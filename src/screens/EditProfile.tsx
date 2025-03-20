@@ -11,6 +11,7 @@ import {
   FlatList,
   Alert,
   ActivityIndicator,
+  ToastAndroid,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -18,6 +19,9 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import CustomButton from '../components/Button';
 import PickerComponent from '../components/PickerComponent';
 import api from '../utils/api';
+import Toast from "react-native-toast-message";
+import BackButton from '../components/BackButton';
+
 
 const interestOptions = ['Music', 'Sports', 'Travel', 'Gaming', 'Books', 'Movies', 'Tech', 'Fitness', 'Art', 'Fashion', 'Photography', 'Cooking'];
 const relationshipOptions = ['Long Term', 'Casual', 'Hookup', 'Marriage'];
@@ -81,6 +85,11 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
 
   // ✅ PATCH request to update profile
   const updateProfile = async () => {
+    if (bio.trim() === '') {
+      Alert.alert('Error', 'Bio cannot be empty');
+      return;
+    }
+  
     try {
       const updatedData = {
         interestedIn,
@@ -89,10 +98,12 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
         avatar1: profilePhoto,
         bio,
       };
-
+  
       await api.patch('/api/v1/users/me', updatedData);
-      Alert.alert('Success', 'Profile updated successfully');
-
+      ToastAndroid.show("Profile Updated Successfully!", ToastAndroid.SHORT);
+  
+      navigation.goBack();
+  
       // ✅ Save updated profile in AsyncStorage
       await AsyncStorage.setItem('profileData', JSON.stringify(updatedData));
     } catch (error) {
@@ -102,9 +113,12 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const selectInterest = (item: string) => {
-    setSelectedInterests((prev) =>
-      prev.includes(item) ? prev.filter((interest) => interest !== item) : prev.length < 7 ? [...prev, item] : prev
-    );
+    setSelectedInterests((prev) => {
+      if (prev.includes(item)) {
+        return prev.length > 1 ? prev.filter((interest) => interest !== item) : prev; // Prevent removing the last interest
+      }
+      return prev.length < 7 ? [...prev, item] : prev;
+    });
   };
 
   if (loading) {
@@ -117,6 +131,7 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <ScrollView style={styles.container}>
+      <BackButton />
       <Text style={styles.headingText}>Edit your profile</Text>
       <View style={styles.profileContainer}>
         <View style={styles.profileImageContainer}>
@@ -179,6 +194,7 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
 
 
       <CustomButton title="Save Changes" onPress={updateProfile} style={styles.updateButton} />
+
     </ScrollView>
   );
 };
@@ -202,24 +218,124 @@ const styles = StyleSheet.create({
     color: 'white',
     paddingLeft: 10,
   },
-  container: { flex: 1, backgroundColor: '#121212', padding: 20 },
-  headingText: { color: '#FFA62B', fontSize: 28, fontWeight: 'bold', alignSelf: 'center', marginBottom: 30 },
-  profileContainer: { alignItems: 'center', marginTop: 30 },
-  profileImageContainer: { position: 'relative' },
-  profileImage: { width: 120, height: 120, borderRadius: 60, borderWidth: 2, borderColor: '#FFA62B' },
-  editIcon: { position: 'absolute', bottom: 10, right: 10, backgroundColor: '#FFA62B', borderRadius: 15, padding: 7 },
-  tagsContainer: { flexDirection: 'row', flexWrap: 'wrap', paddingVertical: 10, gap: 8 },
-  tag: { backgroundColor: '#FFA62B', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
-  tagText: { color: '#FFF', fontWeight: 'bold' },
-  modalContainer: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.8)', justifyContent: 'center', alignItems: 'center' },
-  modalContent: { backgroundColor: '#1E1E1E', padding: 20, borderRadius: 10, width: '80%' },
-  interestOption: { padding: 15, alignItems: 'center' },
-  interestText: { color: '#FFF' },
-  selectedInterest: { color: '#FFA62B', fontWeight: 'bold' },
-  confirmButton: { backgroundColor: '#FFA62B', padding: 15, borderRadius: 10, alignItems: 'center' },
-  confirmButtonText: { color: '#FFF', fontWeight: 'bold' },
-  updateButton: { marginTop: 20, backgroundColor: '#FFA62B' },
-  loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    container: {
+      flex: 1,
+      backgroundColor: '#121212',
+      padding: 20,
+    },
+  
+    headingText: {
+      color: '#FFA62B',
+      fontSize: 28,
+      fontWeight: 'bold',
+      alignSelf: 'center',
+      marginBottom: 30,
+    },
+  
+    profileContainer: {
+      alignItems: 'center',
+      marginTop: 30,
+    },
+  
+    profileImageContainer: {
+      position: 'relative',
+    },
+  
+    profileImage: {
+      width: 150,
+      height: 150,
+      borderRadius: 100,
+      borderWidth: 2,
+      borderColor: '#FFA62B',
+    },
+  
+    editIcon: {
+      position: 'absolute',
+      bottom: 10,
+      right: 10,
+      backgroundColor: '#FFA62B',
+      borderRadius: 15,
+      padding: 7,
+    },
+  
+    tagsContainer: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      paddingVertical: 10,
+      gap: 8,
+    },
+  
+    tag: {
+      backgroundColor: '#FFA62B',
+      borderRadius: 20,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+    },
+  
+    tagText: {
+      color: '#FFF',
+      fontWeight: 'bold',
+    },
+  
+    modalContainer: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+  
+    modalContent: {
+      backgroundColor: '#1E1E1E',
+      padding: 20,
+      borderRadius: 10,
+      width: '80%',
+    },
+  
+    interestOption: {
+      padding: 15,
+      alignItems: 'center',
+    },
+  
+    interestText: {
+      color: '#FFF',
+    },
+  
+    selectedInterest: {
+      color: '#FFA62B',
+      fontWeight: 'bold',
+    },
+  
+    confirmButton: {
+      backgroundColor: '#FFA62B',
+      padding: 15,
+      borderRadius: 10,
+      alignItems: 'center',
+    },
+  
+    confirmButtonText: {
+      color: '#FFF',
+      fontWeight: 'bold',
+    },
+  
+    updateButton: {
+      marginTop: 20,
+      backgroundColor: '#FFA62B',
+    },
+  
+    loaderContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    backButton: {
+      position: 'absolute',
+      top: -15,
+      height: 30,
+      width: 30,
+      alignContent: 'center',
+      justifyContent: 'center',
+    }
+  
 });
 
-export default EditProfileScreen;
+export default EditProfileScreen

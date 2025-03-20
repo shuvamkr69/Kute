@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-nati
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import CustomButton from '../components/Button';
 import { Alert } from 'react-native';
+import api from '../utils/api';
 
 type Props = NativeStackScreenProps<any, 'Premium'>;
 
@@ -19,11 +20,39 @@ const PremiumScreen: React.FC<Props> = ({ navigation }) => {
       features: ['Unlimited Likes', 'See Who Liked You', 'Boost Your Profile'],
     },
     {
-      name: 'Premium',
+      name: 'Diamond',
       price: '₹299 / Month',
       features: ['Unlimited Likes', 'See Who Liked You', 'Boost Your Profile', 'Message Before Match'],
     },
   ];
+
+
+  const basicPlan = () => {
+    try {
+      api.post('/api/v1/users/premiumActivated', { ActivePremiumPlan: "Basic" });
+      Alert.alert('Success', 'You have successfully subscribed to the Basic Plan!');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to subscribe to the Basic Plan!');
+    }
+  };
+
+  const standardPlan = () => {
+    try {
+      api.post('/api/v1/users/premiumActivated', { ActivePremiumPlan: "Standard" });
+      Alert.alert('Success', 'You have successfully subscribed to the Standard Plan!');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to subscribe to the Standard Plan!');
+    }
+  };
+
+  const diamondPlan = () => {
+    try {
+      api.post('/api/v1/users/premiumActivated', { ActivePremiumPlan: "Diamond" });
+      Alert.alert('Success', 'You have successfully subscribed to the Diamond Plan!');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to subscribe to the Diamond Plan!');
+    }
+  };
 
   return (
     <ScrollView style={styles.container}>
@@ -39,7 +68,11 @@ const PremiumScreen: React.FC<Props> = ({ navigation }) => {
               ✅ {feature}
             </Text>
           ))}
-          <CustomButton title={`Subscribe to ${plan.name}`} onPress={() => Alert.alert(`Subscribed to ${plan.name}`)} />
+          <CustomButton 
+  title={`Subscribe to ${plan.name}`} 
+  onPress={plan.name === "Diamond" ? diamondPlan : plan.name === "Standard" ? standardPlan : basicPlan} 
+/>
+
         </View>
       ))}
 

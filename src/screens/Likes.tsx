@@ -1,38 +1,83 @@
-import { StyleSheet, Text, View, FlatList, Image, TouchableOpacity } from 'react-native';
-import React from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { StyleSheet, Text, View, FlatList, Image, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import Icon from 'react-native-vector-icons/FontAwesome';
+import api from '../utils/api';
+import { getUserId } from '../utils/constants';
 
 type Props = NativeStackScreenProps<any, 'Likes'>;
 
-const mockLikes = [
-  { id: '1', name: 'Sophia', image: 'https://via.placeholder.com/150' },
-  { id: '2', name: 'Olivia', image: 'https://via.placeholder.com/150' },
-  { id: '3', name: 'Liam', image: 'https://via.placeholder.com/150' },
-];
+interface LikedUser {
+  _id: string;
+  fullName: string;
+  profileImage: string;
+}
 
 const Likes: React.FC<Props> = ({ navigation }) => {
-  const renderItem = ({ item }: { item: typeof mockLikes[0] }) => (
+  const [likedUsers, setLikedUsers] = useState<LikedUser[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+
+  const fetchLikedUsers = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get('/api/v1/users/userLiked');
+      const formattedUsers = response.data.map((user: any) => ({
+        _id: user._id,
+        fullName: user.fullName,
+        profileImage: user.profileImage || 'https://via.placeholder.com/150',
+      }));
+      setLikedUsers(formattedUsers);
+    } catch (error) {
+      console.error('Error fetching liked users:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLikedUsers();
+  }, []);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchLikedUsers();
+    setRefreshing(false);
+  }, []);
+
+  const renderItem = ({ item }: { item: LikedUser }) => (
     <View style={styles.card}>
-      <Image source={{ uri: item.image }} style={styles.profileImage} />
+      <Image source={{ uri: item.profileImage }} style={styles.profileImage} />
       <View style={styles.info}>
-        <Text style={styles.name}>{item.name}</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('Chat')}>
+        <Text style={styles.name}>{item.fullName}</Text>
+        <TouchableOpacity onPress={async () => {
+          const userId = await getUserId();
+          navigation.navigate('Chat', { loggedInUserId: userId, likedUserId: item._id, userName: item.fullName })
+          }}>
           <Icon name="comments" size={20} color="#FFA62B" />
         </TouchableOpacity>
       </View>
     </View>
   );
+  
 
   return (
     <View style={styles.container}>
       <Text style={styles.heading}>People Who Liked You 💕</Text>
-      <FlatList
-        data={mockLikes}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        contentContainerStyle={styles.list}
-      />
+
+      {loading ? (
+        <ActivityIndicator size="large" color="#FFA62B" />
+      ) : likedUsers.length === 0 ? (
+        <Text style={styles.noLikes}>No one has liked you yet.</Text>
+      ) : (
+        <FlatList
+          data={likedUsers}
+          keyExtractor={(item) => item._id}
+          renderItem={renderItem}
+          contentContainerStyle={styles.list}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        />
+      )}
     </View>
   );
 };
@@ -51,6 +96,12 @@ const styles = StyleSheet.create({
     color: '#FFA62B',
     marginBottom: 20,
     textAlign: 'center',
+  },
+  noLikes: {
+    fontSize: 18,
+    color: '#B0B0B0',
+    textAlign: 'center',
+    marginTop: 20,
   },
   list: {
     paddingBottom: 20,

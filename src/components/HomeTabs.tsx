@@ -11,6 +11,7 @@ import ProfileScreen from "../screens/ProfileScreen";
 import LikesScreen from "../screens/Likes";
 import GamesScreen from "../screens/GameScreens";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import ChatsScreen from "../screens/AllChats";
 
 type Props = NativeStackScreenProps<any, "HomeTabs">;
 
@@ -89,7 +90,7 @@ const HomeTabs: React.FC<Props> = ({ navigation }) => {
         <Tab.Screen name="Home" component={HomeScreen} />
         <Tab.Screen name="Games" component={GamesScreen} />
         <Tab.Screen name="Matches" component={LikesScreen} />
-        <Tab.Screen name="Chats" component={ChatScreen} />
+        <Tab.Screen name="Chats" component={ChatsScreen} />
         <Tab.Screen name="Profile" component={ProfileScreen} />
       </Tab.Navigator>
     </View>

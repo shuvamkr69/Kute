@@ -4,10 +4,43 @@ import AppNavigation from "./src/navigation/AppNavigation";
 import { AuthProvider, useAuth } from "./src/navigation/AuthContext";
 import { RegistrationProvider } from "./src/navigation/RegistrationContext";
 import SplashScreenComponent from "./src/components/SplashScreen";
+import Toast from "react-native-toast-message";
+import { registerForPushNotifications } from "./src/utils/notifications";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { decode as atob, encode as btoa } from 'base-64';
+
+// Polyfill atob (needed for jwt-decode)
+if (!global.atob) {
+  global.atob = atob;
+}
+
+if (!global.btoa) {
+  global.btoa = btoa;
+}
+
 
 const MainApp = () => {
   const { user, loading } = useAuth(); // Fetch user authentication state
   const [isSplashVisible, setIsSplashVisible] = useState(true);
+
+  useEffect(() => {
+    const updatePushToken = async () => {
+      const token = await registerForPushNotifications();
+
+      if (token) {
+        const storedToken = await AsyncStorage.getItem("pushToken");
+        const userToken = await AsyncStorage.getItem("accessToken"); // Get JWT
+        console.log("User JWT:", userToken);
+        if (storedToken !== token) {
+          // Send to backend only if changed
+          await api.post("/api/v1/users/updatePushToken", { pushToken: token });
+          await AsyncStorage.setItem("pushToken", token);
+        }
+      }
+    };
+
+    updatePushToken();
+  }, []);
 
   useEffect(() => {
     console.log("Splash Screen Visible:", isSplashVisible);

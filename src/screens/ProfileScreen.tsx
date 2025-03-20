@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, ScrollView, Alert, ToastAndroid } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import CustomButton from '../components/Button';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import api from '../utils/api'; // ✅ Import your API utility
+import api from '../utils/api'; 
+import Toast from 'react-native-toast-message';
 
 type Props = NativeStackScreenProps<any, 'MyProfile'>;
 
@@ -14,6 +15,9 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   const [age, setAge] = useState<number | null>(null);
   const [bio, setBio] = useState('');
   const [loading, setLoading] = useState(true);
+  const [isVerified, setIsVerified] = useState(false);
+  const [isPremiumActive, setIsPremiumActive] = useState(false);
+
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -29,6 +33,8 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
         setAge(user.age || null);
         setProfilePhoto(user.avatar1 || profilePhoto);
         setBio(user.bio || '');
+        setIsVerified(user.isVerified || false);
+        setIsPremiumActive(user.isPremiumActive || false);
   
         // ✅ Save API response for offline access
         await AsyncStorage.setItem('user', JSON.stringify(user));
@@ -44,7 +50,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
           setProfilePhoto(user.avatar1 || profilePhoto);
           setBio(user.bio || '');
         } else {
-          Alert.alert('Error', 'No offline data available');
+           ToastAndroid.show("No data found/ server error", ToastAndroid.SHORT);
         }
       } finally {
         setLoading(false);
@@ -71,12 +77,22 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
     <ScrollView style={styles.container}>
       {/* Profile Section */}
       <View style={styles.profileContainer}>
-        <View style={styles.profileImageContainer}>
-          <Image source={{ uri: profilePhoto }} style={styles.profileImage} />
-          <TouchableOpacity style={styles.editIcon} onPress={() => navigation.navigate('EditProfile')}>
-            <Icon name="pencil" size={14} color="#121212" />
-          </TouchableOpacity>
-        </View>
+      <View style={styles.profileImageContainer}>
+  <Image source={{ uri: profilePhoto }} style={styles.profileImage} />
+  
+  {/* Edit Icon */}
+  <TouchableOpacity style={styles.editIcon} onPress={() => navigation.navigate('EditProfile')}>
+    <Icon name="pencil" size={14} color="#121212" />
+  </TouchableOpacity>
+
+        {/* Verification Badge */}
+    <Icon 
+        name="check-circle" 
+        size={24} 
+        color={isVerified ? "blue" : "grey"} 
+        style={styles.verificationIcon} 
+      />
+</View>
         <Text style={styles.username}>{name}, {age}</Text>
         <Text style={styles.bio}>{bio}</Text>
       </View>
@@ -126,9 +142,9 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   profileImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    width: 150,
+    height: 150,
+    borderRadius: 100,
     borderWidth: 2,
     borderColor: '#FFA62B',
   },
@@ -204,6 +220,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#121212',
   },
+  verificationIcon: {
+    position: 'absolute',
+    right: -50, 
+    top: 120,
+    borderRadius: 15,
+    padding: 2,
+  },
+  
 });
 
 export default ProfileScreen;

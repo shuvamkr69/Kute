@@ -138,33 +138,34 @@ const AddProfilePictures: React.FC<Props> = ({ navigation }) => {
   };
 
   return (
+    
     <SafeAreaView style={styles.container}>
       <Text style={styles.header}>Upload Your Best Photos</Text>
 
       <FlatList
-        data={[...photos, ...new Array(MAX_PHOTOS - photos.length).fill(null)]}
-        keyExtractor={(item, index) => index.toString()}
-        numColumns={3}
-        renderItem={({ item, index }) => (
-          <TouchableOpacity
-            style={styles.photoContainer}
-            onPress={() => item ? removeImage(index) : openModal(index)}
-          >
-            {item ? (
-              <>
-                <Image source={{ uri: item }} style={styles.photo} />
-                <TouchableOpacity style={styles.removeIcon} onPress={() => removeImage(index)}>
-                  <Icon name="times-circle" size={24} color="red" />
-                </TouchableOpacity>
-              </>
-            ) : (
-              <>
-                <Icon name="plus" size={30} color="#FFA62B" />
-              </>
-            )}
+  data={[...photos, ...new Array(MAX_PHOTOS - photos.length).fill(null)]}
+  keyExtractor={(item, index) => index.toString()}
+  numColumns={2} // Changed to 2 columns
+  renderItem={({ item, index }) => (
+    <TouchableOpacity
+      style={styles.photoContainer}
+      onPress={() => item ? removeImage(index) : openModal(index)}
+    >
+      {item ? (
+        <>
+          <Image source={{ uri: item }} style={styles.photo} />
+          <TouchableOpacity style={styles.removeIcon} onPress={() => removeImage(index)}>
+            <Icon name="times-circle" size={24} color="red" />
           </TouchableOpacity>
-        )}
-      />
+        </>
+      ) : (
+        <>
+          <Icon name="plus" size={30} color="#FFA62B" />
+        </>
+      )}
+    </TouchableOpacity>
+  )}
+/>
 
       {/* Modal for Image Options */}
       {modalVisible && selectedIndex !== null && (
@@ -220,14 +221,18 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   photoContainer: {
-    width: 140,
+    width: 140, // Adjusted width to fit 2 containers in a row
     height: 130,
     borderRadius: 10,
     backgroundColor: '#1E1E1E',
     margin: 10,
+    marginTop: 30,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
+    borderWidth: 0.5,
+    elevation: 5,
+    shadowColor: 'yellow',
+    shadowOffset: { width: 0, height: 2 },
     borderColor: '#FFA62B',
     position: 'relative',
   },

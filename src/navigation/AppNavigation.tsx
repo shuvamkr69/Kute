@@ -17,9 +17,14 @@ import LocationPage from "../screens/UserInfo/Location";
 import AddProfilePictures from "../screens/UserInfo/addProfilePictures";
 import MakeBio from "../screens/UserInfo/MakeUserBio";
 import HomeTabs from "../components/HomeTabs";
+import ProfileDetails from "../screens/profileDetails";
+
 
 // Enable gesture handler
 import "react-native-gesture-handler";
+import MatchScreen from "../screens/MatchScreen";
+import ChatScreen from "../screens/ChatScreen";
+import ChatsScreen from "../screens/AllChats";
 
 const Stack = createNativeStackNavigator(); // Standard Stack Navigator
 
@@ -53,6 +58,14 @@ export default function AppNavigation() {
             <Stack.Screen name="EditProfile" component={EditProfileScreen} />
             <Stack.Screen name="Premium" component={PremiumScreen} />
             <Stack.Screen name="Notifications" component={NotificationsScreen} />
+            <Stack.Screen name="ProfileDetails" component={ProfileDetails} />
+            <Stack.Screen name="MatchScreen" component={MatchScreen} />
+            <Stack.Screen name="Chat" component={ChatScreen} />
+            <Stack.Screen name="AllChatScreen" component={ChatsScreen} />
+
+
+
+
           </>
         ) : (
           <>

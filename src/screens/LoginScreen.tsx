@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Button } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import CustomButton from '../components/Button';
 import api from '../utils/api';
 import { useAuth } from '../navigation/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { registerForPushNotifications } from '../utils/notifications';
 
 type Props = NativeStackScreenProps<any, 'Login'>;
 
@@ -38,9 +39,28 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
         await AsyncStorage.setItem("user", JSON.stringify(user));
         await AsyncStorage.setItem("accessToken", accessToken);
         await AsyncStorage.setItem("refreshToken", refreshToken);
-        
+        await AsyncStorage.setItem("avatar", user.avatar1);
+
+        const token = await registerForPushNotifications();
+      if (token) {
+        const storedToken = await AsyncStorage.getItem("pushToken");
+
+        if (storedToken !== token) {
+          try {
+            await api.post(
+              "/api/v1/users/updatePushToken",
+              { pushToken: token }
+            );
+            await AsyncStorage.setItem("pushToken", token);
+            console.log("Push token updated successfully.");
+          } catch (error) {
+            console.error("Error updating push token:", error.response?.data || error.message);
+          }
+        }
+      }
         // NEW: Update auth state so that user remains logged in
         await signIn();
+        
   
         // Navigate to HomeTabs
         navigation.reset({
@@ -116,6 +136,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
           Register
         </Text>
       </Text>
+      <Button title="PhotoScreen" onPress={() => navigation.navigate('AddProfilePictures')} />
     </View>
   );
 };
