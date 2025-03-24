@@ -1,11 +1,13 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { 
-  View, Text, TouchableOpacity, Image, Alert, StyleSheet, SafeAreaView, FlatList, ActivityIndicator, Modal 
+  View, Text, TouchableOpacity, Image, Alert, StyleSheet, SafeAreaView, FlatList, ActivityIndicator, Modal, 
+  ScrollView
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import BackButton from '../../components/BackButton';
 
 const MAX_PHOTOS = 6;
 
@@ -140,32 +142,72 @@ const AddProfilePictures: React.FC<Props> = ({ navigation }) => {
   return (
     
     <SafeAreaView style={styles.container}>
-      <Text style={styles.header}>Upload Your Best Photos</Text>
+      <BackButton />
 
       <FlatList
-  data={[...photos, ...new Array(MAX_PHOTOS - photos.length).fill(null)]}
-  keyExtractor={(item, index) => index.toString()}
-  numColumns={2} // Changed to 2 columns
-  renderItem={({ item, index }) => (
-    <TouchableOpacity
-      style={styles.photoContainer}
-      onPress={() => item ? removeImage(index) : openModal(index)}
-    >
-      {item ? (
-        <>
-          <Image source={{ uri: item }} style={styles.photo} />
-          <TouchableOpacity style={styles.removeIcon} onPress={() => removeImage(index)}>
-            <Icon name="times-circle" size={24} color="red" />
-          </TouchableOpacity>
-        </>
-      ) : (
-        <>
-          <Icon name="plus" size={30} color="#FFA62B" />
-        </>
-      )}
+        data={[...photos, ...new Array(MAX_PHOTOS - photos.length).fill(null)]}
+        keyExtractor={(item, index) => index.toString()}
+        numColumns={2} // Changed to 2 columns
+        renderItem={({ item, index }) => (
+          <TouchableOpacity
+            style={styles.photoContainer}
+            onPress={() => item ? removeImage(index) : openModal(index)}
+          >
+            {item ? (
+              <>
+                <Image source={{ uri: item }} style={styles.photo} />
+                <TouchableOpacity style={styles.removeIcon} onPress={() => removeImage(index)}>
+                  <Icon name="times-circle" size={24} color="red" />
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <Icon name="plus" size={30} color="white" />
+              </>
+            )}
     </TouchableOpacity>
   )}
 />
+
+{/* Rules Section */}
+<ScrollView style={styles.rulesContainer} contentContainerStyle={styles.rulesContent}>
+  <Text style={{ color: '#5de383', fontSize: 18, marginBottom: 10, fontWeight: 'bold' }}>Photo Guidelines</Text>
+  {/* Rule 1 */}
+  <View style={styles.ruleItem}>
+    <Text style={styles.emoji}>•</Text>
+    <Text style={styles.ruleText}>Upload clear and recent photos.</Text>
+  </View>
+  
+  <View style={styles.ruleItem}>
+    <Text style={styles.emoji}>•</Text>
+    <Text style={styles.ruleText}>Avoid using heavily filtered or blurry images.</Text>
+  </View>
+
+  {/* Rule 2 */}
+  <View style={styles.ruleItem}>
+    <Text style={styles.emoji}>•</Text>
+    <Text style={styles.ruleText}>Show your face clearly in at least one photo.</Text>
+  </View>
+  
+  <View style={styles.ruleItem}>
+    <Text style={styles.emoji}>•</Text>
+    <Text style={styles.ruleText}>Don't upload group photos without marking yourself.</Text>
+  </View>
+
+  {/* Rule 3 */}
+  <View style={styles.ruleItem}>
+    <Text style={styles.emoji}>•</Text>
+    <Text style={styles.ruleText}>Be yourself! Genuine photos work best.</Text>
+  </View>
+  
+  <View style={styles.ruleItem}>
+    <Text style={styles.emoji}>•</Text>
+    <Text style={styles.ruleText}>No explicit or inappropriate content.</Text>
+  </View>
+</ScrollView>
+
+
+
 
       {/* Modal for Image Options */}
       {modalVisible && selectedIndex !== null && (
@@ -176,18 +218,26 @@ const AddProfilePictures: React.FC<Props> = ({ navigation }) => {
           onRequestClose={closeModal}
         >
           <View style={styles.modalOverlay}>
-            <View style={styles.modalContainer}>
-              <Text style={styles.modalTitle}>Choose an Option</Text>
-              <TouchableOpacity style={styles.button} onPress={() => { pickImage(); closeModal(); }}>
-                <Text style={styles.buttonText}>Choose from Gallery</Text>
+          <View style={styles.modalContainer}>
+            <View style={styles.optionContainer}>
+              {/* Gallery Option */}
+              <TouchableOpacity style={styles.optionBox} onPress={() => { pickImage(); closeModal(); }}>
+                <Icon name="image" size={40} color="white" />
+                <Text style={styles.optionText}>Gallery</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.button} onPress={() => { takePhoto(); closeModal(); }}>
-                <Text style={styles.buttonText}>Take a Photo</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
-                <Text style={styles.closeButtonText}>Cancel</Text>
+
+              {/* Camera Option */}
+              <TouchableOpacity style={styles.optionBox} onPress={() => { takePhoto(); closeModal(); }}>
+                <Icon name="camera" size={40} color="white" />
+                <Text style={styles.optionText}>Camera</Text>
               </TouchableOpacity>
             </View>
+
+            <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
+              <Text style={styles.closeButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+
           </View>
         </Modal>
       )}
@@ -214,12 +264,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
   },
-  header: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#FFA62B',
-    marginBottom: 20,
-  },
   photoContainer: {
     width: 140, // Adjusted width to fit 2 containers in a row
     height: 130,
@@ -231,9 +275,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 0.5,
     elevation: 5,
-    shadowColor: 'yellow',
+    shadowColor: '#5de383',
+    shadowOpacity: 1,
     shadowOffset: { width: 0, height: 2 },
-    borderColor: '#FFA62B',
+    borderColor: 'white',
     position: 'relative',
   },
   photo: {
@@ -262,14 +307,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: 300,
   },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFA62B',
-    marginBottom: 20,
-  },
+  
   button: {
-    backgroundColor: '#FFA62B',
+    backgroundColor: 'white',
     padding: 12,
     borderRadius: 10,
     alignItems: 'center',
@@ -285,7 +325,7 @@ const styles = StyleSheet.create({
     color: '#FFF',
   },
   uploadButton: {
-    backgroundColor: '#FFA62B',
+    backgroundColor: '#5de383',
     paddingVertical: 15,
     borderRadius: 10,
     width: '100%',
@@ -300,6 +340,64 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
   },
+  optionContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginVertical: 20,
+    gap: 20,
+  },
+  
+  optionBox: {
+    width: 120,
+    height: 120,
+    backgroundColor: '#1E1E1E',
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'white',
+  },
+  
+  optionText: {
+    color: '#FFF',
+    marginTop: 10,
+    fontSize: 16,
+  },
+
+  rulesContainer: {
+    marginTop: 20,
+    maxHeight: 150,
+    width: '100%',
+    backgroundColor: '#1E1E1E',
+    borderRadius: 10,
+    padding: 15,
+    borderWidth: 1,
+    borderColor: 'white',
+  },
+  
+  rulesContent: {
+    paddingBottom: 10,
+  },
+  
+  ruleItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  
+  emoji: {
+    fontSize: 20,
+    marginRight: 10,
+    color: 'white',
+  },
+  
+  ruleText: {
+    color: '#FFF',
+    fontSize: 14,
+    flex: 1,
+  },
+  
+  
 });
 
 export default AddProfilePictures;

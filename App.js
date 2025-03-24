@@ -4,7 +4,6 @@ import AppNavigation from "./src/navigation/AppNavigation";
 import { AuthProvider, useAuth } from "./src/navigation/AuthContext";
 import { RegistrationProvider } from "./src/navigation/RegistrationContext";
 import SplashScreenComponent from "./src/components/SplashScreen";
-import Toast from "react-native-toast-message";
 import { registerForPushNotifications } from "./src/utils/notifications";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { decode as atob, encode as btoa } from 'base-64';
@@ -33,7 +32,7 @@ const MainApp = () => {
         console.log("User JWT:", userToken);
         if (storedToken !== token) {
           // Send to backend only if changed
-          await api.post("/api/v1/users/updatePushToken", { pushToken: token });
+          await api.patch("/api/v1/users/updatePushToken", { pushToken: token });
           await AsyncStorage.setItem("pushToken", token);
         }
       }
@@ -43,8 +42,7 @@ const MainApp = () => {
   }, []);
 
   useEffect(() => {
-    console.log("Splash Screen Visible:", isSplashVisible);
-    console.log("Auth Loading:", loading);
+    
   }, [isSplashVisible, loading]);
 
   useEffect(() => {

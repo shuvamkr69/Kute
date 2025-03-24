@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
   header: {
     fontSize: 30,
     fontWeight: 'bold',
-    color: '#FFA62B',
+    color: '#5de383',
     textAlign: 'center',
     marginBottom: 10,
   },
@@ -108,8 +108,8 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#FFA62B',
-    shadowColor: '#FFA62B',
+    borderColor: '#5de383',
+    shadowColor: '#5de383',
     shadowOpacity: 0.4,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 5,
@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
   planName: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#FFA62B',
+    color: '#5de383',
     marginBottom: 10,
   },
   planPrice: {
@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
   },
   goBack: {
     textAlign: 'center',
-    color: '#FFA62B',
+    color: '#5de383',
     marginTop: 20,
   },
 });

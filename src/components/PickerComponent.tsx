@@ -49,6 +49,7 @@ const PickerComponent: React.FC<PickerComponentProps> = ({ label, selectedValue,
 const styles = StyleSheet.create({
   container: {
     marginBottom: 20,
+    marginTop: 20,
   },
   label: {
     fontSize: 16,
@@ -64,7 +65,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     width: '100%',
     borderWidth: 1,
-    borderColor: '#FFA62B', // Orange accent for contrast
+    borderColor: '#121212', // Orange accent for contrast
     minHeight: 56,
     color: 'white', // Text color
     justifyContent: 'space-between', // Ensures proper spacing
@@ -103,7 +104,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
     alignItems: 'center',
     padding: 12,
-    backgroundColor: '#FFA62B', // Vibrant orange button for visibility
+    backgroundColor: '#5de383', // Vibrant orange button for visibility
     borderRadius: 12,
   },
   closeButtonText: {

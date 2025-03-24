@@ -44,6 +44,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
         const token = await registerForPushNotifications();
       if (token) {
         const storedToken = await AsyncStorage.getItem("pushToken");
+        
 
         if (storedToken !== token) {
           try {
@@ -101,7 +102,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
       <Text style={styles.tagline}>Find Your University Date</Text>
 
       <View style={styles.inputContainer}>
-        <Icon name="envelope" size={20} color="#FFA62B" style={styles.icon} />
+        <Icon name="envelope" size={20} color="#5de383" style={styles.icon} />
         <TextInput
           style={styles.input}
           placeholder="Email"
@@ -113,7 +114,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
       </View>
 
       <View style={styles.inputContainer}>
-        <Icon name="lock" size={20} color="#FFA62B" style={styles.icon} />
+        <Icon name="lock" size={20} color="#5de383" style={styles.icon} />
         <TextInput
           style={styles.input}
           placeholder="Password"
@@ -136,7 +137,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
           Register
         </Text>
       </Text>
-      <Button title="PhotoScreen" onPress={() => navigation.navigate('AddProfilePictures')} />
+      <Button title="Photo Screen" onPress={() => navigation.navigate('AddProfilePictures')} />
     </View>
   );
 };
@@ -151,7 +152,7 @@ const styles = StyleSheet.create({
   },
   logo: {
     fontSize: 40,
-    color: '#FFA62B',
+    color: '#5de383',
     fontWeight: 'bold',
     marginBottom: 10,
   },
@@ -168,7 +169,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     paddingHorizontal: 15,
     borderWidth: 1,
-    borderColor: '#FFA62B',
+    borderColor: '#5de383',
     width: '100%',
   },
   input: {
@@ -181,12 +182,12 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   forgotPassword: {
-    color: '#FFA62B',
+    color: '#5de383',
     marginBottom: 20,
     textAlign: 'center',
   },
   loginButton: {
-    backgroundColor: '#FFA62B',
+    backgroundColor: '#5de383',
     paddingVertical: 15,
     borderRadius: 10,
     width: '100%',
@@ -198,7 +199,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   registerLink: {
-    color: '#FFA62B',
+    color: '#5de383',
     fontWeight: 'bold',
   },
 });

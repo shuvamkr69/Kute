@@ -53,18 +53,27 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         gender: profile.gender,
         location: profile.location,
         interests: 
-            Array.isArray(profile.interests) ? 
-            profile.interests.join(", ") : 
-            (profile.interests || "No interests listed"),
-            
+        Array.isArray(profile.interests) ? 
+        profile.interests.join(", ") : 
+        (profile.interests || "No interests listed"),
+        
         distance: profile.location?.coordinates 
         ? haversineDistance(
-            37.7749, 
-            -122.4194, 
-            profile.location.coordinates[1], 
-            profile.location.coordinates[0]
+        37.7749, 
+        -122.4194, 
+        profile.location.coordinates[1], 
+        profile.location.coordinates[0]
           ) 
         : null,
+        occupation: profile.occupation,
+        workingAt: profile.workingAt,
+        pronouns: profile.pronouns,
+        genderOrientation: profile.genderOrientation,
+        languages: profile.languages,
+        prompts: profile.prompts,
+        planetSign: profile.planetSign,
+        familyPlanning: profile.familyPlanning,
+        bodyType: profile.bodyType,
       }));
 
       setProfiles(formattedProfiles);
@@ -186,7 +195,7 @@ useEffect(() => {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
       {loading ? (
-        <ActivityIndicator size="large" color="#FFA62B" />
+        <ActivityIndicator size="large" color="#5de383" />
       ) : profiles.length > 0 ? (
         <View style={styles.swiperContainer}>
           <Swiper
@@ -269,7 +278,7 @@ useEffect(() => {
               },
             ],
             backgroundColor:
-              currentImageIndex === index ? "#FFA62B" : "#777",
+              currentImageIndex === index ? "#5de383" : "#777",
             width: currentImageIndex === index ? 20 : 10,
           },
         ]}
@@ -345,7 +354,7 @@ dot: {
   activeDot: {
     width: 15, // Elongated when active
     height: 10,
-    backgroundColor: "#FFA62B",
+    backgroundColor: "#5de383",
     borderRadius: 5,
   },
   scrollContainer: {
@@ -366,18 +375,18 @@ dot: {
   },
   swiper: {
     width: "100%",
-    height: 500,
+    height: 600,
     justifyContent: "center",
     alignItems: "center",
   },
   card: {
     width: "110%",
-    left: -12,
     height: 600,
     borderRadius: 15,
     overflow: "hidden",
-    backgroundColor: "#FFA62B",
+    backgroundColor: "black",
     elevation: 8,
+    alignSelf: "center",
   },
   profileImage: {
     width: "100%",
@@ -394,7 +403,7 @@ dot: {
   },
   relationship: {
     fontSize: 18,
-    color: "#FFA62B",
+    color: "#5de383",
     marginTop: 5,
   },
   noProfiles: {
@@ -456,7 +465,7 @@ dot: {
   closeButton: {
     alignSelf: "center",
     marginTop: 20,
-    backgroundColor: "#FFA62B",
+    backgroundColor: "#5de383",
     padding: 10,
     borderRadius: 20,
   },
@@ -489,7 +498,7 @@ dot: {
     marginTop: 15,
   },
   interestItem: {
-    backgroundColor: "#FFA62B",
+    backgroundColor: "#5de383",
     borderRadius: 15,
     paddingVertical: 5,
     paddingHorizontal: 10,
@@ -504,24 +513,24 @@ dot: {
   aboutMe:{
     marginTop: 20,
     fontSize: 20,
-    color: "#FFA62B",
+    color: "#5de383",
     paddingBottom: 3,
     borderRadius: 20,
   },
   myInterestsText:{
     marginTop: 20,
     fontSize: 20,
-    color: "#FFA62B",
+    color: "#5de383",
     paddingBottom: 3,
     borderRadius: 20,
   },
   distanceText: {
-    color: "#FFA62B",
+    color: "#5de383",
     fontSize: 18,
     left: 20,
   },
   distance: {
-    color: "#FFA62B",
+    color: "#5de383",
     fontSize: 10,
     left: 20,
   },

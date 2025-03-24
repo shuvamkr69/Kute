@@ -51,6 +51,7 @@ const ChatScreen: React.FC<Props> = ({ route }) => {
 
     const fetchConversation = async () => {
       try {
+
         const response = await api.post<{ _id: string }>(`/api/v1/users/chats`, {
           userId: loggedInUserId,
           receiverId: likedUserId,
@@ -145,7 +146,7 @@ const ChatScreen: React.FC<Props> = ({ route }) => {
         <Text style={styles.chatHeader}>Chat with {userName}</Text>
 
         {loading ? (
-          <ActivityIndicator size="large" color="#FFA62B" />
+          <ActivityIndicator size="large" color="#5de383" />
         ) : (
           <FlatList
             ref={flatListRef}
@@ -165,7 +166,7 @@ const ChatScreen: React.FC<Props> = ({ route }) => {
             placeholder="Type a message..."
             placeholderTextColor="#B0B0B0"
           />
-          <Button title="Send" onPress={sendMessage} color="#FFA62B" />
+          <Button title="Send" onPress={sendMessage} color="#5de383" />
         </View>
       </View>
     </KeyboardAvoidingView>
@@ -189,7 +190,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderTopWidth: 1,
-    borderColor: '#FFA62B',
+    borderColor: '#5de383',
     paddingVertical: 10,
   },
   input: {
@@ -202,7 +203,7 @@ const styles = StyleSheet.create({
   },
   myMessage: {
     alignSelf: 'flex-end',
-    backgroundColor: '#FFA62B',
+    backgroundColor: '#5de383',
     padding: 10,
     marginVertical: 5,
     borderRadius: 10,

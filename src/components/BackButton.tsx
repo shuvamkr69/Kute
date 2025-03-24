@@ -21,6 +21,9 @@ const BackButton: React.FC<BackButtonProps> = ({ color = "#FFFFFF", size = 24 })
 const styles = StyleSheet.create({
   button: {
     position: "absolute",
+    left: 10,
+    top: 20,
+    zIndex: 10,
   },
 });
 

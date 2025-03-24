@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#FFA62B',
+    color: '#5de383',
     textAlign: 'center',
     marginBottom: 10,
   },
@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
     height: 10,
     width: 10,
     borderRadius: 5,
-    backgroundColor: '#FFA62B',
+    backgroundColor: '#5de383',
     marginHorizontal: 5,
   },
   button: {

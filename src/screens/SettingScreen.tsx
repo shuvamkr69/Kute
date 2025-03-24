@@ -53,8 +53,8 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
           <Switch
             value={visibility}
             onValueChange={setVisibility}
-            thumbColor={visibility ? '#FFA62B' : '#B0B0B0'}
-            trackColor={{ false: '#555', true: '#FFA62B' }}
+            thumbColor={visibility ? '#5de383' : '#B0B0B0'}
+            trackColor={{ false: '#555', true: '#5de383' }}
           />
         </View>
         <View style={styles.optionWithSwitch}>
@@ -62,8 +62,8 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
           <Switch
             value={location}
             onValueChange={setLocation}
-            thumbColor={location ? '#FFA62B' : '#B0B0B0'}
-            trackColor={{ false: '#555', true: '#FFA62B' }}
+            thumbColor={location ? '#5de383' : '#B0B0B0'}
+            trackColor={{ false: '#555', true: '#5de383' }}
           />
         </View>
       </View>
@@ -76,8 +76,8 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
           <Switch
             value={notifications}
             onValueChange={setNotifications}
-            thumbColor={notifications ? '#FFA62B' : '#B0B0B0'}
-            trackColor={{ false: '#555', true: '#FFA62B' }}
+            thumbColor={notifications ? '#5de383' : '#B0B0B0'}
+            trackColor={{ false: '#555', true: '#5de383' }}
           />
         </View>
         <TouchableOpacity style={styles.option}>
@@ -96,10 +96,18 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
         </TouchableOpacity>
       </View>
 
+
       {/* Logout */}
-      <View style={styles.logoutSection}>
-        <CustomButton title="Logout" onPress={handleLogout} />
+
+      <View style={styles.section}>
+        <TouchableOpacity style={styles.sectionTitle}>
+        <Text onPress={handleLogout}>Logout</Text>
+        </TouchableOpacity>
+         
       </View>
+
+      
+      
     </ScrollView>
   );
 };
@@ -125,7 +133,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   sectionTitle: {
-    color: '#FFA62B',
+    color: '#5de383',
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 15,

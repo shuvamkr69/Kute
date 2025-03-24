@@ -18,7 +18,7 @@ const CustomButton: React.FC<CustomButtonProps> = ({ title, onPress, style }) =>
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: '#FFA62B',
+    backgroundColor: '#81e8e0',
     borderRadius: 10,
     paddingVertical: 15,
     alignItems: 'center',

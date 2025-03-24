@@ -46,7 +46,7 @@ const ForgotPasswordScreen: React.FC<Props> = ({ navigation }) => {
 
       {/* Email Input */}
       <View style={styles.inputContainer}>
-        <Icon name="envelope" size={20} color="#FFA62B" style={styles.icon} />
+        <Icon name="envelope" size={20} color="#5de383" style={styles.icon} />
         <TextInput
           style={styles.input}
           placeholder="Email"
@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
   logo: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#FFA62B',
+    color: '#5de383',
     textAlign: 'center',
     marginBottom: 10,
   },
@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     paddingHorizontal: 15,
     borderWidth: 1,
-    borderColor: '#FFA62B',
+    borderColor: '#5de383',
   },
   input: {
     flex: 1,
@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   button: {
-    backgroundColor: '#FFA62B',
+    backgroundColor: '#5de383',
     borderRadius: 10,
     paddingVertical: 15,
     alignItems: 'center',
@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   loginLink: {
-    color: '#FFA62B',
+    color: '#5de383',
     fontWeight: 'bold',
   },
 });

@@ -5,6 +5,7 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import PickerComponent from '../../components/PickerComponent';
 import api from '../../utils/api';
+import BackButton from '../../components/BackButton';
 
 type Props = NativeStackScreenProps<any, 'BasicDetails'>;
 
@@ -60,11 +61,12 @@ const BasicDetails: React.FC<Props> = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <BackButton/>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <Text style={styles.header}>Tell us about yourself</Text>
 
         <TouchableOpacity style={styles.inputContainer} activeOpacity={1}>
-          <Icon name="calendar" size={20} color="#FFA62B" />
+          <Icon name="calendar" size={20} color="#5de383" />
           <TextInput
             style={[styles.input, { width: '100%' }]}
             placeholder="Select Age"
@@ -98,7 +100,7 @@ const BasicDetails: React.FC<Props> = ({ navigation }) => {
         />
 
         <TouchableOpacity style={styles.inputContainer} onPress={() => setShowInterestModal(true)}>
-          <Icon name="pencil" size={20} color="#FFA62B" />
+          <Icon name="pencil" size={20} color="#5de383" />
           <View style={styles.tagsContainer}>
             {selectedInterests.map((item, index) => (
               <TouchableOpacity key={index} style={styles.tag} onPress={() => removeInterest(item)}>
@@ -110,7 +112,7 @@ const BasicDetails: React.FC<Props> = ({ navigation }) => {
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.inputContainer} onPress={() => setShowRelationshipModal(true)}>
-          <Icon name="heart" size={20} color="#FFA62B" />
+          <Icon name="heart" size={20} color="#5de383" />
           <Text style={{ color: relationshipType ? '#FFF' : '#B0B0B0', paddingLeft: 10 }}>
             {relationshipType || 'Select Relationship Type'}
           </Text>
@@ -178,7 +180,7 @@ const styles = StyleSheet.create({
   header: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#FFA62B',
+    color: '#5de383',
     marginBottom: 30,
     textAlign: 'center',
   },
@@ -191,7 +193,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     width: '100%',
     borderWidth: 1,
-    borderColor: '#FFA62B',
+    borderColor: '#5de383',
     minHeight: 56,
     color: 'white',
   },
@@ -202,7 +204,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   tag: {
-    backgroundColor: '#FFA62B',
+    backgroundColor: '#5de383',
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -232,7 +234,7 @@ const styles = StyleSheet.create({
   interestOption: {
     padding: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#FFA62B',
+    borderBottomColor: '#5de383',
     alignItems: 'center',
   },
 
@@ -241,12 +243,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   selectedInterest: {
-    color: '#FFA62B',
+    color: '#5de383',
     fontWeight: 'bold',
   },
   confirmButton: {
     marginTop: 20,
-    backgroundColor: '#FFA62B',
+    backgroundColor: '#5de383',
     padding: 15,
     borderRadius: 10,
     alignItems: 'center',
@@ -256,7 +258,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   button: {
-    backgroundColor: '#FFA62B',
+    backgroundColor: '#5de383',
     paddingVertical: 15,
     borderRadius: 10,
     width: '100%',

@@ -1,44 +1,37 @@
 import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ImageBackground } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ImageBackground } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
 type Props = NativeStackScreenProps<any, 'Games'>;
 
-const games = [
-  { name: 'Truth or Dare 🔥', image: require('../assets/gameScreenImages/truth-or-dare_orig.png') },
-  { name: 'Would You Rather ❓', image: require('../assets/gameScreenImages/would-you-rather-questions.jpg') },
-  { name: 'Couple Quiz 💕', image: require('../assets/gameScreenImages/would-you-rather-questions.jpg') },
-  { name: 'Flirty Questions 💌', image: require('../assets/gameScreenImages/flirty-questions.jpeg') },
-  { name: 'Never Have I Ever 🍸', image: require('../assets/gameScreenImages/never-have-i-ever.jpeg') },
-];
+const GameCard = ({ name, image, onPress }: { name: string; image: any; onPress: () => void }) => (
+  <TouchableOpacity onPress={onPress} style={styles.card}>
+    <ImageBackground source={image} style={styles.image} imageStyle={{ borderRadius: 15 }}>
+      <View style={styles.overlay}>
+        <Text style={styles.gameName}>{name}</Text>
+      </View>
+    </ImageBackground>
+  </TouchableOpacity>
+);
 
-const GamesScreen: React.FC<Props> = () => {
+const GamesScreen: React.FC<Props> = ({ navigation }) => {
   const handlePlay = (game: string) => {
+    console.log(`Playing ${game}`);
+    navigation.navigate(`${game}`);
   };
-
-  const renderGame = ({ item }: { item: typeof games[0] }) => (
-    <TouchableOpacity onPress={() => handlePlay(item.name)} style={styles.card}>
-      <ImageBackground source={item.image} style={styles.image} imageStyle={{ borderRadius: 15 }}>
-        <View style={styles.overlay}>
-          <Text style={styles.gameName}>{item.name}</Text>
-        </View>
-      </ImageBackground>
-    </TouchableOpacity>
-  );
 
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Games</Text>
       <Text style={styles.subtitle}>Play and break the ice!</Text>
 
-      <FlatList
-        data={games}
-        renderItem={renderGame}
-        keyExtractor={(item, index) => index.toString()}
-        numColumns={2}
-        contentContainerStyle={styles.grid}
-        showsVerticalScrollIndicator={false}
-      />
+      <View style={styles.grid}>
+        <GameCard name="Truth or Dare 🔥" image={require('../assets/gameScreenImages/truth-or-dare_orig.png')} onPress={() => handlePlay('TruthDare')} />
+        <GameCard name="Would You Rather ❓" image={require('../assets/gameScreenImages/would-you-rather-questions.jpg')} onPress={() => handlePlay('Would You Rather')} />
+        <GameCard name="Couple Quiz 💕" image={require('../assets/gameScreenImages/would-you-rather-questions.jpg')} onPress={() => handlePlay('Couple Quiz')} />
+        <GameCard name="Flirty Questions 💌" image={require('../assets/gameScreenImages/flirty-questions.jpeg')} onPress={() => handlePlay('Flirty Questions')} />
+        <GameCard name="Never Have I Ever 🍸" image={require('../assets/gameScreenImages/never-have-i-ever.jpeg')} onPress={() => handlePlay('Never Have I Ever')} />
+      </View>
     </View>
   );
 };
@@ -52,7 +45,7 @@ const styles = StyleSheet.create({
   header: {
     fontSize: 30,
     fontWeight: 'bold',
-    color: '#FFA62B',
+    color: '#5de383',
     textAlign: 'center',
     marginBottom: 3,
   },
@@ -63,11 +56,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
   },
   card: {
-    flex: 1,
-    margin: 10,
+    width: '48%',
+    marginBottom: 20,
     aspectRatio: 1,
     borderRadius: 15,
     overflow: 'hidden',

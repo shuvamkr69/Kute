@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
   },
   relationshipType: {
     fontSize: 20,
-    color: '#FFA62B',
+    color: '#5de383',
     marginBottom: 25,
   },
   section: {

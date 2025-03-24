@@ -5,6 +5,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import BackButton from '../../components/BackButton';
 
 type Props = NativeStackScreenProps<any, 'Location'>;
 
@@ -84,7 +85,8 @@ const LocationUniversityPage: React.FC<Props> = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {loading && <ActivityIndicator size="large" color="#FFA62B" style={styles.loader} />}
+      <BackButton />
+      {loading && <ActivityIndicator size="large" color="#5de383" style={styles.loader} />}
       <Text style={styles.title}>Tell Us About Yourself</Text>
       <Text style={styles.subtitle}>Please provide your location and country</Text>
 
@@ -192,7 +194,7 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   button: {
-    backgroundColor: '#FFA62B',
+    backgroundColor: '#5de383',
     borderRadius: 10,
     paddingVertical: 15,
     alignItems: 'center',
@@ -210,7 +212,7 @@ const styles = StyleSheet.create({
     backgroundColor : '1e1e1e',
   },
   mapButton: {
-    backgroundColor: '#FFA62B',
+    backgroundColor: '#5de383',
     borderRadius: 10,
     paddingVertical: 15,
     alignItems: 'center',

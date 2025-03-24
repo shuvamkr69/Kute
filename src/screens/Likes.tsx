@@ -54,7 +54,7 @@ const Likes: React.FC<Props> = ({ navigation }) => {
           const userId = await getUserId();
           navigation.navigate('Chat', { loggedInUserId: userId, likedUserId: item._id, userName: item.fullName })
           }}>
-          <Icon name="comments" size={20} color="#FFA62B" />
+          <Icon name="comments" size={20} color="#5de383" />
         </TouchableOpacity>
       </View>
     </View>
@@ -66,7 +66,7 @@ const Likes: React.FC<Props> = ({ navigation }) => {
       <Text style={styles.heading}>People Who Liked You 💕</Text>
 
       {loading ? (
-        <ActivityIndicator size="large" color="#FFA62B" />
+        <ActivityIndicator size="large" color="#5de383" />
       ) : likedUsers.length === 0 ? (
         <Text style={styles.noLikes}>No one has liked you yet.</Text>
       ) : (
@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
   heading: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#FFA62B',
+    color: '#5de383',
     marginBottom: 20,
     textAlign: 'center',
   },

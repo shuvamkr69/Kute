@@ -3,6 +3,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { View, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Image, Text, StyleSheet } from "react-native";
 
 // Import screens
 import HomeScreen from "../screens/HomeScreen";
@@ -34,8 +35,11 @@ const HomeTabs: React.FC<Props> = ({ navigation }) => {
             borderColor: "#2A2A2A",
           }}
         >
-          <Ionicons name="logo-web-component" size={28} color="white" />
-          <View style={{ flexDirection: "row" }}>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <Image source={require('../assets/icons/logo.png')} style={{ width: 28, height: 28 }}/> 
+              <Text style = {styles.uteText}>ute</Text>
+          </View>
+        <View style={{ flexDirection: "row" }}>
             <Ionicons
               name="notifications-outline"
               size={26}
@@ -72,7 +76,7 @@ const HomeTabs: React.FC<Props> = ({ navigation }) => {
               <Ionicons
                 name={icons[route.name]}
                 size={28}
-                color={focused ? "#FFA62B" : "#8F8F8F"}
+                color={focused ? "#5de383" : "#8F8F8F"}
               />
             );
           },
@@ -85,6 +89,7 @@ const HomeTabs: React.FC<Props> = ({ navigation }) => {
             shadowColor: "#000",
             elevation: 5,
           },
+
         })}
       >
         <Tab.Screen name="Home" component={HomeScreen} />
@@ -96,5 +101,15 @@ const HomeTabs: React.FC<Props> = ({ navigation }) => {
     </View>
   );
 };
+
+
+const styles = StyleSheet.create({
+  uteText: {
+    color: '#81e8e0',
+    fontSize: 25,
+    fontWeight: 'bold',
+  }
+  })
+;
 
 export default HomeTabs;

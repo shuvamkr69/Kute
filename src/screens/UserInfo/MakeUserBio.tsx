@@ -14,6 +14,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import api from "../../utils/api"; // Import the API utility
 import { useAuth } from "../../navigation/AuthContext";
 import { registerForPushNotifications } from "../../utils/notifications";
+import BackButton from "../../components/BackButton";
 
 /** Type Definitions */
 type Props = NativeStackScreenProps<any, "MakeBio">;
@@ -110,6 +111,7 @@ const MakeBio: React.FC<Props> = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <BackButton />
       <Text style={styles.header}>Create Your Bio</Text>
       <TextInput
         style={styles.input}
@@ -141,7 +143,7 @@ const styles = StyleSheet.create({
   header: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#FFA62B",
+    color: "#5de383",
     marginBottom: 20,
   },
   input: {
@@ -152,11 +154,11 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#FFA62B",
+    borderColor: "#5de383",
     marginBottom: 20,
   },
   submitButton: {
-    backgroundColor: "#FFA62B",
+    backgroundColor: "#5de383",
     paddingVertical: 15,
     borderRadius: 10,
     width: "100%",

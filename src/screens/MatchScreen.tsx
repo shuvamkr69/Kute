@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
   matchText: {
     fontSize: 32,
     fontWeight: "bold",
-    color: "#FFA62B",
+    color: "#5de383",
     marginBottom: 20,
   },
   imagesContainer: {
@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
     height: "100%",
     borderRadius: 60,
     borderWidth: 4,
-    borderColor: "#FFA62B",
+    borderColor: "#5de383",
   },
   heartIcon: {
     width: 60,
@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   button: {
-    backgroundColor: "#FFA62B",
+    backgroundColor: "#5de383",
     paddingVertical: 12,
     paddingHorizontal: 30,
     borderRadius: 25,
