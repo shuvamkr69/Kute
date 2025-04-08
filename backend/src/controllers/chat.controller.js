@@ -1,0 +1,157 @@
+// controllers/chatController.js
+import { Conversation } from "../models/conversation.model.js";
+import { Message } from "../models/message.model.js";
+import { getIO } from "../utils/socket.js";
+
+/**
+ * Start a chat between two matched users
+ */
+export const startChat = async (req, res) => {
+  const { userId, receiverId } = req.body;
+
+  if (!userId || !receiverId) {
+    return res.status(400).json({ error: "UserId and ReceiverId are required." });
+  }
+
+  try {
+    // ✅ Find existing conversation or create a new one
+    let conversation = await Conversation.findOne({
+      participants: { $all: [userId, receiverId] },
+    });
+
+    if (!conversation) {
+      conversation = new Conversation({
+        participants: [userId, receiverId],
+      });
+      await conversation.save();
+    }
+
+    res.status(200).json(conversation);
+  } catch (error) {
+    console.error("Error starting chat:", error);
+    res.status(500).json({ error: "Failed to start conversation." });
+  }
+};
+
+/**
+ * Get all conversations of a 
+ */
+export const getUserChats = async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const conversations = await Conversation.find({ participants: userId })
+  .populate("participants", "fullName avatar1")
+  .sort({ updatedAt: -1 })
+  .lean(); // Convert to plain JS objects for easier manipulation
+
+const formattedConversations = conversations.map((conversation) => {
+  const otherParticipant = conversation.participants.find(
+    (participant) => participant._id.toString() !== userId
+  );
+
+  return {
+    _id: conversation._id,
+    otherParticipant: {
+      _id: otherParticipant?._id,
+      fullName: otherParticipant?.fullName,
+      avatar1: otherParticipant?.avatar1,
+    },
+    lastMessage: conversation.lastMessage
+      ? {
+          senderId: conversation.lastMessage.senderId,
+          message: conversation.lastMessage.message,
+          createdAt: conversation.lastMessage.createdAt,
+        }
+      : null,
+    updatedAt: conversation.updatedAt,
+  };
+});
+console.log("formattedConversations", formattedConversations);
+res.status(200).json(formattedConversations);
+
+  } catch (error) {
+    console.error("Error retrieving chats:", error);
+    res.status(500).json({ error: "Failed to retrieve conversations." });
+  }
+};
+
+/**
+ * Send a message in a chat
+ */
+export const sendMessage = async (req, res) => {
+  const { conversationId, senderId, message: text } = req.body;
+  const io = getIO();
+
+  if (!conversationId || !senderId || !text) {
+    return res.status(400).json({ error: "ConversationId, senderId, and message are required." });
+  }
+
+  try {
+    const newMessage = new Message({
+      conversationId,
+      senderId,
+      message: text,
+    });
+    await newMessage.save();
+
+    // ✅ Update lastMessage in Conversation
+    await Conversation.findByIdAndUpdate(conversationId, {
+      lastMessage: {
+        senderId,
+        message: text,
+        createdAt: newMessage.createdAt,
+      },
+      updatedAt: Date.now(),
+    });
+
+    // ✅ Emit message using Socket.IO
+    io.to(conversationId).emit("newMessage", {
+      _id: newMessage._id,
+      text: newMessage.message,
+      senderId: newMessage.senderId,
+      conversationId: newMessage.conversationId,
+      createdAt: newMessage.createdAt,
+    });
+
+    res.status(201).json({ ...newMessage.toObject(), text: newMessage.message });
+  } catch (error) {
+    console.error("Error sending message:", error);
+    res.status(500).json({ error: "Failed to send message." });
+  }
+};
+
+/**
+ * Get all messages in a chat
+ */
+export const getMessages = async (req, res) => {
+  const { conversationId } = req.params;
+
+  try {
+    const messages = await Message.find({ conversationId })
+      .sort({ createdAt: 1 })
+      .lean();
+
+    const formattedMessages = messages.map((msg) => ({
+      ...msg,
+      text: msg.message,
+    }));
+
+    res.status(200).json(formattedMessages);
+  } catch (error) {
+    console.error("Error retrieving messages:", error);
+    res.status(500).json({ error: "Failed to retrieve messages." });
+  }
+};
+
+
+export const deleteAllMessage = async (req, res) => {
+  try {
+    const { conversationId } = req.params;
+    await Message.deleteMany({ conversationId });
+    res.status(200).json({ message: 'All messages deleted' });
+  } catch (err) {
+    console.error('Failed to delete messages:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
