@@ -1,34 +1,39 @@
-import React, { useEffect } from "react";
-import { View, Text, StyleSheet, StatusBar } from "react-native";
-import LottieView from "lottie-react-native";
-import { NativeStackScreenProps } from "@react-navigation/native-stack"; // Import for TypeScript types
+import React, { useEffect, useRef } from "react";
+import { View, StyleSheet, StatusBar } from "react-native";
+import { Video, ResizeMode } from "expo-av"; // Import ResizeMode
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
 
-// Define your navigation prop type
 type Props = NativeStackScreenProps<any, 'SplashScreen'>;
 
 const SplashScreenComponent: React.FC<Props> = ({ navigation }) => {
+  const videoRef = useRef<Video>(null);
+
   useEffect(() => {
-    // Ensure navigation is defined before trying to navigate
     if (navigation) {
       setTimeout(() => {
-        navigation.navigate("Home"); // Navigate to "Home" after 5 seconds
-      }, 2000); // Adjust delay according to animation duration
-    } 
+        navigation.navigate("Home");
+      }, 2000);
+    }
   }, [navigation]);
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#121212" />
-      
-      {/* Heart Animation */}
-      <LottieView
-        source={require("../assets/animations/heart-animation.json")} // Ensure this path is correct
-        autoPlay
-        loop
-        style={styles.animation}
+      <StatusBar 
+        barStyle="light-content" 
+        backgroundColor="transparent"
+        translucent={true}
       />
-
-      <Text style={styles.logoText}>Kute</Text>
+      
+      <Video
+        ref={videoRef}
+        source={require("../assets/splashScreen/splashScreen.mp4")}
+        style={styles.video}
+        shouldPlay
+        isLooping={false}
+        onError={(error) => console.error("Video Error: ", error)}
+        resizeMode={ResizeMode.COVER} // Use enum value
+        rate={1.0}
+      />
     </View>
   );
 };
@@ -36,22 +41,13 @@ const SplashScreenComponent: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
     backgroundColor: "#121212",
   },
-  animation: {
-    width: 200,  // Customize the size
-    height: 200, // Customize the size
-  },
-  logoText: {
-    fontSize: 48,
-    fontWeight: "bold",
-    color: "#FF4081",
-    marginTop: 20,
-    textShadowColor: "#FF4081",
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 10,
+  video: {
+    flex: 1,
+    alignSelf: 'stretch',
+    width: '100%',
+    height: '100%',
   },
 });
 

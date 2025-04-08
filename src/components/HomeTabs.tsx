@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { View, Platform } from "react-native";
+import { View, Platform, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Image, Text, StyleSheet } from "react-native";
@@ -13,12 +13,31 @@ import LikesScreen from "../screens/Likes";
 import GamesScreen from "../screens/GameScreens";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import ChatsScreen from "../screens/AllChats";
+import { LinearGradient } from "expo-linear-gradient";
+import api from "../utils/api";
 
 type Props = NativeStackScreenProps<any, "HomeTabs">;
 
 const Tab = createBottomTabNavigator();
 
 const HomeTabs: React.FC<Props> = ({ navigation }) => {
+
+  const [superLikes, setSuperLikes] = useState(0);
+  const [boosts, setBoosts] = useState(0);
+
+  useEffect(() => {
+    const fetchCounters = async () => {
+      try {
+        const response = await api.get('/api/v1/users/powerUps');
+        setSuperLikes(response.data.superLike);
+        setBoosts(response.data.boost);
+      } catch (error) {
+        console.error('Error fetching counters:', error);
+      }
+    };
+    fetchCounters();
+  }, []);
+
   return (
     <View style={{ flex: 1, backgroundColor: "#181818" }}>
       {/* Custom Top Bar */}
@@ -30,26 +49,61 @@ const HomeTabs: React.FC<Props> = ({ navigation }) => {
             flexDirection: "row",
             justifyContent: "space-between",
             alignItems: "center",
-            paddingHorizontal: 20,
-            borderBottomWidth: 1,
-            borderColor: "#2A2A2A",
+            paddingHorizontal: 20,            
           }}
         >
           <View style={{ flexDirection: "row", alignItems: "center" }}>
               <Image source={require('../assets/icons/logo.png')} style={{ width: 28, height: 28 }}/> 
               <Text style = {styles.uteText}>ute</Text>
           </View>
-        <View style={{ flexDirection: "row" }}>
+
+
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginLeft: 20 }}>
+          <TouchableOpacity 
+            style={styles.counterContainer}
+            onPress={() => navigation.navigate("BoostsAndLikes", { type: 'superLikes' })}
+          >
+            <Image 
+              source={require('../assets/icons/super-like.png')}
+              style={styles.counterIcon}
+            />
+            <Text style={styles.counterText}>{superLikes}</Text>
+          </TouchableOpacity>
+
+          {/* Boosts Counter */}
+          <TouchableOpacity 
+            style={styles.counterContainer}
+            onPress={() => navigation.navigate("BoostsAndLikes", { type: 'boosts' })}
+          >
+            <Image 
+              source={require('../assets/icons/popularity.png')}
+              style={styles.counterIcon}
+            />
+            <Text style={styles.counterText}>{boosts}</Text>
+          </TouchableOpacity>
+          </View>
+
+          
+
+          <View style={{ flexDirection: "row"}}>
+            <Ionicons
+              name="search-outline"
+              size={23}
+              color="white"
+              style={{ marginRight: 15 }}
+              onPress={() => navigation.navigate("AdvancedFiltering")}
+            />
+         
             <Ionicons
               name="notifications-outline"
-              size={26}
+              size={23}
               color="white"
-              style={{ marginRight: 20 }}
+              style={{ marginRight: 15 }}
               onPress={() => navigation.navigate("Notifications")}
             />
             <Ionicons
               name="settings-outline"
-              size={26}
+              size={23}
               color="white"
               onPress={() => navigation.navigate("Settings")}
             />
@@ -83,7 +137,7 @@ const HomeTabs: React.FC<Props> = ({ navigation }) => {
           tabBarStyle: {
             backgroundColor: "#0a0000",
             height: Platform.OS === "ios" ? 70 : 55,
-            borderTopWidth: 0.2,
+            borderTopWidth: 0,
             shadowOpacity: 0.1,
             shadowRadius: 5,
             shadowColor: "#000",
@@ -108,7 +162,23 @@ const styles = StyleSheet.create({
     color: '#81e8e0',
     fontSize: 25,
     fontWeight: 'bold',
-  }
+  },
+  counterIcon: {
+    width: 18,
+    height: 18,
+    },
+ 
+  counterContainer: {
+    flexDirection: 'row',
+    borderRadius: 15,
+  },
+  counterText: {
+    color: 'white',
+    marginLeft: 2,
+    fontWeight: 'bold',
+    fontSize: 14,
+    paddingHorizontal: 1,
+  },
   })
 ;
 

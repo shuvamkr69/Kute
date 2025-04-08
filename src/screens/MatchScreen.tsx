@@ -1,118 +1,175 @@
 import React from "react";
-import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  Image,
+  StyleSheet,
+  TouchableOpacity,
+  Dimensions,
+  SafeAreaView,
+} from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
+
+const { width, height } = Dimensions.get("window");
 
 type Props = NativeStackScreenProps<any, "MatchScreen">;
 
 const MatchScreen: React.FC<Props> = ({ navigation, route }) => {
-  const params = route.params || {}; // Ensure params exist
+  const params = route.params || {};
   const { user, matchedUser } = params;
 
   if (!user || !matchedUser) {
     return (
-      <View style={styles.container}>
+      <LinearGradient colors={["#1f4d2c", "#195252"]} style={styles.container}>
         <Text style={styles.errorText}>Error: Missing match details</Text>
-        <TouchableOpacity style={styles.button} onPress={() => navigation.goBack()}>
-          <Text style={styles.buttonText}>Go Back</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.fallbackButton}>
+          <LinearGradient colors={["#388c50", "#257d7d"]} style={styles.fullWidthGradient}>
+            <Text style={styles.buttonText}>Go Back</Text>
+          </LinearGradient>
         </TouchableOpacity>
-      </View>
+      </LinearGradient>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <LinearGradient colors={["#1f4d2c", "#195252"]} style={styles.container}>
       <View style={styles.overlay} />
 
-      <Text style={styles.matchText}>It's a Match!</Text>
-
-      {/* Updated Layout: User Images on both sides, Heart in the Center */}
-      <View style={styles.imagesContainer}>
-        <View style={styles.imageWrapper}>
-          <Image source={{ uri: user.image }} style={styles.profileImage} />
+      <SafeAreaView style={styles.contentWrapper}>
+        {/* Tinder Match Text Image at Top */}
+        <View style={styles.matchImageWrapper}>
+          <Image
+            source={require("../assets/images/TinderMatchText.png")}
+            style={styles.matchText}
+            resizeMode="contain"
+          />
         </View>
-        
-        <Image source={require("../assets/images/heart.png")} style={styles.heartIcon} />
-        
-        <View style={styles.imageWrapper}>
+
+        {/* Catchy Line */}
+        <Text style={styles.catchyLine}>Two Hearts, One Vibe</Text>
+
+        {/* Profile Images + Heart */}
+        <View style={styles.imagesContainer}>
+          <Image source={{ uri: user.image }} style={styles.profileImage} />
+
+          <Image
+            source={require("../assets/images/heart-attack.png")}
+            style={styles.heartIcon}
+          />
+
           <Image source={{ uri: matchedUser.image }} style={styles.profileImage} />
         </View>
-      </View>
 
-      <Text style={styles.description}>
-        You and {matchedUser.fullName?.split(" ")[0] || "Someone"} have liked each other!
-      </Text>
+        {/* Description */}
+        <Text style={styles.description}>
+          {matchedUser.fullName?.split(" ")[0] || "Someone"} has liked you back!
+        </Text>
+      </SafeAreaView>
 
-      <TouchableOpacity style={styles.button} onPress={() => navigation.goBack()}>
-        <Text style={styles.buttonText}>Continue Swiping</Text>
+      {/* Fixed Bottom Button */}
+      <TouchableOpacity
+        style={styles.bottomButtonWrapper}
+        onPress={() => navigation.goBack()}
+        activeOpacity={0.9}
+      >
+        <LinearGradient
+          colors={["#1b5f49", "#004d4d"]}
+          style={styles.fullWidthGradient}
+        >
+          <Text style={styles.buttonText}>Keep the momentum. Keep swiping</Text>
+        </LinearGradient>
       </TouchableOpacity>
-    </View>
+    </LinearGradient>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#121212",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0,0,0,0.8)",
   },
+  contentWrapper: {
+    flex: 1,
+    justifyContent: "flex-start",
+    alignItems: "center",
+    paddingHorizontal: 20,
+  },
+  matchImageWrapper: {
+    marginBottom: -30,
+  },
   matchText: {
-    fontSize: 32,
+    width: width * 0.9,
+    height: height * 0.39,
+  },
+  catchyLine: {
+    fontSize: 24,
     fontWeight: "bold",
-    color: "#5de383",
-    marginBottom: 20,
+    color: "#FFFFFF",
+    marginTop: -50,
+    marginBottom: 70,
   },
   imagesContainer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 20,
+    marginBottom: 30,
+    gap: 40,
   },
-  imageWrapper: {
+  profileImage: {
     width: 120,
     height: 120,
     borderRadius: 60,
-    overflow: "hidden",
-  },
-  profileImage: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 60,
-    borderWidth: 4,
-    borderColor: "#5de383",
+    borderWidth: 1,
+    borderColor: "#fff",
+    zIndex: 2,
   },
   heartIcon: {
-    width: 60,
-    height: 60,
-    marginHorizontal: 15, // Adds space between images and heart
+    width: 200,
+    height: 200,
+    marginHorizontal: -40,
+    zIndex: 1,
+    position: "absolute",
   },
   description: {
     fontSize: 18,
     color: "#FFFFFF",
     textAlign: "center",
-    marginBottom: 30,
+    paddingHorizontal: 10,
+    marginTop: 20,
+    fontWeight: "bold",
+    fontStyle: "italic",
   },
-  button: {
-    backgroundColor: "#5de383",
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 25,
+  bottomButtonWrapper: {
+    position: "absolute",
+    bottom: 0,
+    width: "100%",
+  },
+  fullWidthGradient: {
+    width: "100%",
+    paddingVertical: 16,
+    alignItems: "center",
+    justifyContent: "center",
   },
   buttonText: {
-    color: "#121212",
-    fontSize: 18,
+    color: "white",
+    fontSize: 15,
     fontWeight: "bold",
+    textAlign: "center",
   },
   errorText: {
     color: "red",
     fontSize: 16,
     textAlign: "center",
     marginBottom: 20,
+  },
+  fallbackButton: {
+    position: "absolute",
+    bottom: 40,
+    width: "100%",
   },
 });
 

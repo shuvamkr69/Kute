@@ -9,5 +9,6 @@ export type RootStackParamList = {
     Settings: undefined;
     Location: undefined;
     MakeUserBio: undefined;
+    BoostsAndLikes: undefined;
   };
   

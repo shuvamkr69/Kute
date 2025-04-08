@@ -23,6 +23,8 @@ import MatchScreen from "../screens/MatchScreen";
 import ChatScreen from "../screens/ChatScreen";
 import ChatsScreen from "../screens/AllChats";
 import TruthDareScreen from "../screens/games/TruthOrDare";
+import BoostsAndLikesScreen from "../screens/BoostsAndLikes";
+import AdvancedFilteringScreen from "../screens/AdvancedFiltering"; // Import your Advanced Filtering screen
 
 const Stack = createNativeStackNavigator(); // Standard Stack Navigator
 
@@ -61,6 +63,8 @@ export default function AppNavigation() {
             <Stack.Screen name="Chat" component={ChatScreen} />
             <Stack.Screen name="AllChatScreen" component={ChatsScreen} />
             <Stack.Screen name="TruthDare" component={TruthDareScreen} />
+            <Stack.Screen name="BoostsAndLikes" component={BoostsAndLikesScreen} />
+            <Stack.Screen name="AdvancedFiltering" component={AdvancedFilteringScreen} />
 
           </>
         ) : (

@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert } from 'reac
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { io } from 'socket.io-client';
 
-const socket = io('http://http://192.168.193.211:3000:3000'); // Replace with your backend server URL
+const socket = io('http:// http://192.168.193.211:3000:3000'); // Replace with your backend server URL
 
 const TruthDareScreen: React.FC<NativeStackScreenProps<any, 'TruthDare'>> = ({ route }) => {
   const { roomId, username } = route.params;

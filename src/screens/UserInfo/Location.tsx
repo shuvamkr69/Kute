@@ -84,10 +84,10 @@ const LocationUniversityPage: React.FC<Props> = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <BackButton />
+    <View style={styles.backButtonContainer}>
+      <BackButton title= {"Your current location"}/>
+      <SafeAreaView style={styles.container}>
       {loading && <ActivityIndicator size="large" color="#5de383" style={styles.loader} />}
-      <Text style={styles.title}>Tell Us About Yourself</Text>
       <Text style={styles.subtitle}>Please provide your location and country</Text>
 
       <TouchableOpacity onPress={() => setShowMapModal(true)} style={styles.inputContainer}>
@@ -108,9 +108,6 @@ const LocationUniversityPage: React.FC<Props> = ({ navigation }) => {
         />
       </View>
 
-      <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-        <Text style={styles.buttonText}>Submit</Text>
-      </TouchableOpacity>
 
       <Modal
         animationType="slide"
@@ -143,9 +140,16 @@ const LocationUniversityPage: React.FC<Props> = ({ navigation }) => {
               <Text style={styles.buttonText}>Cancel</Text>
             </TouchableOpacity>
             </View>
+            
         </SafeAreaView>
       </Modal>
     </SafeAreaView>
+    <TouchableOpacity style={styles.button} onPress={handleSubmit}>
+        <Text style={styles.buttonText}>Submit</Text>
+      </TouchableOpacity>
+    </View>
+
+    
   );
 };
 
@@ -155,6 +159,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#121212',
     padding: 20,
     justifyContent: 'center',
+  },
+  backButtonContainer: {
+    flex: 1,
+    backgroundColor: '#121212',
   },
   loader: {
     position: 'absolute',
@@ -199,6 +207,8 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     alignItems: 'center',
     marginTop: 20,
+    bottom: 0,
+    
   },
   buttonText: {
     color: 'white',

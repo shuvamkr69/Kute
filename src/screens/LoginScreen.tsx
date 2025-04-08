@@ -15,6 +15,10 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const { signIn } = useAuth();
 
+
+  
+  
+
   const loginHandler = async () => {
     if (!email || !password) {
       Alert.alert("Error", "Please fill in all fields");

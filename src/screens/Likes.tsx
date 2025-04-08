@@ -63,12 +63,16 @@ const Likes: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>People Who Liked You 💕</Text>
+      <Text style={styles.heading}>Matches</Text>
 
       {loading ? (
         <ActivityIndicator size="large" color="#5de383" />
       ) : likedUsers.length === 0 ? (
-        <Text style={styles.noLikes}>No one has liked you yet.</Text>
+        <View style ={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+            <Image source={require('../assets/icons/broken-heart.png')} style={{ width: 150, height: 150, alignSelf: 'center' }} />
+            <Text style={styles.noLikes}>No likes? The algorithm must be jealous</Text>
+        </View>
+        
       ) : (
         <FlatList
           data={likedUsers}
@@ -91,17 +95,16 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   heading: {
-    fontSize: 24,
+    fontSize: 16,
     fontWeight: 'bold',
-    color: '#5de383',
+    color: 'white',
     marginBottom: 20,
-    textAlign: 'center',
   },
   noLikes: {
     fontSize: 18,
     color: '#B0B0B0',
     textAlign: 'center',
-    marginTop: 20,
+    marginBottom: 90,
   },
   list: {
     paddingBottom: 20,

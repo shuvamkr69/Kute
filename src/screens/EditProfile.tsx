@@ -21,29 +21,59 @@ import PickerComponent from '../components/PickerComponent';
 import api from '../utils/api';
 import Toast from "react-native-toast-message";
 import BackButton from '../components/BackButton';
+import * as ImagePicker from 'expo-image-picker';
+import { Dimensions } from 'react-native';
+import { profile } from '../../assets/images';
+import LoadingScreen from './LoadingScreen';
+import { set } from 'mongoose';
+
+const screenWidth = Dimensions.get('window').width;
+const itemSize = (screenWidth - 60) / 3; // 20 padding on both sides + 10 gap between items
 
 
 const interestOptions = ['Music', 'Sports', 'Travel', 'Gaming', 'Books', 'Movies', 'Tech', 'Fitness', 'Art', 'Fashion', 'Photography', 'Cooking'];
 const relationshipOptions = ['Long Term', 'Casual', 'Hookup', 'Marriage'];
-const interestedInOptions = ['Men', 'Women', 'Others'];
+const Options = ['Men', 'Women', 'Others'];
 const pronounsOptions = ['He/Him', 'She/Her', 'They/Them'];
 const genderOrientationOptions = ['Straight', 'Lesbian', 'Gay', 'Bisexual', 'Asexual', 'Pansexual', 'Queer'];
-const planetSignOptions = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
+const zodiacOptions = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
 const familyPlanningOptions = ['Want Kids', 'Don\'t Want Kids', 'Undecided'];
 const bodyTypeOptions = ['Muscular', 'Average', 'Obese', 'Athletic', 'Slim'];
+const drinkingOptions = ['Socially', 'Regularly', 'Never'];
+const smokingOptions = ['Socially', 'Regularly', 'Never'];
+const workoutOptions = ['Daily', 'Weekly', 'Occasionally', 'Never'];
+const religionOptions = ['Hinduism',
+        'Christianity',
+        'Buddhism',
+        'Judaism',
+        'Agnosticism',
+        'Jainism',
+        'Sikhism',
+        'Islam',
+        'Atheism',
+        'Spiritual but not religious',
+        'Paganism',
+        'Taoism',
+        'Confucianism',
+        'Scientology',
+        'Zoroastrianism',
+        'New Age',
+        'Prefer not to say',
+        'Other',];
 
 
 type Props = NativeStackScreenProps<any, 'EditProfile'>;
 
 const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
-  const [profilePhoto, setProfilePhoto] = useState('');
   const [bio, setBio] = useState('');
-  const [interestedIn, setInterestedIn] = useState('');
   const [relationshipType, setRelationshipType] = useState('');
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [showInterestModal, setShowInterestModal] = useState(false);
   const [loading, setLoading] = useState<boolean>(true);
+  const [religion, setReligion] = useState('');
 
+  // Replace profilePhoto state with an array
+  const [profilePhotos, setProfilePhotos] = useState<string[]>([]);
 
   const [height, setHeight] = useState<string>('');
   const [heightUnit, setHeightUnit] = useState<'cm' | 'feet'>('cm');
@@ -52,10 +82,13 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
   const [pronouns, setPronouns] = useState('');
   const [genderOrientation, setGenderOrientation] = useState('');
   const [languages, setLanguages] = useState('');
-  const [prompts, setPrompts] = useState('');
-  const [planetSign, setPlanetSign] = useState('');
+  const [loveLanguage, setloveLanguage] = useState('');
+  const [zodiac, setzodiac] = useState('');
   const [familyPlanning, setFamilyPlanning] = useState('');
   const [bodyType, setBodyType] = useState('');
+  const [smoking, setSmoking] = useState('');
+  const [drinking, setDrinking] = useState('');
+  const [workout, setWorkout] = useState('');
 
 
   // ✅ Load profile data from API or AsyncStorage
@@ -63,24 +96,33 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
     try {
       const response = await api.get('/api/v1/users/me');
       const profileData = response.data;
-  
-      setProfilePhoto(profileData.avatar1);
-      setInterestedIn(profileData.interestedIn);
+
+      const avatars = [];                          //fetching all photos
+      for (let i = 1; i <= 6; i++) {
+        const avatar = profileData[`avatar${i}`];
+        if (avatar) avatars.push(avatar);
+      }
+
+      setProfilePhotos(avatars);
       setRelationshipType(profileData.relationshipType);
       setSelectedInterests(profileData.interests);
       setBio(profileData.bio || '');
       setOccupation(profileData.occupation || '');
-      setHeight(profileData.height.split(' ')[0]);
+      setHeight(profileData.height?.split(' ')[0] || '');
       setWorkingAt(profileData.workingAt || '');
       setPronouns(profileData.pronouns || '');
       setGenderOrientation(profileData.genderOrientation || '');
       setLanguages(profileData.languages || '');
-      setPrompts(profileData.prompts || '');
-      setPlanetSign(profileData.planetSign || '');
+      setloveLanguage(profileData.loveLanguage || '');
+      setzodiac(profileData.zodiac || '');
       setFamilyPlanning(profileData.familyPlanning || '');
       setBodyType(profileData.bodyType || '');
+      setSmoking(profileData.smoking || '');
+      setDrinking(profileData.drinking || '');
+      setWorkout(profileData.workout || '');
+      setReligion(profileData.religion || '');
       
-      await AsyncStorage.setItem('profileData', JSON.stringify(profileData));
+     await AsyncStorage.setItem('profileData', JSON.stringify(profileData));
     } catch (error) {
       console.log('Error fetching profile:', error);
       Alert.alert('Error', 'Failed to load profile data');
@@ -88,6 +130,48 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
       setLoading(false);
     }
   };
+
+  const handleAddPhoto = async () => {
+    if (profilePhotos.length >= 6) {
+      Alert.alert("Limit Reached", "You can upload a maximum of 6 photos.");
+      return;
+    }
+  
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permissionResult.granted) {
+      Alert.alert("Permission Denied", "Please grant access to your gallery.");
+      return;
+    }
+  
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+  
+    if (!result.canceled && result.assets?.length) {
+      const newPhotos = [...profilePhotos];
+      const emptyIndex = newPhotos.findIndex((photo) => !photo);
+      if (emptyIndex !== -1) {
+        newPhotos[emptyIndex] = result.assets[0].uri;
+      } else {
+        newPhotos.push(result.assets[0].uri);
+      }
+      setProfilePhotos(newPhotos);
+    }
+  };
+  
+  
+  const removePhoto = (index: number) => {
+    setProfilePhotos((prev) => {
+      const updatedPhotos = [...prev];
+       updatedPhotos[index] = null; // Mark the photo as null
+      return updatedPhotos;
+    });
+    console.log('Photo removed. Updated photos:', profilePhotos);
+  };
+  
   
 
   useEffect(() => {
@@ -102,71 +186,128 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
     }
   
     try {
-      const updatedData = {
-        interestedIn,
-        relationshipType,
-        interests: selectedInterests,
-        avatar1: profilePhoto,
-        bio,
-        occupation: occupation,
-        workingAt: workingAt,
-        pronouns: pronouns,
-        genderOrientation: genderOrientation,
-        languages: languages,
-        prompts: prompts,
-        planetSign: planetSign,
-        familyPlanning: familyPlanning,
-        bodyType: bodyType,
-        height: height + ' ' + heightUnit,
-      };
-      console.log(updatedData);
+      const formData = new FormData();
+      formData.append('relationshipType', relationshipType);
+      formData.append('bio', bio);
+      formData.append('occupation', occupation);
+      formData.append('workingAt', workingAt);
+      formData.append('height', height);
+      formData.append('pronouns', pronouns);
+      formData.append("interests", JSON.stringify(selectedInterests)); // Convert to JSON string
+      formData.append('genderOrientation', genderOrientation);
+      formData.append('languages', languages);
+      formData.append('loveLanguage', loveLanguage);
+      formData.append('zodiac', zodiac);
+      formData.append('familyPlanning', familyPlanning);
+      formData.append('bodyType', bodyType);
+      formData.append('smoking', smoking);
+      formData.append('drinking', drinking);
+      formData.append('workout', workout);
+      formData.append('religion', religion);
   
-      await api.patch('/api/v1/users/me', updatedData);
-      ToastAndroid.show("Profile Updated Successfully!", ToastAndroid.SHORT);
+      // ✅ Append images using FormData (handling both URLs and file URIs)
+      profilePhotos.forEach((photoUri: string | null, index: number) => {
+        if (photoUri === null || photoUri === '') {
+          // Append "null" for removed images
+          formData.append(`avatar${index + 1}`, 'null'); 
+        } else if (photoUri.startsWith('http')) {
+          // Append existing image URLs
+          formData.append(`avatar${index + 1}`, photoUri);
+        } else {
+          // Append new images (converted to FormData object)
+          formData.append(`avatar${index + 1}`, {
+            uri: photoUri,
+            name: `avatar${index + 1}.jpg`,
+            type: "image/jpeg",
+          } as any);
+        }
+      });
+
+      console.log(profilePhotos);
+
+      const hasAtLeastOnePhoto = profilePhotos.some(photoUri => photoUri && photoUri !== 'null');
+
+      if (!hasAtLeastOnePhoto) {
+        Alert.alert('Error', 'You must have at least one photo on your profile.');
+        return;
+      }
+    
+  
+      console.log(formData);
+  
+      await api.patch('/api/v1/users/me', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+  
+      ToastAndroid.show('Profile Updated Successfully!', ToastAndroid.SHORT);
       navigation.goBack();
-  
-      await AsyncStorage.setItem('profileData', JSON.stringify(updatedData));
     } catch (error) {
       Alert.alert('Error', 'Could not update profile');
       console.error('Error updating profile:', error);
     }
   };
   
+  
+  
+  
+  
 
   const selectInterest = (item: string) => {
     setSelectedInterests((prev) => {
+      // Check if the interest is already selected
       if (prev.includes(item)) {
-        return prev.length > 1 ? prev.filter((interest) => interest !== item) : prev; // Prevent removing the last interest
+        return prev.filter((interest) => interest !== item);
       }
-      return prev.length < 7 ? [...prev, item] : prev;
+      
+      // Prevent duplicates and limit to a maximum of 7 interests
+      if (prev.length < 7) {
+        return [...prev, item];
+      } else {
+        ToastAndroid.show('You can select up to 7 interests only!', ToastAndroid.SHORT);
+        return prev;
+      }
     });
   };
+  
 
   if (loading) {
-    return (
-      <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" color="#5de383" />
-      </View>
-    );
+    return <LoadingScreen description='Fetching your profile'/>;
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <BackButton />
+    <FlatList
+  style={styles.container}
+  data={[1]} // Using single item array as container
+  keyExtractor={() => 'editProfile'}
+  renderItem={() => (
+    <>
+      <BackButton title = {"Edit Profile"}/>
       <View style={styles.profileContainer}>
-        <View style={styles.profileImageContainer}>
-          <Image
-            source={{ uri: profilePhoto || 'https://www.shutterstock.com/image-photo/very-random-pose-asian-men-260nw-2423213779.jpg' }}
-            style={styles.profileImage}
-          />
-          <TouchableOpacity style={styles.editIcon} onPress={() => navigation.navigate('EditProfile')}>
-            <Icon name="pencil" size={14} color="#121212" />
-          </TouchableOpacity>
+        <View style={styles.gridContainer}>
+          {Array.from({ length: 6 }).map((_, index) => (
+            <View key={index} style={styles.gridItem}>
+              {profilePhotos[index] ? (
+                <>
+                  <Image source={{ uri: profilePhotos[index] }} style={styles.profileImage} />
+                  <TouchableOpacity
+                    style={styles.removeIcon}
+                    onPress={() => removePhoto(index)}
+                  >
+                    <Icon name="times" size={16} color="white" />
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <TouchableOpacity onPress={handleAddPhoto} style={styles.gridItem}>
+                  <Icon name="plus" size={30} color="#5de383" />
+                </TouchableOpacity>
+              )}
+            </View>
+          ))}
         </View>
       </View>
 
-      <PickerComponent label="Interested In" selectedValue={interestedIn} options={interestedInOptions} onValueChange={setInterestedIn} />
-      <PickerComponent label="Relationship Type" selectedValue={relationshipType} options={relationshipOptions} onValueChange={setRelationshipType} />
+    <View style={styles.section}>
+
 
       <TouchableOpacity onPress={() => setShowInterestModal(true)}>
         <Icon name="pencil" size={20} color="#5de383" />
@@ -201,114 +342,152 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
         </View>
       </Modal>
 
+      
+
 
       <Text style={styles.label}>About me</Text>
+        <View style={styles.bioInputContainer}>
+          <TextInput
+            style={styles.bioInput}
+            placeholder="Describe yourself"
+            placeholderTextColor="#B0B0B0"
+            value={bio}
+            onChangeText={(text) => {
+              if (text.length <= 500) {
+                setBio(text);
+              }
+            }}
+            multiline
+          />
+        </View>
+        <Text style={[styles.charCounter, bio.length === 500 && styles.charLimitReached]}>
+          {bio.length}/500
+      </Text>
+
+      <Text style={styles.label}>Height</Text>
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
-          placeholder="Write your bio..."
+          placeholder="Enter Height in cm"
           placeholderTextColor="#B0B0B0"
-          value={bio}
-          onChangeText={setBio}
-          multiline
+          value={height}
+          onChangeText={(text) => {
+            if (/^\d*$/.test(text)) {
+              setHeight(text);
+            }
+          }}
+          keyboardType="numeric"
         />
+        <Text style={{ color: 'white'}}>cm</Text>
       </View>
 
-<Text style={styles.label}>Height</Text>
-<View style={styles.inputContainer}>
-  <TextInput
-    style={styles.input}
-    placeholder="Enter Height"
-    placeholderTextColor="#B0B0B0"
-    value={height}
-    onChangeText={setHeight}
-    keyboardType="numeric"
-  />
-  <TouchableOpacity onPress={() => setHeightUnit((prev) => (prev === 'cm' ? 'feet' : 'cm'))}>
-    <Text style={{ color: '#5de383', marginLeft: 10 }}>{heightUnit}</Text>
-  </TouchableOpacity>
-</View>
+      <Text style={styles.label}>Occupation</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Enter your occupation"
+        placeholderTextColor="#B0B0B0"
+        value={occupation}
+        onChangeText={setOccupation}
+      />
 
+      <Text style={styles.label}>Working At / Student At</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Where do you work or study?"
+        placeholderTextColor="#B0B0B0"
+        value={workingAt}
+        onChangeText={setWorkingAt}
+      />
 
+      
 
+      <Text style={styles.label}>Languages I Know</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Enter languages separated by commas"
+        placeholderTextColor="#B0B0B0"
+        value={languages}
+        onChangeText={setLanguages}
+      />
 
+      <Text style={styles.label}>My Love Language</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="How do you feel loved?"
+        placeholderTextColor="#B0B0B0"
+        value={loveLanguage}
+        onChangeText={setloveLanguage}
+      />
 
-<Text style={styles.label}>Occupation</Text>
-<TextInput
-  style={styles.input}
-  placeholder="Enter your occupation"
-  placeholderTextColor="#B0B0B0"
-  value={occupation}
-  onChangeText={setOccupation}
-/>
-
-<Text style={styles.label}>Working At / Student At</Text>
-<TextInput
-  style={styles.input}
-  placeholder="Where do you work or study?"
-  placeholderTextColor="#B0B0B0"
-  value={workingAt}
-  onChangeText={setWorkingAt}
-/>
-
-<PickerComponent
-  label="Pronouns"
-  selectedValue={pronouns}
-  options={pronounsOptions}
-  onValueChange={setPronouns}
-/>
+      <PickerComponent label="Relationship Type" selectedValue={relationshipType} options={relationshipOptions} onValueChange={setRelationshipType} />
 
 <PickerComponent
-  label="Gender Orientation"
-  selectedValue={genderOrientation}
-  options={genderOrientationOptions}
-  onValueChange={setGenderOrientation}
-/>
+        label="Pronouns"
+        selectedValue={pronouns}
+        options={pronounsOptions}
+        onValueChange={setPronouns}
+      />
 
-<Text style={styles.label}>Languages I Know</Text>
-<TextInput
-  style={styles.input}
-  placeholder="Enter languages separated by commas"
-  placeholderTextColor="#B0B0B0"
-  value={languages}
-  onChangeText={setLanguages}
-/>
+      <PickerComponent
+        label="Gender Orientation"
+        selectedValue={genderOrientation}
+        options={genderOrientationOptions}
+        onValueChange={setGenderOrientation}
+      />
 
-<Text style={styles.label}>Prompts</Text>
-<TextInput
-  style={styles.input}
-  placeholder="Enter prompts"
-  placeholderTextColor="#B0B0B0"
-  value={prompts}
-  onChangeText={setPrompts}
-/>
+      <PickerComponent
+        label="Planet Sign"
+        selectedValue={zodiac}
+        options={zodiacOptions}
+        onValueChange={setzodiac}
+      />
+      <PickerComponent
+        label="Religion"
+        selectedValue={religion}
+        options={religionOptions}
+        onValueChange={setReligion}
+      />
 
-<PickerComponent
-  label="Planet Sign"
-  selectedValue={planetSign}
-  options={planetSignOptions}
-  onValueChange={setPlanetSign}
-/>
+      <PickerComponent
+        label="Family Planning"
+        selectedValue={familyPlanning}
+        options={familyPlanningOptions}
+        onValueChange={setFamilyPlanning}
+      />
 
-<PickerComponent
-  label="Family Planning"
-  selectedValue={familyPlanning}
-  options={familyPlanningOptions}
-  onValueChange={setFamilyPlanning}
-/>
-
-<PickerComponent
-  label="Body Type"
-  selectedValue={bodyType}
-  options={bodyTypeOptions}
-  onValueChange={setBodyType}
-/>
+      <PickerComponent
+        label="Body Type"
+        selectedValue={bodyType}
+        options={bodyTypeOptions}
+        onValueChange={setBodyType}
+      />
 
 
+      <PickerComponent
+        label="Workout"
+        selectedValue={workout}
+        options={workoutOptions}
+        onValueChange={setWorkout}
+      />
+
+      <PickerComponent
+        label="Smoking"
+        selectedValue={smoking}
+        options={smokingOptions}
+        onValueChange={setSmoking}
+      />
+      <PickerComponent
+        label="Drinking"
+        selectedValue={drinking}
+        options={drinkingOptions}
+        onValueChange={setDrinking}
+      />
+      </View>
 
       <CustomButton title="Save Changes" onPress={updateProfile} style={styles.updateButton} />
-
-    </ScrollView>
+    </>
+  )}
+/>
   );
 };
 
@@ -318,13 +497,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#1E1E1E',
     borderRadius: 10,
-    marginBottom: 20,
+    marginBottom: 5,
     paddingHorizontal: 15,
     borderWidth: 1,
     borderColor: '#121212',
     width: '100%',
-    
+
   },
+  bioInputContainer: {
+    backgroundColor: '#1E1E1E',
+    borderRadius: 10,
+    marginBottom: 5,
+    paddingHorizontal: 15,
+    paddingTop: 15, // Add padding at top
+    borderWidth: 1,
+    borderColor: '#121212',
+    width: '100%',
+    minHeight: 150, // Use minHeight instead of fixed height
+  },
+  bioInput: {
+    flex: 1,
+    color: 'white',
+    backgroundColor: 'transparent',
+    textAlignVertical: 'top', // This makes text start from top
+    paddingTop: 0, 
+  },
+
   input: {
     flex: 1,
     height: 50,
@@ -332,6 +530,21 @@ const styles = StyleSheet.create({
     paddingLeft: 10,
     backgroundColor: '#1E1E1E',
     borderRadius: 10,
+  },
+  charCounter: {
+    alignSelf: 'flex-end',
+    color: '#B0B0B0',
+    fontSize: 12,
+    marginBottom: 10,
+    marginRight: 5,
+    marginTop: 3,
+  },
+  charLimitReached: {
+    color: '#ff5555',
+    fontWeight: 'bold',
+    marginTop: 3,
+    marginRight: 5,
+
   },
     container: {
       flex: 1,
@@ -341,21 +554,48 @@ const styles = StyleSheet.create({
   
     profileContainer: {
       alignItems: 'center',
-      marginTop: 30,
+      
     },
-  
-    profileImageContainer: {
-      position: 'relative',
+    section: {
       marginBottom: 20,
+      padding: 10,
+      backgroundColor: '#1a1a1a',
+      borderRadius: 10,
+      elevation: 3,
+      shadowColor: '#000',
     },
-  
-    profileImage: {
-      width: 150,
-      height: 150,
-      borderRadius: 100,
-      borderWidth: 2,
-      borderColor: '#5de383',
-    },
+
+gridContainer: {
+  flexDirection: 'row',
+  flexWrap: 'wrap',
+  justifyContent: 'space-between',
+  marginBottom: 20,
+  paddingHorizontal: 10,
+},
+gridItem: {
+  width: (Dimensions.get('window').width - 60) / 3.4,
+  height: (Dimensions.get('window').width - 60) / 3.4,
+  backgroundColor: '#1E1E1E',
+  borderRadius: 10,
+  alignItems: 'center',
+  justifyContent: 'center',
+  margin: 5,
+},
+    
+  profileImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 10,
+    
+  },
+  removeIcon: {
+    position: 'absolute',
+    top: 5,
+    right: 5,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 10,
+    padding: 5,
+  },
   
     editIcon: {
       position: 'absolute',
@@ -447,7 +687,7 @@ const styles = StyleSheet.create({
     label: {
       color: '#5de383',
       fontSize: 16,
-      marginBottom: 5,
+      marginBottom: 10,
       marginTop: 10,
     }
     

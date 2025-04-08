@@ -141,8 +141,10 @@ const AddProfilePictures: React.FC<Props> = ({ navigation }) => {
 
   return (
     
-    <SafeAreaView style={styles.container}>
-      <BackButton />
+    <View style={styles.backButtonContainer}>
+      <BackButton title={"Show yourself to the world"}/>
+<SafeAreaView style={styles.container}>
+      
 
       <FlatList
         data={[...photos, ...new Array(MAX_PHOTOS - photos.length).fill(null)]}
@@ -186,7 +188,7 @@ const AddProfilePictures: React.FC<Props> = ({ navigation }) => {
   {/* Rule 2 */}
   <View style={styles.ruleItem}>
     <Text style={styles.emoji}>•</Text>
-    <Text style={styles.ruleText}>Show your face clearly in at least one photo.</Text>
+    <Text style={styles.ruleText}>Show your face clearly in the primary photo.</Text>
   </View>
   
   <View style={styles.ruleItem}>
@@ -254,6 +256,9 @@ const AddProfilePictures: React.FC<Props> = ({ navigation }) => {
         )}
       </TouchableOpacity>
     </SafeAreaView>
+
+    </View>
+    
   );
 };
 
@@ -262,11 +267,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#121212',
     alignItems: 'center',
-    padding: 20,
+  },
+  backButtonContainer: {
+    flex: 1,
+    backgroundColor: '#121212',
   },
   photoContainer: {
     width: 140, // Adjusted width to fit 2 containers in a row
-    height: 130,
+    height: 160,
     borderRadius: 10,
     backgroundColor: '#1E1E1E',
     margin: 10,

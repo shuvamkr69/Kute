@@ -16,9 +16,10 @@ import api from '../utils/api';
 import { getUserId } from '../utils/constants';
 import { io } from 'socket.io-client';
 import Icon from "react-native-vector-icons/FontAwesome";
+import LoadingScreen from './LoadingScreen';
 
 
-const socket = io('http://192.168.193.211:3000');
+const socket = io(' http://192.168.193.211:3000');
 
 type Props = NativeStackScreenProps<any, 'AllChatScreen'>;
 
@@ -105,11 +106,12 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
   }, [userId]);
 
   if (loading) {
-    return (
-      <View style={styles.loaderContainer}>
-        <ActivityIndicator size="large" color="#5de383" />
-      </View>
-    );
+    return <LoadingScreen description='Fetching your chats'/>;
+    // return (
+    //   <View style={styles.loaderContainer}>
+    //     <ActivityIndicator size="large" color="#5de383" />
+    //   </View>
+    // );
   }
 
   // ✅ Pull-to-refresh handler
@@ -139,9 +141,10 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
         style={styles.chatItem}
         onPress={() =>
           navigation.navigate('Chat', {
-            likedUserId: otherParticipant._id,
-            userName: otherParticipant.fullName,
-            loggedInUserId: userId,
+        likedUserId: otherParticipant._id,
+        userName: otherParticipant.fullName,
+        loggedInUserId: userId,
+        likedUserAvatar: otherParticipant.avatar1, // Pass the liked user's avatar
           })
         }
       >
@@ -152,14 +155,14 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
         <View style={styles.chatDetails}>
           <Text style={styles.chatName}>{otherParticipant?.fullName}</Text>
           <Text
-            style={[
-              styles.lastMessage,
-              item?.lastMessage?.isRead === false && item.lastMessage.senderId !== userId
-                ? styles.unreadMessage
-                : {},
-            ]}
+        style={[
+          styles.lastMessage,
+          item?.lastMessage?.isRead === false && item.lastMessage.senderId !== userId
+            ? styles.unreadMessage
+            : {},
+        ]}
           >
-            {lastMessageText}
+        {lastMessageText}
           </Text>
         </View>
       </TouchableOpacity>
@@ -167,14 +170,15 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
-    <TouchableOpacity onPress={() => navigation.goBack()}>
-      <Icon name="arrow-left" style={{color: "white", position: "absolute", top: 15}}/>
-    </TouchableOpacity>      
+    <View style={styles.container}>      
     <Text style={styles.headingText}>Your Chats</Text>
 
       {chats.length === 0 ? (
-        <Text style={styles.noChatsText}>No chats found. Start chatting now!</Text>
+        <View style ={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+          <Image source={require('../assets/icons/koala.png')} style={{ width: 150, height: 150, alignSelf: 'center' }} />
+          <Text style={styles.noChatsText}>No DMs? Clearly, they fear the power of the perfect reply</Text>
+        </View>
+        
       ) : (
         <FlatList
           data={chats}
@@ -194,9 +198,9 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   headingText: {
-    marginLeft: 30,
-    color: '#5de383',
-    fontSize: 28,
+    marginLeft: 2,
+    color: 'white',
+    fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 20,
   },
@@ -239,7 +243,8 @@ const styles = StyleSheet.create({
     color: '#B0B0B0',
     fontSize: 16,
     textAlign: 'center',
-    marginTop: 50,
+    marginBottom: 90,
+
   },
   backButton: {
     color: '#5de383',

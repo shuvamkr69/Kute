@@ -56,7 +56,8 @@ const MakeBio: React.FC<Props> = ({ navigation }) => {
       }
 
       userData.bio = bio;
-      userData.pushToken = pushToken || (await AsyncStorage.getItem("pushToken")); // Ensure pushToken is set
+      userData.pushToken =
+        pushToken || (await AsyncStorage.getItem("pushToken")); // Ensure pushToken is set
 
       console.log("User Data:", userData);
 
@@ -71,15 +72,16 @@ const MakeBio: React.FC<Props> = ({ navigation }) => {
       formData.append("password", userData.password);
       formData.append("age", String(userData.age));
       formData.append("gender", userData.gender);
-      formData.append("interestedIn", userData.interestedIn);
       formData.append("personality", userData.personality);
       formData.append("interests", userData.interests);
       formData.append("relationshipType", userData.relationshipType);
       formData.append("bio", bio.trim());
+      formData.append("genderOrientation", userData.genderOrientation);
       formData.append("location", userData.location);
       formData.append("country", userData.country);
       formData.append("pushToken", userData.pushToken || ""); // Ensure pushToken is included
-
+      formData.append("religion", userData.religion);
+      console.log("Form Data:", formData);
       photos.forEach((photoUri: string, index: number) => {
         formData.append(`avatar${index + 1}`, {
           uri: photoUri,
@@ -94,7 +96,8 @@ const MakeBio: React.FC<Props> = ({ navigation }) => {
       });
 
       if (response.status === 201) {
-        Alert.alert("Success", "Profile created successfully!");
+        const { accessToken } = response.data.data;
+        await AsyncStorage.setItem("accessToken", accessToken);
         await AsyncStorage.setItem("avatar", photos[0]);
         signIn();
         navigation.reset({ index: 0, routes: [{ name: "Home" }] });
@@ -103,32 +106,53 @@ const MakeBio: React.FC<Props> = ({ navigation }) => {
       }
     } catch (error: any) {
       console.error("Submit Error:", error.message);
-      Alert.alert("Error", error.response?.data?.message || "Failed to submit data.");
+      Alert.alert(
+        "Error",
+        error.response?.data?.message || "Failed to submit data."
+      );
     } finally {
       setIsUploading(false);
     }
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <BackButton />
-      <Text style={styles.header}>Create Your Bio</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Tell us about yourself"
-        placeholderTextColor="#888"
-        value={bio}
-        onChangeText={setBio}
-        multiline
-      />
+    <View style={styles.backButtonContainer}>
+      <BackButton title={"Bio"} />
+      <SafeAreaView style={styles.container}>
+        <Text style={styles.header}>Your Love Resume</Text>
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder="Tell us about yourself"
+            placeholderTextColor="#888"
+            value={bio}
+            onChangeText={(text) => {
+              if (text.length <= 500) setBio(text);
+            }}
+            multiline
+            maxLength={500}
+          />
+          <Text
+            style={[styles.charCount, bio.length === 500 && { color: "red" }]}
+          >
+            {bio.length}/500
+          </Text>
+        </View>
+
+        
+      </SafeAreaView>
       <TouchableOpacity
-        style={[styles.submitButton, isUploading && styles.disabledButton]}
-        onPress={submitData}
-        disabled={isUploading}
-      >
-        {isUploading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.buttonText}>Submit</Text>}
-      </TouchableOpacity>
-    </SafeAreaView>
+          style={[styles.submitButton, isUploading && styles.disabledButton]}
+          onPress={submitData}
+          disabled={isUploading}
+        >
+          {isUploading ? (
+            <ActivityIndicator color="#FFF" />
+          ) : (
+            <Text style={styles.buttonText}>Submit</Text>
+          )}
+        </TouchableOpacity>
+    </View>
   );
 };
 
@@ -146,17 +170,30 @@ const styles = StyleSheet.create({
     color: "#5de383",
     marginBottom: 20,
   },
+  inputContainer: {
+    width: "100%",
+    position: "relative",
+    marginBottom: 30,
+  },
   input: {
     width: "100%",
-    height: 100,
+    height: 160,
     backgroundColor: "#1E1E1E",
     color: "#FFF",
     padding: 10,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: "#5de383",
-    marginBottom: 20,
+    textAlignVertical: "top",
   },
+  charCount: {
+    position: "absolute",
+    right: 10,
+    bottom: 10,
+    fontSize: 12,
+    color: "#888",
+  },
+
   submitButton: {
     backgroundColor: "#5de383",
     paddingVertical: 15,
@@ -171,6 +208,10 @@ const styles = StyleSheet.create({
     color: "#FFF",
     fontWeight: "bold",
     fontSize: 16,
+  },
+  backButtonContainer: {
+    flex: 1,
+    backgroundColor: "#121212",
   },
 });
 

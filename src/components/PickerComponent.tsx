@@ -1,119 +1,186 @@
-// PickerComponent.tsx
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, FlatList } from 'react-native';
+import React from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Modal,
+  FlatList,
+  Dimensions,
+  Animated,
+  Easing,
+} from "react-native";
+
+const { height } = Dimensions.get("window");
 
 interface PickerComponentProps {
   label: string;
   selectedValue: string;
   options: string[];
   onValueChange: (value: string) => void;
+  icon?: React.ReactNode;
 }
 
-const PickerComponent: React.FC<PickerComponentProps> = ({ label, selectedValue, options, onValueChange }) => {
+
+
+
+
+
+const PickerComponent: React.FC<PickerComponentProps> = ({
+  label,
+  selectedValue,
+  options,
+  onValueChange,
+  icon,
+}) => {
   const [modalVisible, setModalVisible] = React.useState(false);
+  const slideAnim = React.useRef(new Animated.Value(height)).current;
+  const OPTION_HEIGHT = 60;
+  const MAX_VISIBLE_OPTIONS = Math.floor(height * 0.5 / OPTION_HEIGHT);
+  const targetHeight = Math.min(options.length, MAX_VISIBLE_OPTIONS) * OPTION_HEIGHT + 100;
+
+  const openModal = () => {
+    setModalVisible(true);
+    
+    Animated.timing(slideAnim, {
+      toValue: height - targetHeight,
+      duration: 300,
+      easing: Easing.out(Easing.exp),
+      useNativeDriver: false,
+    }).start();
+  };
+
+  const closeModal = () => {
+    Animated.timing(slideAnim, {
+      toValue: height,
+      duration: 200,
+      easing: Easing.in(Easing.linear),
+      useNativeDriver: false,
+    }).start(() => setModalVisible(false));
+  };
 
   const handleSelect = (value: string) => {
     onValueChange(value);
-    setModalVisible(false);
+    closeModal();
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
-      <TouchableOpacity style={styles.picker} onPress={() => setModalVisible(true)}>
-        <Text style={styles.selectedValue}>{selectedValue || 'Select an option'}</Text>
-      </TouchableOpacity>
+    <View>
+      <TouchableOpacity style={styles.pickerRow} onPress={openModal}>
+  <View style={styles.labelContainer}>
+    {icon && <View style={styles.iconContainer}>{icon}</View>}
+    <Text style={styles.label}>{label}</Text>
+  </View>
+  <View style={styles.selectedValueBox}>
+    <Text style={styles.selectedValueText}>{selectedValue || "Not Set"}</Text>
+    {!modalVisible && <Text style={styles.arrow}>▼</Text>}
+  </View>
+</TouchableOpacity>
 
-      <Modal visible={modalVisible} transparent animationType="slide">
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <FlatList
-              data={options}
-              keyExtractor={(item) => item}
-              renderItem={({ item }) => (
-                <TouchableOpacity style={styles.option} onPress={() => handleSelect(item)}>
-                  <Text style={styles.optionText}>{item}</Text>
-                </TouchableOpacity>
-              )}
-            />
-            <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
-              <Text style={styles.closeButtonText}>Close</Text>
+
+      <Modal visible={modalVisible} transparent animationType="none">
+  <View style={styles.modalOverlay}>
+    <TouchableOpacity style={styles.backgroundDismissArea} activeOpacity={1} onPress={closeModal} />
+    <Animated.View style={[styles.bottomSheet, { top: slideAnim }]}>
+      <View style={styles.handleBar} />
+      <FlatList
+          style={{ maxHeight: MAX_VISIBLE_OPTIONS * OPTION_HEIGHT }}
+          showsVerticalScrollIndicator={false}
+          data={options}
+          keyExtractor={(item) => item}
+          renderItem={({ item }) => (
+            <TouchableOpacity style={styles.optionBox} onPress={() => handleSelect(item)}>
+              <Text style={styles.optionText}>{item}</Text>
             </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+          )}
+        />
+
+    </Animated.View>
+  </View>
+</Modal>
+
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    marginBottom: 20,
-    marginTop: 20,
+  pickerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 15,
   },
   label: {
     fontSize: 16,
-    marginBottom: 5,
-    color: '#E0E0E0', // Light text for dark mode
+    color: "#A0A0A0",
   },
-  picker: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1E1E1E', // Dark mode friendly
-    borderRadius: 10,
+  selectedValueBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#1f1f1f",
+    paddingVertical: 8,
     paddingHorizontal: 15,
-    marginBottom: 15,
-    width: '100%',
-    borderWidth: 1,
-    borderColor: '#121212', // Orange accent for contrast
-    minHeight: 56,
-    color: 'white', // Text color
-    justifyContent: 'space-between', // Ensures proper spacing
+    borderRadius: 10,
   },
-  selectedValue: {
-    color: '#BBBBBB', // Soft gray for contrast
+  selectedValueText: {
     fontSize: 16,
-    flex: 1, // Allows the text to take available space
+    color: "#A0A0A0",
+    marginRight: 10,
   },
-  modalContainer: {
+  arrow: {
+    fontSize: 10,
+    color: "#BBBBBB",
+  },
+  labelContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  
+  iconContainer: {
+    marginRight: 8,
+  },
+  
+  modalOverlay: {
     flex: 1,
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.6)', // Dark semi-transparent overlay
+    backgroundColor: "rgba(0,0,0,0.8)",
+    justifyContent: "flex-end",
   },
-  modalContent: {
-    backgroundColor: '#2A2A2A', // Dark modal background
-    borderRadius: 12,
-    margin: 20,
+  bottomSheet: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    backgroundColor: "#2A2A2A",
+    borderTopLeftRadius: 25,
+    borderTopRightRadius: 25,
     padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 5,
+    paddingBottom: 40,
   },
-  option: {
+  backgroundDismissArea: {
+    flex: 1,
+  },
+  
+  
+  handleBar: {
+    width: 50,
+    height: 6,
+    backgroundColor: "#666",
+    borderRadius: 3,
+    alignSelf: "center",
+    marginBottom: 20,
+  },
+  optionBox: {
+    backgroundColor: "#3A3A3A",
     padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#444444', // Subtle divider
+    borderRadius: 12,
+    marginBottom: 15,
   },
   optionText: {
-    fontSize: 16,
-    color: '#FFFFFF', // White for high contrast
+    fontSize: 14,
+    color: "#FFFFFF",
+    textAlign: "center",
+    fontWeight: "600",
   },
-  closeButton: {
-    marginTop: 20,
-    alignItems: 'center',
-    padding: 12,
-    backgroundColor: '#5de383', // Vibrant orange button for visibility
-    borderRadius: 12,
-  },
-  closeButtonText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
+  
 });
-
-
 
 export default PickerComponent;

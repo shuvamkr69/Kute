@@ -1,30 +1,43 @@
 import React from "react";
-import { TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import Icon from "react-native-vector-icons/FontAwesome";
+import { Ionicons } from "@expo/vector-icons";
 
-interface BackButtonProps {
+interface HeaderProps {
+  title: string;
   color?: string;
   size?: number;
 }
 
-const BackButton: React.FC<BackButtonProps> = ({ color = "#FFFFFF", size = 24 }) => {
+const Header: React.FC<HeaderProps> = ({ title, color = "#FFFFFF", size = 24 }) => {
   const navigation = useNavigation();
 
   return (
-    <TouchableOpacity style={styles.button} onPress={() => navigation.goBack()}>
-      <Icon name="arrow-left" size={size} color={color} />
-    </TouchableOpacity>
+    <View style={styles.header}>
+      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <Ionicons name="arrow-back" size={size} color={color} />
+      </TouchableOpacity>
+      <Text style={[styles.title, { color }]}>{title}</Text>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  button: {
-    position: "absolute",
-    left: 10,
-    top: 20,
-    zIndex: 10,
+  header: {
+    width: '100%',
+    height: 60,
+    backgroundColor: "#000000", // Pure black background
+    flexDirection: "row",
+    alignItems: 'center',
+    paddingHorizontal: 15,
+  },
+  backButton: {
+    marginRight: 15,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: "bold",
   },
 });
 
-export default BackButton;
+export default Header;
