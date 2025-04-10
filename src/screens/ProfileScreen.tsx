@@ -21,7 +21,6 @@ import { RefreshControl } from "react-native";
 import { set } from "mongoose";
 const VerificationImage = require("../assets/icons/verified-logo.png");
 
-
 type Props = NativeStackScreenProps<any, "MyProfile">;
 
 const ProfileScreen: React.FC<Props> = ({ navigation }) => {
@@ -53,6 +52,8 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   const [bodyType, setBodyType] = useState("");
   const [height, setHeight] = useState<string>("");
   const [heightUnit, setHeightUnit] = useState<"cm" | "feet">("cm");
+  const [personality, setPersonality] = useState<string>("Any");
+  const [interests, setInterests] = useState<string[]>([]);
 
   const onRefresh = async () => {
     //for refreshing the screen
@@ -80,6 +81,8 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
       setBodyType(user.bodyType || "");
       setHeight(user.height || "");
       setHeightUnit(user.heightUnit || "cm");
+      setPersonality(user.personality || "Any");
+      setInterests(user.interests || []);
       ToastAndroid.show("Profile Refreshed!", ToastAndroid.SHORT);
     } catch (error) {
       console.log("Refresh Error:", error);
@@ -117,6 +120,8 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
         setBodyType(user.bodyType || "");
         setHeight(user.height || "");
         setHeightUnit(user.heightUnit || "cm");
+        setPersonality(user.personality || "Any");
+        setInterests(user.interests || []);
 
         // ✅ Save API response for offline access
         await AsyncStorage.setItem("user", JSON.stringify(user));
@@ -164,6 +169,8 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
     if (languages) progress += 8;
     if (occupation) progress += 8;
     if (pronouns) progress += 8;
+    if (religion) progress += 8;
+    if (familyPlanning) progress += 8;
 
     setProfileProgress(progress);
   }, [
@@ -181,6 +188,8 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
     languages,
     occupation,
     pronouns,
+    religion,
+    familyPlanning,
   ]);
 
   useEffect(() => {
@@ -238,33 +247,35 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
     >
       {/* Profile Section */}
       <View style={styles.profileContainer}>
-      <View style={styles.profileImageContainer}>
-  {/* Profile Image */}
-  <Image source={{ uri: profilePhoto }} style={styles.profileImage} />
+        <View style={styles.profileImageContainer}>
+          {/* Profile Image */}
+          <Image source={{ uri: profilePhoto }} style={styles.profileImage} />
 
-  {/* Edit Icon */}
-  <TouchableOpacity
-    style={styles.editIcon}
-    onPress={() => navigation.navigate("EditProfile")}
-  >
-    <Icon name="pencil" size={14} color="#121212" />
-  </TouchableOpacity>
+          {/* Edit Icon */}
+          <TouchableOpacity
+            style={styles.editIcon}
+            onPress={() => navigation.navigate("EditProfile")}
+          >
+            <Icon name="pencil" size={14} color="#121212" />
+          </TouchableOpacity>
 
-  {/* Verification Image - Replaces the Verification Icon */}
-  <Image
-    source={VerificationImage}
-    style={[
-      styles.verificationImage,
-      { tintColor: isVerified ? null : "#B0B0B0", opacity: isVerified ? 1 : 0.5 }
-    ]}
-  />
-</View>
-
+          {/* Verification Image - Replaces the Verification Icon */}
+          <Image
+            source={VerificationImage}
+            style={[
+              styles.verificationImage,
+              {
+                tintColor: isVerified ? null : "#B0B0B0",
+                opacity: isVerified ? 1 : 0.5,
+              },
+            ]}
+          />
+        </View>
 
         <Text style={styles.username}>
           {name} {age}
         </Text>
-        
+
         <Text style={styles.bio}>{bio}</Text>
       </View>
 
@@ -295,7 +306,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
           { label: "Height in cm:", value: `${height}` },
           { label: "Occupation:", value: occupation },
           { label: "Working At:", value: workingAt },
-          {label : "Religion:", value: religion},
+          { label: "Religion:", value: religion },
           { label: "Pronouns:", value: pronouns },
           { label: "Gender Orientation:", value: genderOrientation },
           { label: "Languages:", value: languages },
@@ -310,8 +321,28 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
           { label: "Zodiac:", value: zodiac },
           { label: "Family Planning:", value: familyPlanning },
           { label: "Body Type:", value: bodyType },
+          { label: "Religion:", value: religion },
+          { label: "Personality", value: personality },
+
+
         ]}
       />
+
+{/* Interests Section - Special Handling */}
+<View style={styles.sectionContainer}>
+  <Text style={styles.sectionTitle}>Interests</Text>
+  {interests.length > 0 ? (
+    <View style={styles.interestsContainer}>
+      {interests.map((interest, index) => (
+        <View key={index} style={styles.interestBox}>
+          <Text style={styles.interestText}>{interest}</Text>
+        </View>
+      ))}
+    </View>
+  ) : (
+    <Text style={styles.noInfo}>No interests added</Text>
+  )}
+</View>
 
       {/* Upgrade Section */}
       <View style={styles.upgradeContainer}>
@@ -339,7 +370,6 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
 
       {/* Boost & Roses Section */}
       <View style={styles.cardsContainer}>
-
         <TouchableOpacity
           activeOpacity={1}
           style={styles.card}
@@ -394,7 +424,6 @@ const styles = StyleSheet.create({
     position: "relative",
     width: 150,
     height: 150,
-    
   },
 
   profileImage: {
@@ -422,7 +451,6 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
   },
-  
 
   username: {
     marginTop: 15,
@@ -516,6 +544,24 @@ const styles = StyleSheet.create({
     color: "#B0B0B0",
     textAlign: "center",
     marginTop: 5,
+  },
+  interestsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 10,
+  },
+  interestBox: {
+    backgroundColor: '#5de383',
+    borderRadius: 15,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  interestText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '500',
   },
   loadingContainer: {
     flex: 1,

@@ -13,7 +13,7 @@ interface LikedUser {
   profileImage: string;
 }
 
-const Likes: React.FC<Props> = ({ navigation }) => {
+const Likes: React.FC<Props> = ({ navigation}) => {
   const [likedUsers, setLikedUsers] = useState<LikedUser[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
@@ -48,15 +48,23 @@ const Likes: React.FC<Props> = ({ navigation }) => {
   const renderItem = ({ item }: { item: LikedUser }) => (
     <View style={styles.card}>
       <Image source={{ uri: item.profileImage }} style={styles.profileImage} />
-      <View style={styles.info}>
-        <Text style={styles.name}>{item.fullName}</Text>
-        <TouchableOpacity onPress={async () => {
+      <Text style={styles.name} numberOfLines={1} ellipsizeMode="tail">
+        {item.fullName}
+      </Text>
+      <TouchableOpacity 
+        style={styles.chatButton}
+        onPress={async () => {
           const userId = await getUserId();
-          navigation.navigate('Chat', { loggedInUserId: userId, likedUserId: item._id, userName: item.fullName })
-          }}>
-          <Icon name="comments" size={20} color="#5de383" />
-        </TouchableOpacity>
-      </View>
+          navigation.navigate('Chat', { 
+            loggedInUserId: userId, 
+            likedUserId: item._id, 
+            userName: item.fullName,
+            likedUserAvatar: item.profileImage,
+          });
+        }}
+      >
+        <Icon name="comments" size={20} color="#5de383" />
+      </TouchableOpacity>
     </View>
   );
   
@@ -75,12 +83,15 @@ const Likes: React.FC<Props> = ({ navigation }) => {
         
       ) : (
         <FlatList
-          data={likedUsers}
-          keyExtractor={(item) => item._id}
-          renderItem={renderItem}
-          contentContainerStyle={styles.list}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        />
+  data={likedUsers}
+  keyExtractor={(item) => item._id}
+  renderItem={renderItem}
+  numColumns={2}
+  columnWrapperStyle={styles.columnWrapper}
+  contentContainerStyle={styles.list}
+  refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+  key="two-columns" // Add this to prevent the invariant violation
+/>
       )}
     </View>
   );
@@ -92,13 +103,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#121212',
-    padding: 20,
+    padding: 10, // Reduced padding for better grid spacing
   },
   heading: {
     fontSize: 16,
     fontWeight: 'bold',
     color: 'white',
     marginBottom: 20,
+    paddingHorizontal: 10, // Added horizontal padding
   },
   noLikes: {
     fontSize: 18,
@@ -109,13 +121,17 @@ const styles = StyleSheet.create({
   list: {
     paddingBottom: 20,
   },
-  card: {
-    flexDirection: 'row',
-    backgroundColor: '#1E1E1E',
-    padding: 15,
+  columnWrapper: {
+    justifyContent: 'space-between',
+    paddingHorizontal: 10,
     marginBottom: 15,
+  },
+  card: {
+    width: '48%', // Takes up slightly less than half to allow spacing
+    backgroundColor: '#1E1E1E',
     borderRadius: 10,
-    alignItems: 'center',
+    padding: 15,
+    alignItems: 'center', // Center items vertically
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
@@ -123,19 +139,33 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   profileImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    marginRight: 15,
+    width: 80, // Slightly larger image
+    height: 80,
+    borderRadius: 40,
+    marginBottom: 10, // Space between image and name
   },
+  name: {
+    fontSize: 16,
+    color: 'white',
+    fontWeight: 'bold',
+    marginBottom: 10, // Space between name and button
+    textAlign: 'center',
+    width: '100%', // Ensure text takes full width for proper centering
+  },
+  chatButton: {
+    backgroundColor: '#242424',
+    padding: 8,
+    borderRadius: 20,
+    width: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  
   info: {
     flex: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  name: {
-    fontSize: 18,
-    color: '#B0B0B0',
-  },
+  
 });

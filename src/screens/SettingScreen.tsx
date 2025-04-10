@@ -139,8 +139,10 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
   }, [navigation]);
 
   return (
+    <View style={styles.backButtonContainer}>
+    <BackButton title = {'User Settings'}/>
+
     <ScrollView style={styles.container}>
-      <BackButton title = {'User Settings'}/>
       <CustomAlert
           visible={showLogoutAlert}
           title="Confirm Logout"
@@ -230,11 +232,9 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
       <TouchableOpacity style={styles.deleteButton} onPress={handleAccountOptions}>
         <Text style={styles.deleteText}>Delete Account</Text>
       </TouchableOpacity>
-
-      <Button onPress={() => navigation.navigate('MatchScreen')} title="Go to Main Tab" />
-
       
     </ScrollView>
+    </View>
   );
 };
 
@@ -243,6 +243,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#121212',
     paddingHorizontal: 20,
+  },
+  backButtonContainer: {
+    flex: 1,
+    backgroundColor: '#121212',
   },
   title: {
     fontSize: 19,

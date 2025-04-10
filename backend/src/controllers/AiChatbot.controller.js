@@ -14,6 +14,7 @@ export const getLoveAdvice = async (req, res) => {
 
     const prompt = `
 You are CupidAI, a love expert who reads the entire chat between two users and gives personalized romantic advice.
+The users are on a dating app named Kute, where they are chatting with each other. Curate your advice based on the chat history, and users prompt.
 
 Chat Context:
 ${context}
@@ -23,11 +24,11 @@ User asked: "${userInput}"
 Give friendly, helpful love advice in a couple sentences.
 `;
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const text = response.text();
-
+    console.log('AI Response:', text);
     res.status(200).json({ response: text.trim() });
   } catch (err) {
     console.error(err);

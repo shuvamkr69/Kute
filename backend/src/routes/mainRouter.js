@@ -5,7 +5,7 @@ import ChatRouter from "./chat.route.js";
 import NotificationRouter from "./notification.route.js";
 import TDRouter from "./TruthOrDare/truthOrDare.routes.js";
 import filterRouter from "./filter.route.js";
-import getPremiumPlans from "../controllers/premiumPlans.controller.js";
+import getPremiumPlans from "./premiumPlans.route.js";
 import AiChatbotRouter from "./AiChatbot.route.js";
 
 const router = Router()

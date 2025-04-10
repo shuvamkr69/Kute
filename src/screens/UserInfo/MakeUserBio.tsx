@@ -81,7 +81,9 @@ const MakeBio: React.FC<Props> = ({ navigation }) => {
       formData.append("country", userData.country);
       formData.append("pushToken", userData.pushToken || ""); // Ensure pushToken is included
       formData.append("religion", userData.religion);
+
       console.log("Form Data:", formData);
+      
       photos.forEach((photoUri: string, index: number) => {
         formData.append(`avatar${index + 1}`, {
           uri: photoUri,

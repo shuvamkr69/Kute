@@ -6,6 +6,7 @@ import {upload} from "../middlewares/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
 import { User } from "../models/user.model.js";
 import { getLikedUsers } from "../controllers/liked.controller.js";
+import { otherProfile } from "../controllers/user.controller.js";
 
 
 
@@ -27,8 +28,6 @@ UserRouter.route("/logout").post(                          //logout
 )
 
 UserRouter.get("/userLiked", verifyJWT, getLikedUsers);    //liking a user
-
-
 
 UserRouter.route("/me").get(                               //get my profile
   verifyJWT,
@@ -66,7 +65,10 @@ UserRouter.route("/deleteAccount").delete(                    //delete account
   deleteAccount
 )
 
-
+UserRouter.route("/get/:userId").get(                               //get user profile
+  verifyJWT,
+  otherProfile,
+)
 
 
 export default UserRouter

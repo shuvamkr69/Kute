@@ -8,7 +8,7 @@ const filterSchema = new mongoose.Schema(
     },
     relationshipType: {
       type: String,
-      enum: ["Long Term", "Casual", "Hookup", "Marriage"],
+      enum: ["Long Term", "Casual", "Hookup", "Marriage", "Any"],
     },
     genderOrientation: {
       type: String,
@@ -25,17 +25,20 @@ const filterSchema = new mongoose.Schema(
     distance: { type: Number, default: 0 },
     location: { type: String },
     verifiedUser: { type: Boolean, default: false },
-    personality: { type: Boolean, default: false },
+    personality: {
+      type: String,
+      enum: ["Extrovert", "Ambivert", "Introvert", "Any"],
+    },
     bio: { type: Boolean, default: false },
     workout: {
       type: String,
-      enum: ["Daily", "Weekly", "Occasionally", "Never"],
+      enum: ["Daily", "Weekly", "Occasionally", "Never", "Any"],
     },
-    drinking: { type: String, enum: ["Socially", "Regularly", "Never"] },
-    smoking: { type: String, enum: ["Socially", "Regularly", "Never"] },
+    drinking: { type: String, enum: ["Socially", "Regularly", "Never", "Any"] },
+    smoking: { type: String, enum: ["Socially", "Regularly", "Never", "Any"] },
     familyPlanning: {
       type: String,
-      enum: ["Want Kids", "Dont Want Kids", "Undecided"],
+      enum: ["Want Kids", "Dont Want Kids", "Undecided", "Any"],
     },
     zodiac: {
       type: String,
@@ -52,6 +55,7 @@ const filterSchema = new mongoose.Schema(
         "Capricorn",
         "Aquarius",
         "Pisces",
+        "Any",
       ],
     },
     interests: [

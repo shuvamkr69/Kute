@@ -1,5 +1,5 @@
 import { Server } from "socket.io";
-
+import { Message } from "../models/message.model.js";
 
 let io = null;
 
@@ -34,6 +34,35 @@ export const initializeSocket = (server) => {
       // ✅ Emit the message to all users in the room
       io.to(message.convId).emit("newMessage", message);
     });
+    // 🟡 Typing event
+    socket.on("typing", ({ convId, senderId }) => {
+      socket.to(convId).emit("typing", { senderId });
+    });
+
+    // ⚪ Stop typing event
+    socket.on("stopTyping", ({ convId, senderId }) => {
+      socket.to(convId).emit("stopTyping", { senderId });
+    });
+    socket.on("messageRead", async ({ conversationId, receiverId }) => {
+      try {
+        await Message.updateMany(
+          {
+            conversationId,
+            senderId: { $ne: receiverId },
+            isRead: false,
+          },
+          { isRead: true }
+        );
+    
+        io.to(conversationId).emit("messageRead", {
+          conversationId,
+          seenBy: receiverId,
+        });
+      } catch (error) {
+        console.error("Failed to update message read status:", error);
+      }
+    });
+    
 
     // ✅ Handle disconnection
     socket.on("disconnect", () => {

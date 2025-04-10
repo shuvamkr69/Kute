@@ -45,6 +45,7 @@ const PremiumScreen: React.FC<Props> = ({ navigation }) => {
       try {
         const response = await api.get("/api/v1/users/premiumPlans");
         setPlans(response.data.data);
+        console.log("Plans fetched successfully:", response.data.data); // Debug log
       } catch (error) {
         Alert.alert("Error", "Failed to fetch premium plans");
       }

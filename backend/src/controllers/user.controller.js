@@ -249,60 +249,62 @@ const homescreenProfiles = async (req, res) => {
     console.log("Default Gender Filter:", filter);
 
     // Fetch user's saved filters
-    const userFilter = await Filter.findOne({ userId: currentUserId });
+const userFilter = await Filter.findOne({ userId: currentUserId });
 
-    if (userFilter) {
-      console.log("Applying Advanced Filters:", userFilter);
+if (userFilter) {
+  console.log("Applying Advanced Filters:", userFilter);
 
-      if (userFilter.relationshipType) {
-        filter.relationshipType = userFilter.relationshipType;
-      }
-      if (userFilter.genderOrientation) {
-        filter.genderOrientation = userFilter.genderOrientation;
-      }
-      if (userFilter.verifiedUser) {
-        filter.isVerified = true;
-      }
-      if (userFilter.personality) {
-        filter.personality = true;
-      }
-      if (userFilter.workout) {
-        filter.workout = userFilter.workout;
-      }
-      if (userFilter.drinking) {
-        filter.drinking = userFilter.drinking;
-      }
-      if (userFilter.smoking) {
-        filter.smoking = userFilter.smoking;
-      }
-      if (userFilter.familyPlanning) {
-        filter.familyPlanning = userFilter.familyPlanning;
-      }
-      if (userFilter.zodiac) {
-        filter.zodiac = userFilter.zodiac;
-      }
-      if (userFilter.religion) {
-        filter.religion = userFilter.religion;
-      }
-      if (userFilter.interests && userFilter.interests.length > 0) {
-        filter.interests = { $in: userFilter.interests };
-      }
-      if (userFilter.location) {
-        filter.location = userFilter.location;
-      }
+  if (userFilter.relationshipType && userFilter.relationshipType !== "Any") {
+    filter.relationshipType = userFilter.relationshipType;
+  }
+  if (userFilter.genderOrientation && userFilter.genderOrientation !== "Any") {
+    filter.genderOrientation = userFilter.genderOrientation;
+  }
+  if (userFilter.verifiedUser && userFilter.verifiedUser !== "Any") {
+    filter.isVerified = true;
+  }
+  if (userFilter.personality && userFilter.personality !== "Any") {
+    filter.personality = userFilter.personality;
+  }
+  if (userFilter.workout && userFilter.workout !== "Any") {
+    filter.workout = userFilter.workout;
+  }
+  if (userFilter.drinking && userFilter.drinking !== "Any") {
+    filter.drinking = userFilter.drinking;
+  }
+  if (userFilter.smoking && userFilter.smoking !== "Any") {
+    filter.smoking = userFilter.smoking;
+  }
+  if (userFilter.familyPlanning && userFilter.familyPlanning !== "Any") {
+    filter.familyPlanning = userFilter.familyPlanning;
+  }
+  if (userFilter.zodiac && userFilter.zodiac !== "Any") {
+    filter.zodiac = userFilter.zodiac;
+  }
+  if (userFilter.religion && userFilter.religion !== "Any") {
+    filter.religion = userFilter.religion;
+  }
+  if (
+    userFilter.interests &&
+    userFilter.interests.length > 0 &&
+    !userFilter.interests.includes("Any")
+  ) {
+    filter.interests = { $in: userFilter.interests };
+  }
+  if (userFilter.location && userFilter.location !== "Any") {
+    filter.location = userFilter.location;
+  }
 
-      console.log("Final Filter with Advanced Options:", filter);
-    }
+  console.log("Final Filter with Advanced Options:", filter);
+}
 
-    // Fetch filtered users
-    const users = await User.find(filter)
-    // .select(
-    //   "fullName email age gender relationshipType interests bio location country avatar1 avatar2 avatar3 avatar4 avatar5 avatar6 occupation workingAt pronouns genderOrientation languages personality loveLanguage zodiac familyPlanning bodyType isVerified relationshipType isPremiumActive workout drinking smoking"
-    // );
+// Fetch filtered users
+const users = await User.find(filter);
 
-    if (!users.length) {
-      return res.status(404).json({ message: "No profiles found" });
-    }
+if (!users.length) {
+  return res.status(404).json({ message: "No profiles found" });
+}
+
 
     // Format the response
     const formattedUsers = users.map((user) => ({
@@ -341,7 +343,42 @@ const homescreenProfiles = async (req, res) => {
   }
 };
 
-
+const otherProfile = async (req, res) => {    //getting other profile
+    const { userId } = req.params; // Get the userId from the request parameters
+    const user =  await User.findById(userId);
+    if (!user) {
+        return res.status(404).json({ message: "User not found" });
+    }
+    const formattedUser = {
+      _id: user._id,
+      name: user.fullName,
+      email: user.email,
+      age: user.age,
+      gender: user.gender,
+      relationshipType: user.relationshipType,
+      interests: user.interests,
+      bio: user.bio,
+      location: user.location,
+      country: user.country,
+      images: [user.avatar1, user.avatar2, user.avatar3, user.avatar4, user.avatar5, user.avatar6].filter(
+        (avatar) => avatar !== null && avatar !== undefined
+      ),
+      isPremiumActive: user.isPremiumActive,
+      isVerified: user.isVerified,
+      occupation: user.occupation,
+      workingAt: user.workingAt,
+      pronouns: user.pronouns,
+      genderOrientation: user.genderOrientation,
+      languages: user.languages,
+      loveLanguage: user.loveLanguage,
+      zodiac: user.zodiac,
+      familyPlanning: user.familyPlanning,
+      bodyType: user.bodyType,
+      religion: user.religion,
+      drinking: user.drinking,
+    }
+    res.status(200).json(formattedUser);
+  }
 
 const userProfile = async (req, res) => {        //getting our own profile
     try {
@@ -444,4 +481,4 @@ const powerUps = async (req, res) => {   //get powerups
 };
 
 
-export { registerUser, loginUser, logoutUser, premiumActive, deleteAccount, homescreenProfiles, userProfile, editUserProfile, updatePushToken, powerUps};
+export { registerUser, loginUser, logoutUser,otherProfile, premiumActive, deleteAccount, homescreenProfiles, userProfile, editUserProfile, updatePushToken, powerUps};

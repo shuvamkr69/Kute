@@ -10,6 +10,7 @@ import {
   Alert,
   RefreshControl, // ✅ Import RefreshControl
 } from 'react-native';
+import moment from 'moment';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../utils/api';
@@ -19,7 +20,7 @@ import Icon from "react-native-vector-icons/FontAwesome";
 import LoadingScreen from './LoadingScreen';
 
 
-const socket = io(' http://192.168.193.211:3000');
+const socket = io('http://192.168.193.211:3000');
 
 type Props = NativeStackScreenProps<any, 'AllChatScreen'>;
 
@@ -123,28 +124,33 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
   // ✅ Render each chat item
   const renderChatItem = ({ item }: { item: Chat }) => {
     if (!userId) return null;
-
+  
     const otherParticipant = item?.otherParticipant || item?.participants?.find((p) => p._id !== userId);
     if (!otherParticipant) {
       console.warn("Invalid chat data: No participants available", item);
       return null;
     }
-
-    const lastMessageText = item?.lastMessage?.senderId
-      ? item.lastMessage.senderId === userId
-        ? `You: ${item.lastMessage.message}`
-        : `${item.lastMessage.message}`
+  
+    const lastMessage = item?.lastMessage;
+    const lastMessageText = lastMessage?.senderId
+      ? lastMessage.senderId === userId
+        ? `You: ${lastMessage.message}`
+        : `${lastMessage.message}`
       : 'No messages yet';
-
+  
+    const formattedTime = lastMessage?.createdAt
+      ? moment(lastMessage.createdAt).format('hh:mm A')
+      : '';
+  
     return (
       <TouchableOpacity
         style={styles.chatItem}
         onPress={() =>
           navigation.navigate('Chat', {
-        likedUserId: otherParticipant._id,
-        userName: otherParticipant.fullName,
-        loggedInUserId: userId,
-        likedUserAvatar: otherParticipant.avatar1, // Pass the liked user's avatar
+            likedUserId: otherParticipant._id,
+            userName: otherParticipant.fullName,
+            loggedInUserId: userId,
+            likedUserAvatar: otherParticipant.avatar1,
           })
         }
       >
@@ -153,21 +159,24 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
           style={styles.chatAvatar}
         />
         <View style={styles.chatDetails}>
-          <Text style={styles.chatName}>{otherParticipant?.fullName}</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Text style={styles.chatName}>{otherParticipant?.fullName}</Text>
+            <Text style={styles.chatTime}>{formattedTime}</Text>
+          </View>
           <Text
-        style={[
-          styles.lastMessage,
-          item?.lastMessage?.isRead === false && item.lastMessage.senderId !== userId
-            ? styles.unreadMessage
-            : {},
-        ]}
+            style={[
+              styles.lastMessage,
+              lastMessage?.isRead === false && lastMessage.senderId !== userId ? styles.unreadMessage : {},
+            ]}
+            numberOfLines={1}
           >
-        {lastMessageText}
+            {lastMessageText}
           </Text>
         </View>
       </TouchableOpacity>
     );
   };
+  
 
   return (
     <View style={styles.container}>      
@@ -204,6 +213,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 20,
   },
+  chatTime: {
+    color: '#B0B0B0',
+    fontSize: 12,
+    marginLeft: 10,
+  },
+  
   loaderContainer: {
     flex: 1,
     justifyContent: 'center',

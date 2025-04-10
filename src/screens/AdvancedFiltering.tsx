@@ -8,15 +8,15 @@ import api from '../utils/api';
 import { getUserId } from '../utils/constants';
 import LoadingScreen from './LoadingScreen';
 
-const relationshipOptions = ['Long Term', 'Casual', 'Hookup', 'Marriage'];
+const relationshipOptions = ['Long Term', 'Casual', 'Hookup', 'Marriage', 'Any'];
 const genderOrientationOptions = ['Straight', 'Lesbian', 'Gay', 'Bisexual', 'Asexual', 'Pansexual', 'Queer'];
-const zodiacOptions = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
-const workoutOptions = ['Daily', 'Weekly', 'Occasionally', 'Never'];
-const drinkingOptions = ['Socially', 'Regularly', 'Never'];
-const smokingOptions = ['Socially', 'Regularly', 'Never'];
-const familyPlanningOptions = ['Want Kids', 'Dont Want Kids', 'Undecided'];
+const zodiacOptions = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces', 'Any'];
+const workoutOptions = ['Daily', 'Weekly', 'Occasionally', 'Never', 'Any'];
+const drinkingOptions = ['Socially', 'Regularly', 'Never', 'Any'];
+const smokingOptions = ['Socially', 'Regularly', 'Never', 'Any'];
+const familyPlanningOptions = ['Want Kids', 'Dont Want Kids', 'Undecided', 'Any'];
 const interestOptions = ['Music', 'Sports', 'Travel', 'Gaming', 'Books', 'Movies', 'Tech', 'Fitness', 'Art', 'Fashion', 'Photography', 'Cooking'];
-
+const personalityOptions = ['Extrovert', 'Ambivert', 'Introvert', 'Any'];
 
 
 
@@ -27,7 +27,7 @@ const AdvancedFilteringScreen = ({ navigation }) => {
   const [distance, setDistance] = useState(0);
   const [location, setLocation] = useState('');
   const [verifiedUser, setVerifiedUser] = useState(false);
-  const [personality, setPersonality] = useState(false);
+  const [personality, setPersonality] = useState<string>('Any');
   const [interests, setInterests] = useState<string[]>([]);
   const [workout, setWorkout] = useState<string>('');
   const [drinking, setDrinking] = useState<string>('');
@@ -80,7 +80,7 @@ const AdvancedFilteringScreen = ({ navigation }) => {
       setDistance(savedFilters.distance || 0);
       setLocation(savedFilters.location || '');
       setVerifiedUser(savedFilters.verifiedUser || false);
-      setPersonality(savedFilters.personality || false);
+      setPersonality(savedFilters.personality || '');
       setWorkout(savedFilters.workout || '');
       setDrinking(savedFilters.drinking || '');
       setSmoking(savedFilters.smoking || '');
@@ -134,9 +134,10 @@ const AdvancedFilteringScreen = ({ navigation }) => {
         onValueChange={setVerifiedUser}
       />
 
-      <FilterSwitch
-        label="Personality visible"
-        value={personality}
+<PickerComponent
+        label="Personality"
+        selectedValue={personality}
+        options={personalityOptions}
         onValueChange={setPersonality}
       />
 
@@ -164,7 +165,7 @@ const AdvancedFilteringScreen = ({ navigation }) => {
       <PickerComponent
         label="Family Planning"
         selectedValue={familyPlanning}
-        options={['Want Kids', 'Dont Want Kids', 'Undecided']}
+        options={familyPlanningOptions}
         onValueChange={setFamilyPlanning}
       />
 
