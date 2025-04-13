@@ -1,3 +1,4 @@
+//5de383
 import React, { useEffect, useRef, useState } from "react";
 import {
   Modal,
@@ -162,7 +163,7 @@ const AiChatbot: React.FC<Props> = ({ messages, loggedInUserId }) => {
               <Ionicons
                 name="close-circle-outline"
                 size={30}
-                color="#5de383"
+                color="#de822c"
                 style={styles.closeBtn}
                 onPress={closeModal}
               />
@@ -194,7 +195,7 @@ const AiChatbot: React.FC<Props> = ({ messages, loggedInUserId }) => {
                 );
               })}
 
-              {loading && <ActivityIndicator size="small" color="#5de383" />}
+              {loading && <ActivityIndicator size="small" color="#de822c" />}
             </ScrollView>
 
             <View style={styles.inputContainer}>
@@ -245,7 +246,7 @@ const styles = StyleSheet.create({
     width: 25,
     height: 25,
     resizeMode: "contain",
-    tintColor: "#5de383",
+    tintColor: "#de822c",
     marginLeft: 10,
   },
   modalBackground: {
@@ -269,7 +270,7 @@ const styles = StyleSheet.create({
     borderColor: "#2b2b2b",
   },
   title: {
-    color: "#5de383",
+    color: "#de822c",
     fontSize: 22,
     fontWeight: "600",
     marginBottom: 12,
@@ -315,7 +316,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 12,
     marginLeft: 8,
-    shadowColor: "#5de383",
+    shadowColor: "#de822c",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
@@ -332,7 +333,7 @@ const styles = StyleSheet.create({
     marginTop: 0,
   },
   closeText: {
-    color: "#5de383",
+    color: "#de822c",
     fontWeight: "600",
     fontSize: 14,
     letterSpacing: 0.5,

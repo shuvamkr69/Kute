@@ -157,7 +157,7 @@ const BasicDetails: React.FC<Props> = ({ navigation }) => {
           <Icon
             name="calendar"
             size={20}
-            color="#5de383"
+            color="#de822c"
             alignItems={"flex-end"}
           />
           <TextInput
@@ -176,7 +176,7 @@ const BasicDetails: React.FC<Props> = ({ navigation }) => {
             selectedValue={gender}
             options={genderOptions}
             onValueChange={setGender}
-            icon={<Ionicons name="person-outline" size={20} color="#5de383" />}
+            icon={<Ionicons name="person-outline" size={20} color="#de822c" />}
           />
 
           <PickerComponent
@@ -185,7 +185,7 @@ const BasicDetails: React.FC<Props> = ({ navigation }) => {
             options={genderOrientationOptions}
             onValueChange={setGenderOrientation}
             icon={
-              <Ionicons name="male-female-outline" size={20} color="#5de383" />
+              <Ionicons name="male-female-outline" size={20} color="#de822c" />
             }
           />
 
@@ -194,7 +194,7 @@ const BasicDetails: React.FC<Props> = ({ navigation }) => {
             selectedValue={personality}
             options={personalityType}
             onValueChange={setPersonality}
-            icon={<Ionicons name="happy-outline" size={20} color="#5de383" />}
+            icon={<Ionicons name="happy-outline" size={20} color="#de822c" />}
           />
 
           <PickerComponent
@@ -202,7 +202,7 @@ const BasicDetails: React.FC<Props> = ({ navigation }) => {
             selectedValue={religion}
             options={religionOptions}
             onValueChange={setReligion}
-            icon={<Ionicons name="leaf-outline" size={20} color="#5de383" />}
+            icon={<Ionicons name="leaf-outline" size={20} color="#de822c" />}
           />
         </View>
 
@@ -354,7 +354,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   tag: {
-    backgroundColor: "#5de383",
+    backgroundColor: "#de822c",
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -384,7 +384,7 @@ const styles = StyleSheet.create({
   interestOption: {
     padding: 15,
     borderBottomWidth: 1,
-    borderBottomColor: "#5de383",
+    borderBottomColor: "#de822c",
     alignItems: "center",
   },
   pickerRow: {
@@ -407,12 +407,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   selectedInterest: {
-    color: "#5de383",
+    color: "#de822c",
     fontWeight: "bold",
   },
   confirmButton: {
     marginTop: 20,
-    backgroundColor: "#5de383",
+    backgroundColor: "#de822c",
     padding: 15,
     borderRadius: 10,
     alignItems: "center",
@@ -422,7 +422,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   button: {
-    backgroundColor: "#5de383",
+    backgroundColor: "#de822c",
     paddingVertical: 15,
     borderRadius: 10,
     width: "100%",

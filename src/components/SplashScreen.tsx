@@ -41,7 +41,7 @@ const SplashScreenComponent: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#121212",
+    backgroundColor: "black",
   },
   video: {
     flex: 1,

@@ -7,6 +7,7 @@ import { TextInput } from 'react-native';
 import api from '../utils/api';
 import { getUserId } from '../utils/constants';
 import LoadingScreen from './LoadingScreen';
+import { premiumActive } from '../../backend/src/controllers/user.controller';
 
 const relationshipOptions = ['Long Term', 'Casual', 'Hookup', 'Marriage', 'Any'];
 const genderOrientationOptions = ['Straight', 'Lesbian', 'Gay', 'Bisexual', 'Asexual', 'Pansexual', 'Queer'];
@@ -56,7 +57,6 @@ const AdvancedFilteringScreen = ({ navigation }) => {
       familyPlanning,
       zodiac,
       interests,
-      isPremium,
     };
   
     try {
@@ -67,7 +67,37 @@ const AdvancedFilteringScreen = ({ navigation }) => {
       console.error('Request Failed:', error.response?.data || error.message);
     }
   };
+
+
+  const getPremiumStatus = async () => {
+    try {
+      const PremiumStatus = await api.get('/api/v1/users/me');
+      const {ActivePremiumPlan} = PremiumStatus.data;
+          
+      if(ActivePremiumPlan === "Diamond") {
+        setIsPremium(true);
+      }
+      else if(ActivePremiumPlan === "Standard") {
+        setIsPremium(true);
+      }
+      else if(ActivePremiumPlan === "Basic") {
+        setIsPremium(true);
+      }
+      else {
+        setIsPremium(false);
+      }
+      console.log("premium: " + PremiumStatus.data.ActivePremiumPlan);
+      console.log("isPremium: " + isPremium);
+
+    } catch (error) {
+      console.error('Failed to fetch premium status:', error.response?.data || error.message);
+      
+    }
+  }
   
+  
+
+
   // Fetching saved filters when the screen loads
   const fetchFilters = async () => {
     try {
@@ -87,20 +117,32 @@ const AdvancedFilteringScreen = ({ navigation }) => {
       setFamilyPlanning(savedFilters.familyPlanning || '');
       setZodiac(savedFilters.zodiac || '');
       setInterests(savedFilters.interests || []);
-      setIsPremium(savedFilters.isPremium || false);
     } catch (error) {
       console.error('Failed to fetch filters:', error.response?.data || error.message);
     }
     finally {
-      setLoading(false); // Set loading to false after fetching
+      setLoading(false);
     }
   };
   
   useEffect(() => {
-    fetchFilters(); // Fetch filters when the component mounts
-  }, []); // Empty dependency array to run only once
-  // Call fetchFilters when the screen loads (useEffect or useFocusEffect)
+    getPremiumStatus();
+    fetchFilters(); 
+  }, []);
   
+
+  const resetFilters = () => {
+    setRelationshipType('Any');
+    setGenderOrientation('Straight');
+    setDistance(100);
+    setVerifiedUser(false);
+    setPersonality('Any');
+    setWorkout('Any');
+    setDrinking('Any');
+    setSmoking('Any');
+    setFamilyPlanning('Any');
+    setZodiac('Any');
+  }
 
 
   const FilterSwitch = ({ label, value, onValueChange }) => (
@@ -109,7 +151,7 @@ const AdvancedFilteringScreen = ({ navigation }) => {
       <Switch
         value={value}
         onValueChange={onValueChange}
-        trackColor={{ false: '#555', true: '#5de383' }}
+        trackColor={{ false: '#555', true: '#de822c' }}
         thumbColor={value ? '#fff' : '#ccc'}
       />
     </View>
@@ -193,17 +235,22 @@ const AdvancedFilteringScreen = ({ navigation }) => {
       <Slider
         style={{ width: '100%', height: 40 }}
         minimumValue={0}
-        maximumValue={100}
+        maximumValue={1000}
         step={1}
         value={distance}
         onValueChange={setDistance}
-        minimumTrackTintColor="#5de383"
+        minimumTrackTintColor="#de822c"
         maximumTrackTintColor="#fff"
       />
       <Text style={{ color: '#fff' }}>Distance: {distance} km</Text>
 
+      
+
       <TouchableOpacity onPress={applyFilters} style={styles.applyButton}>
         <Text style={styles.applyButtonText}>Apply Filters</Text>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={resetFilters} style={styles.resetButton}>
+        <Text style={styles.applyButtonText}>Reset</Text>
       </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -213,7 +260,7 @@ const AdvancedFilteringScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: 'black',
     padding: 20,
   },
   backButton: {
@@ -226,7 +273,14 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   applyButton: {
-    backgroundColor: '#5de383',
+    backgroundColor: '#de822c',
+    padding: 15,
+    borderRadius: 10,
+    marginTop: 30,
+    alignItems: 'center',
+  },
+  resetButton: {
+    backgroundColor: '#ff1212',
     padding: 15,
     borderRadius: 10,
     marginTop: 30,

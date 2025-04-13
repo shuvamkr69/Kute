@@ -57,32 +57,6 @@ const HomeTabs: React.FC<Props> = ({ navigation }) => {
               <Text style = {styles.uteText}>ute</Text>
           </View>
 
-
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginLeft: 20 }}>
-          <TouchableOpacity 
-            style={styles.counterContainer}
-            onPress={() => navigation.navigate("BoostsAndLikes", { type: 'superLikes' })}
-          >
-            <Image 
-              source={require('../assets/icons/super-like.png')}
-              style={styles.counterIcon}
-            />
-            <Text style={styles.counterText}>{superLikes}</Text>
-          </TouchableOpacity>
-
-          {/* Boosts Counter */}
-          <TouchableOpacity 
-            style={styles.counterContainer}
-            onPress={() => navigation.navigate("BoostsAndLikes", { type: 'boosts' })}
-          >
-            <Image 
-              source={require('../assets/icons/popularity.png')}
-              style={styles.counterIcon}
-            />
-            <Text style={styles.counterText}>{boosts}</Text>
-          </TouchableOpacity>
-          </View>
-
           
 
           <View style={{ flexDirection: "row"}}>
@@ -130,7 +104,7 @@ const HomeTabs: React.FC<Props> = ({ navigation }) => {
               <Ionicons
                 name={icons[route.name]}
                 size={28}
-                color={focused ? "#5de383" : "#8F8F8F"}
+                color={focused ? "#de822c" : "#8F8F8F"}
               />
             );
           },
@@ -163,22 +137,7 @@ const styles = StyleSheet.create({
     fontSize: 25,
     fontWeight: 'bold',
   },
-  counterIcon: {
-    width: 18,
-    height: 18,
-    },
- 
-  counterContainer: {
-    flexDirection: 'row',
-    borderRadius: 15,
-  },
-  counterText: {
-    color: 'white',
-    marginLeft: 2,
-    fontWeight: 'bold',
-    fontSize: 14,
-    paddingHorizontal: 1,
-  },
+  
   })
 ;
 

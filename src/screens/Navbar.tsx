@@ -46,7 +46,7 @@ const Navbar: React.FC<Props> = ({ navigation }) => {
     <Animated.View style={[styles.navbar, { opacity: fadeAnim }]}>
       {navbarOrder.map((screen, index) => (
         <TouchableOpacity key={index} style={styles.navButton} onPress={() => navigateWithAnimation(screen)}>
-          <Icon name={screen === 'Home' ? 'home' : screen.toLowerCase()} size={24} color="#5de383" />
+          <Icon name={screen === 'Home' ? 'home' : screen.toLowerCase()} size={24} color="#de822c" />
           <Text style={styles.label}>{screen}</Text>
         </TouchableOpacity>
       ))}

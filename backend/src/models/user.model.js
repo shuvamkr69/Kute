@@ -71,7 +71,7 @@ const userSchema = new Schema(
     interests: [
       {
         type: String,
-        default: null,
+        default: [],
       },
     ],
     relationshipType: {
@@ -84,10 +84,10 @@ const userSchema = new Schema(
       default: null,
       trim: true,
     },
-    location: {
-      type: String,
+    location: [{
+      type: Number,
       default: null,
-    },
+      }],
     pushToken: {
       type: String,
       default: null,

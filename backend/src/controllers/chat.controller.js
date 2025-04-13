@@ -80,7 +80,7 @@ res.status(200).json(formattedConversations);
  * Send a message in a chat
  */
 export const sendMessage = async (req, res) => {
-  const { conversationId, senderId, message: text } = req.body;
+  const { conversationId, senderId, message: text, replyTo } = req.body;
   const io = getIO();
 
   if (!conversationId || !senderId || !text) {
@@ -92,8 +92,15 @@ export const sendMessage = async (req, res) => {
       conversationId,
       senderId,
       message: text,
+      replyTo: replyTo || null,
     });
     await newMessage.save();
+    
+    // ✅ Fetch the saved message with populated replyTo
+    const populatedMsg = await Message.findById(newMessage._id)
+      .populate({ path: "replyTo", select: "message senderId" })
+      .lean();
+    
 
     // ✅ Update lastMessage in Conversation
     await Conversation.findByIdAndUpdate(conversationId, {
@@ -107,14 +114,37 @@ export const sendMessage = async (req, res) => {
 
     // ✅ Emit message using Socket.IO
     io.to(conversationId).emit("newMessage", {
-      _id: newMessage._id,
-      text: newMessage.message,
-      senderId: newMessage.senderId,
-      conversationId: newMessage.conversationId,
-      createdAt: newMessage.createdAt,
+      _id: populatedMsg._id,
+      text: populatedMsg.message,
+      senderId: populatedMsg.senderId,
+      conversationId: populatedMsg.conversationId,
+      createdAt: populatedMsg.createdAt,
+      replyTo: populatedMsg.replyTo
+        ? {
+            _id: populatedMsg.replyTo._id,
+            text: populatedMsg.replyTo.message,
+            senderId: populatedMsg.replyTo.senderId,
+          }
+        : undefined,
     });
+    
 
-    res.status(201).json({ ...newMessage.toObject(), text: newMessage.message });
+    res.status(201).json({
+      _id: populatedMsg._id,
+      text: populatedMsg.message,
+      senderId: populatedMsg.senderId,
+      conversationId: populatedMsg.conversationId,
+      createdAt: populatedMsg.createdAt,
+      replyTo: populatedMsg.replyTo
+        ? {
+            _id: populatedMsg.replyTo._id,
+            text: populatedMsg.replyTo.message,
+            senderId: populatedMsg.replyTo.senderId,
+          }
+        : undefined,
+    });
+    
+    
   } catch (error) {
     console.error("Error sending message:", error);
     res.status(500).json({ error: "Failed to send message." });
@@ -130,12 +160,23 @@ export const getMessages = async (req, res) => {
   try {
     const messages = await Message.find({ conversationId })
       .sort({ createdAt: 1 })
+      .populate({
+        path: "replyTo",
+        select: "message senderId", // only pull these fields
+      })
       .lean();
 
-    const formattedMessages = messages.map((msg) => ({
-      ...msg,
-      text: msg.message,
-    }));
+      const formattedMessages = messages.map((msg) => ({
+        _id: msg._id,
+        text: msg.message,  // This is correct since your model uses 'message'
+        senderId: msg.senderId,
+        createdAt: msg.createdAt,
+        replyTo: msg.replyTo ? {
+          _id: msg.replyTo._id,
+          text: msg.replyTo.message,  // Note the field name
+          senderId: msg.replyTo.senderId
+        } : undefined
+      }));
 
     res.status(200).json(formattedMessages);
   } catch (error) {

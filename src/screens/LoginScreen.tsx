@@ -7,6 +7,9 @@ import api from '../utils/api';
 import { useAuth } from '../navigation/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { registerForPushNotifications } from '../utils/notifications';
+import * as GoogleSignIn from 'expo-google-app-auth';
+import { GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
+
 
 type Props = NativeStackScreenProps<any, 'Login'>;
 
@@ -44,6 +47,9 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
         await AsyncStorage.setItem("accessToken", accessToken);
         await AsyncStorage.setItem("refreshToken", refreshToken);
         await AsyncStorage.setItem("avatar", user.avatar1);
+        await AsyncStorage.setItem("location", JSON.stringify(user.location));
+        const location = await AsyncStorage.getItem("location")
+        console.log("User data stored successfully:",location);
 
         const token = await registerForPushNotifications();
       if (token) {
@@ -106,7 +112,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
       <Text style={styles.tagline}>Find Your University Date</Text>
 
       <View style={styles.inputContainer}>
-        <Icon name="envelope" size={20} color="#5de383" style={styles.icon} />
+        <Icon name="envelope" size={20} color="#de822c" style={styles.icon} />
         <TextInput
           style={styles.input}
           placeholder="Email"
@@ -118,7 +124,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
       </View>
 
       <View style={styles.inputContainer}>
-        <Icon name="lock" size={20} color="#5de383" style={styles.icon} />
+        <Icon name="lock" size={20} color="#de822c" style={styles.icon} />
         <TextInput
           style={styles.input}
           placeholder="Password"
@@ -149,14 +155,14 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: 'black',
     justifyContent: 'center',
     paddingHorizontal: 20,
     alignItems: 'center',
   },
   logo: {
     fontSize: 40,
-    color: '#5de383',
+    color: '#de822c',
     fontWeight: 'bold',
     marginBottom: 10,
   },
@@ -173,7 +179,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     paddingHorizontal: 15,
     borderWidth: 1,
-    borderColor: '#5de383',
+    borderColor: '#de822c',
     width: '100%',
   },
   input: {
@@ -186,12 +192,12 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   forgotPassword: {
-    color: '#5de383',
+    color: '#de822c',
     marginBottom: 20,
     textAlign: 'center',
   },
   loginButton: {
-    backgroundColor: '#5de383',
+    backgroundColor: '#de822c',
     paddingVertical: 15,
     borderRadius: 10,
     width: '100%',
@@ -203,7 +209,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   registerLink: {
-    color: '#5de383',
+    color: '#de822c',
     fontWeight: 'bold',
   },
 });

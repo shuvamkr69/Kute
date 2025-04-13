@@ -25,7 +25,14 @@ import * as ImagePicker from "expo-image-picker";
 import { Dimensions } from "react-native";
 import { profile } from "../../assets/images";
 import LoadingScreen from "./LoadingScreen";
-import { set } from "mongoose";
+import { PanGestureHandler } from 'react-native-gesture-handler';
+import Animated, { 
+  useAnimatedGestureHandler, 
+  useSharedValue, 
+  useAnimatedStyle, 
+  withSpring,
+  runOnJS
+} from 'react-native-reanimated';
 
 const screenWidth = Dimensions.get("window").width;
 const itemSize = (screenWidth - 60) / 3; // 20 padding on both sides + 10 gap between items
@@ -96,7 +103,96 @@ const religionOptions = [
   "Other",
 ];
 
+
+// Add this RIGHT BEFORE your EditProfileScreen component definition
+// (after all the imports but before const EditProfileScreen: React.FC<Props> = ...)
+
+const DraggablePhoto = ({ 
+  
+  photoUri, 
+  index, 
+  onRemove, 
+  onDragEnd,
+  isDragging,
+  setDraggingIndex,
+  onAddPhoto,
+  
+}: {
+  photoUri: string | null;
+  index: number;
+  onRemove: (index: number) => void;
+  onDragEnd: (fromIndex: number, toIndex: number) => void;
+  isDragging: boolean;
+  setDraggingIndex: (index: number | null) => void;
+  onAddPhoto: () => void;
+}) => {
+  const position = useSharedValue({ x: 0, y: 0 });
+  const isActive = useSharedValue(false);
+  const scale = useSharedValue(1);
+
+  const gestureHandler = useAnimatedGestureHandler({
+    onStart: () => {
+      isActive.value = true;
+      scale.value = 1.1;
+      runOnJS(setDraggingIndex)(index);
+    },
+    onActive: (event) => {
+      position.value = {
+        x: event.translationX,
+        y: event.translationY,
+      };
+    },
+    onEnd: (event) => {
+      isActive.value = false;
+      scale.value = 1;
+      position.value = { x: 0, y: 0 };
+      // Calculate which item we're hovering over
+      const dropIndex = Math.floor(event.absoluteX / itemSize);
+      if (dropIndex >= 0 && dropIndex < 6 && dropIndex !== index) {
+        runOnJS(onDragEnd)(index, dropIndex);
+      }
+      runOnJS(setDraggingIndex)(null);
+    },
+  });
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [
+        { translateX: position.value.x },
+        { translateY: position.value.y },
+        { scale: scale.value },
+      ],
+      zIndex: isActive.value ? 100 : 1,
+      opacity: isDragging ? 0.5 : 1,
+    };
+  });
+
+  if (!photoUri) {
+    return (
+      <TouchableOpacity onPress={onAddPhoto} style={styles.gridItem}>
+        <Icon name="plus" size={30} color="#de822c" />
+      </TouchableOpacity>
+    );
+  }
+
+  return (
+    <PanGestureHandler onGestureEvent={gestureHandler}>
+      <Animated.View style={[styles.gridItem, animatedStyle]}>
+        <Image source={{ uri: photoUri }} style={styles.profileImage} />
+        <TouchableOpacity
+          style={styles.removeIcon}
+          onPress={() => onRemove(index)}
+        >
+          <Icon name="times" size={16} color="white" />
+        </TouchableOpacity>
+      </Animated.View>
+    </PanGestureHandler>
+  );
+};
+
+
 type Props = NativeStackScreenProps<any, "EditProfile">;
+
 
 const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
   const [bio, setBio] = useState("");
@@ -124,6 +220,9 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
   const [drinking, setDrinking] = useState("");
   const [workout, setWorkout] = useState("");
 
+  const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
+  const [dropTargetIndex, setDropTargetIndex] = useState<number | null>(null);
+
   // ✅ Load profile data from API or AsyncStorage
   const profileFetcher = async () => {
     try {
@@ -138,7 +237,11 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
 
       setProfilePhotos(avatars);
       setRelationshipType(profileData.relationshipType);
-      setSelectedInterests(profileData.interests);
+      setSelectedInterests(
+        profileData.interests.length > 0
+          ? profileData.interests[0].split(",").map((item) => item.trim())
+          : []
+      );
       setBio(profileData.bio || "");
       setOccupation(profileData.occupation || "");
       setHeight(profileData.height?.split(" ")[0] || "");
@@ -164,8 +267,23 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
+  // Add this function RIGHT AFTER your profileFetcher function
+// (inside the EditProfileScreen component)
+const handleDragEnd = (fromIndex: number, toIndex: number) => {
+  if (fromIndex === toIndex) return;
+  
+  const newPhotos = [...profilePhotos];
+  const temp = newPhotos[fromIndex];
+  newPhotos[fromIndex] = newPhotos[toIndex];
+  newPhotos[toIndex] = temp;
+  
+  setProfilePhotos(newPhotos);
+};
+
   const handleAddPhoto = async () => {
-    const validPhotos = profilePhotos.filter((photo) => photo && photo !== "null");
+    const validPhotos = profilePhotos.filter(
+      (photo) => photo && photo !== "null"
+    );
     if (validPhotos.length >= 6) {
       Alert.alert("Limit Reached", "You can upload a maximum of 6 photos.");
       return;
@@ -317,48 +435,40 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
         renderItem={() => (
           <>
             <View style={styles.profileContainer}>
-              <View style={styles.gridContainer}>
-                {Array.from({ length: 6 }).map((_, index) => (
-                  <View key={index} style={styles.gridItem}>
-                    {profilePhotos[index] ? (
-                      <>
-                        <Image
-                          source={{ uri: profilePhotos[index] }}
-                          style={styles.profileImage}
-                        />
-                        <TouchableOpacity
-                          style={styles.removeIcon}
-                          onPress={() => removePhoto(index)}
-                        >
-                          <Icon name="times" size={16} color="white" />
-                        </TouchableOpacity>
-                      </>
-                    ) : (
-                      <TouchableOpacity
-                        onPress={handleAddPhoto}
-                        style={styles.gridItem}
-                      >
-                        <Icon name="plus" size={30} color="#5de383" />
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                ))}
-              </View>
+            <View style={styles.gridContainer}>
+  {Array.from({ length: 6 }).map((_, index) => (
+    <DraggablePhoto
+      key={index}
+      photoUri={profilePhotos[index]}
+      index={index}
+      onRemove={removePhoto}
+      onDragEnd={handleDragEnd}
+      isDragging={draggingIndex === index}
+      setDraggingIndex={setDraggingIndex}
+      onAddPhoto={handleAddPhoto}
+    />
+  ))}
+</View>
             </View>
 
             <View style={styles.section}>
               <TouchableOpacity onPress={() => setShowInterestModal(true)}>
-                <Icon name="pencil" size={20} color="#5de383" />
+                <Icon name="pencil" size={20} color="#de822c" />
                 <View style={styles.tagsContainer}>
-                  {selectedInterests.map((item, index) => (
-                    <TouchableOpacity
-                      key={index}
-                      style={styles.tag}
-                      onPress={() => selectInterest(item)}
-                    >
-                      <Text style={styles.tagText}>{item}</Text>
-                    </TouchableOpacity>
-                  ))}
+                  {selectedInterests.map((item, index) => {
+                    // Split comma-separated string if needed (as fallback)
+                    const interests =
+                      typeof item === "string" ? item.split(",") : [item];
+                    return interests.map((interest, idx) => (
+                      <TouchableOpacity
+                        key={`${index}-${idx}`}
+                        style={styles.tag}
+                        onPress={() => selectInterest(interest.trim())}
+                      >
+                        <Text style={styles.tagText}>{interest.trim()}</Text>
+                      </TouchableOpacity>
+                    ));
+                  })}
                   {selectedInterests.length === 0 && (
                     <Text style={{ color: "#B0B0B0", paddingLeft: 10 }}>
                       Your interests
@@ -564,9 +674,9 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   backButtonContainer: {
     flex: 1,
-    backgroundColor: "#121212",
+    backgroundColor: "black",
   },
-  
+
   bioInputContainer: {
     backgroundColor: "#1E1E1E",
     borderRadius: 10,
@@ -574,7 +684,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingTop: 15, // Add padding at top
     borderWidth: 1,
-    borderColor: "#121212",
+    borderColor: "black",
     width: "100%",
     minHeight: 150, // Use minHeight instead of fixed height
   },
@@ -610,7 +720,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: "#121212",
+    backgroundColor: "black",
     padding: 10,
   },
 
@@ -620,7 +730,7 @@ const styles = StyleSheet.create({
   section: {
     marginBottom: 20,
     padding: 10,
-    backgroundColor: "#1a1a1a",
+    backgroundColor: "121212",
     borderRadius: 10,
     elevation: 3,
     shadowColor: "#000",
@@ -636,7 +746,7 @@ const styles = StyleSheet.create({
   gridItem: {
     width: (Dimensions.get("window").width - 60) / 3.2,
     height: (Dimensions.get("window").width - 60) / 2.5,
-    backgroundColor: "#1E1E1E",
+    backgroundColor: "#1a1a1a",
     borderRadius: 10,
     alignItems: "center",
     justifyContent: "center",
@@ -656,16 +766,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 5,
   },
-
-  editIcon: {
-    position: "absolute",
-    bottom: 10,
-    right: 10,
-    backgroundColor: "#5de383",
-    borderRadius: 15,
-    padding: 7,
-  },
-
   tagsContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -674,7 +774,7 @@ const styles = StyleSheet.create({
   },
 
   tag: {
-    backgroundColor: "#5de383",
+    backgroundColor: "#de822c",
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -693,7 +793,7 @@ const styles = StyleSheet.create({
   },
 
   modalContent: {
-    backgroundColor: "#1E1E1E",
+    backgroundColor: "#1a1a1a",
     padding: 20,
     borderRadius: 10,
     width: "80%",
@@ -709,12 +809,12 @@ const styles = StyleSheet.create({
   },
 
   selectedInterest: {
-    color: "#5de383",
+    color: "#de822c",
     fontWeight: "bold",
   },
 
   confirmButton: {
-    backgroundColor: "#5de383",
+    backgroundColor: "#de822c",
     padding: 15,
     borderRadius: 10,
     alignItems: "center",
@@ -728,7 +828,7 @@ const styles = StyleSheet.create({
   updateButton: {
     marginTop: 20,
     marginBottom: 40,
-    backgroundColor: "#5de383",
+    backgroundColor: "#de822c",
   },
 
   loaderContainer: {
@@ -745,7 +845,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   label: {
-    color: "#5de383",
+    color: "#de822c",
     fontSize: 16,
     marginBottom: 10,
     marginTop: 30,

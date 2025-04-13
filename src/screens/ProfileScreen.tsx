@@ -18,8 +18,8 @@ import api from "../utils/api";
 import { Dimensions, Animated } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { RefreshControl } from "react-native";
-import { set } from "mongoose";
 const VerificationImage = require("../assets/icons/verified-logo.png");
+const PremiumImage = require("../assets/icons/premium.png");
 
 type Props = NativeStackScreenProps<any, "MyProfile">;
 
@@ -29,6 +29,8 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   const animatedProgress = useState(new Animated.Value(0))[0];
   const screenWidth = Dimensions.get("window").width;
   const progressBarWidth = screenWidth * 0.7; // Adjust width as needed
+  const [superLikes, setSuperLikes] = useState(0);
+  const [boosts, setBoosts] = useState(0);
 
   const [name, setName] = useState("");
   const [profilePhoto, setProfilePhoto] = useState(
@@ -38,8 +40,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   const [bio, setBio] = useState("");
   const [loading, setLoading] = useState(true);
   const [isVerified, setIsVerified] = useState(false);
-  const [isPremiumActive, setIsPremiumActive] = useState(false);
-
+  const [ActivePremiumPlan, setActivePremium] = useState(null);
   const [occupation, setOccupation] = useState("");
   const [workingAt, setWorkingAt] = useState("");
   const [religion, setReligion] = useState("");
@@ -55,6 +56,19 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   const [personality, setPersonality] = useState<string>("Any");
   const [interests, setInterests] = useState<string[]>([]);
 
+  useEffect(() => {
+    const fetchCounters = async () => {
+      try {
+        const response = await api.get("/api/v1/users/powerUps");
+        setSuperLikes(response.data.superLike);
+        setBoosts(response.data.boost);
+      } catch (error) {
+        console.error("Error fetching counters:", error);
+      }
+    };
+    fetchCounters();
+  }, []);
+
   const onRefresh = async () => {
     //for refreshing the screen
     setRefreshing(true);
@@ -68,7 +82,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
       setProfilePhoto(user.avatar1 || profilePhoto);
       setBio(user.bio || "");
       setIsVerified(user.isVerified || false);
-      setIsPremiumActive(user.isPremiumActive || false);
+      setActivePremium(user.ActivePremiumPlan || null);
       setOccupation(user.occupation || "");
       setWorkingAt(user.workingAt || "");
       setReligion(user.religion || "");
@@ -82,7 +96,13 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
       setHeight(user.height || "");
       setHeightUnit(user.heightUnit || "cm");
       setPersonality(user.personality || "Any");
-      setInterests(user.interests || []);
+      setInterests(
+        user.interests?.flatMap((interest) =>
+          typeof interest === "string"
+            ? interest.split(",").map((i) => i.trim())
+            : interest
+        ) || []
+      );
       ToastAndroid.show("Profile Refreshed!", ToastAndroid.SHORT);
     } catch (error) {
       console.log("Refresh Error:", error);
@@ -107,7 +127,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
         setProfilePhoto(user.avatar1 || profilePhoto);
         setBio(user.bio || "");
         setIsVerified(user.isVerified || false);
-        setIsPremiumActive(user.isPremiumActive || false);
+        setActivePremium(user.ActivePremiumPlan || null);
         setOccupation(user.occupation || "");
         setWorkingAt(user.workingAt || "");
         setReligion(user.religion || "");
@@ -241,7 +261,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
         <RefreshControl
           refreshing={refreshing}
           onRefresh={onRefresh}
-          colors={["#5de383"]}
+          colors={["#de822c"]}
         />
       }
     >
@@ -256,9 +276,12 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
             style={styles.editIcon}
             onPress={() => navigation.navigate("EditProfile")}
           >
-            <Icon name="pencil" size={14} color="#121212" />
+            <Icon name="pencil" size={14} color="black" />
           </TouchableOpacity>
+        </View>
 
+        <Text style={styles.username}>
+          {name} {age}
           {/* Verification Image - Replaces the Verification Icon */}
           <Image
             source={VerificationImage}
@@ -270,14 +293,22 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
               },
             ]}
           />
-        </View>
-
-        <Text style={styles.username}>
-          {name} {age}
         </Text>
 
         <Text style={styles.bio}>{bio}</Text>
       </View>
+
+      {/* Premium Image - Replaces the Premium Icon */}
+      <Image
+        source={PremiumImage}
+        style={[
+          styles.premiumImage,
+          {
+            tintColor: ActivePremiumPlan ? null : "#B0B0B0",
+            opacity: isVerified ? 1 : 0.5,
+          },
+        ]}
+      />
 
       {/* Progress Bar */}
       <View style={styles.progressContainer}>
@@ -286,7 +317,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
             style={[styles.progressFill, { width: animatedProgress }]}
           >
             <LinearGradient
-              colors={["#5de383", "#4b9e6a"]}
+              colors={["#ff172e", "#de822c"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.gradient}
@@ -321,33 +352,30 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
           { label: "Zodiac:", value: zodiac },
           { label: "Family Planning:", value: familyPlanning },
           { label: "Body Type:", value: bodyType },
-          { label: "Religion:", value: religion },
           { label: "Personality", value: personality },
-
-
         ]}
       />
 
-{/* Interests Section - Special Handling */}
-<View style={styles.sectionContainer}>
-  <Text style={styles.sectionTitle}>Interests</Text>
-  {interests.length > 0 ? (
-    <View style={styles.interestsContainer}>
-      {interests.map((interest, index) => (
-        <View key={index} style={styles.interestBox}>
-          <Text style={styles.interestText}>{interest}</Text>
-        </View>
-      ))}
-    </View>
-  ) : (
-    <Text style={styles.noInfo}>No interests added</Text>
-  )}
-</View>
+      {/* Interests Section - Special Handling */}
+      <View style={styles.sectionContainer}>
+        <Text style={styles.sectionTitle}>Interests</Text>
+        {interests.length > 0 ? (
+          <View style={styles.interestsContainer}>
+            {interests.map((interest, index) => (
+              <View key={index} style={styles.interestBox}>
+                <Text style={styles.interestText}>{interest}</Text>
+              </View>
+            ))}
+          </View>
+        ) : (
+          <Text style={styles.noInfo}>No interests added</Text>
+        )}
+      </View>
 
       {/* Upgrade Section */}
       <View style={styles.upgradeContainer}>
         <LinearGradient
-          colors={["#5de383", "#00FFFF"]}
+          colors={["#de822c", "#ff172e"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.upgradeGradient}
@@ -368,6 +396,8 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
         </LinearGradient>
       </View>
 
+      {/* Boosts Counter */}
+
       {/* Boost & Roses Section */}
       <View style={styles.cardsContainer}>
         <TouchableOpacity
@@ -377,10 +407,26 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
         >
           <Image
             source={require("../assets/icons/popularity.png")}
-            style={{ width: 29, height: 29 }}
+            style={{ width: 34, height: 34 }}
           />
           <Text style={styles.cardTitle}>Boost</Text>
           <Text style={styles.cardText}>Increase your visibility by 11%</Text>
+
+          <View style={styles.counterContainer}>
+            <Text style={styles.counterText}>x{boosts}</Text>
+          </View>
+          <TouchableOpacity style={styles.cardText}>
+            <LinearGradient
+              colors={["#de822c", "#ff172e"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.activateNowButton}
+            >
+              <TouchableOpacity>
+                <Text style={styles.activateNowButtonText}>Activate Now</Text>
+              </TouchableOpacity>
+            </LinearGradient>
+          </TouchableOpacity>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -390,10 +436,13 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
         >
           <Image
             source={require("../assets/icons/super-like.png")}
-            style={{ width: 29, height: 29 }}
+            style={{ width: 34, height: 34 }}
           />
           <Text style={styles.cardTitle}>Super Likes</Text>
           <Text style={styles.cardText}>Send special likes to your crush!</Text>
+          <View style={styles.counterContainer}>
+            <Text style={styles.counterText}>x{superLikes}</Text>
+          </View>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -401,7 +450,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
           style={styles.card}
           onPress={() => navigation.navigate("Premium")}
         >
-          <Icon name="unlock" size={24} color="pink" />
+          <Icon name="unlock" size={34} color="pink" />
           <Text style={styles.cardTitle}>Unlock all features</Text>
           <Text style={styles.cardText}>Unlock all the premium features</Text>
         </TouchableOpacity>
@@ -413,7 +462,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#121212",
+    backgroundColor: "black",
     padding: 20,
   },
   profileContainer: {
@@ -422,8 +471,8 @@ const styles = StyleSheet.create({
   },
   profileImageContainer: {
     position: "relative",
-    width: 150,
-    height: 150,
+    width: 200,
+    height: 200,
   },
 
   profileImage: {
@@ -438,7 +487,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 10,
     right: 10,
-    backgroundColor: "#5de383",
+    backgroundColor: "#de822c",
     borderRadius: 15,
     padding: 7,
     elevation: 5,
@@ -448,8 +497,15 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 0,
     right: 0,
+    width: 30,
+    height: 30,
+    marginLeft: 10,
+  },
+  premiumImage: {
+    alignSelf: "center",
     width: 38,
     height: 38,
+    marginTop: 10,
   },
 
   username: {
@@ -500,7 +556,7 @@ const styles = StyleSheet.create({
   },
 
   upgradeButton: {
-    backgroundColor: "#121212",
+    backgroundColor: "black",
     paddingVertical: 14,
     paddingHorizontal: 40,
     borderRadius: 30,
@@ -512,7 +568,7 @@ const styles = StyleSheet.create({
   },
 
   upgradeButtonText: {
-    color: "#5de383",
+    color: "#de822c",
     fontSize: 18,
     fontWeight: "bold",
   },
@@ -546,12 +602,12 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   interestsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     marginTop: 10,
   },
   interestBox: {
-    backgroundColor: '#5de383',
+    backgroundColor: "#de822c",
     borderRadius: 15,
     paddingVertical: 6,
     paddingHorizontal: 12,
@@ -559,15 +615,15 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   interestText: {
-    color: 'white',
+    color: "white",
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#121212",
+    backgroundColor: "black",
   },
 
   progressContainer: {
@@ -603,7 +659,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 24,
     borderLeftColor: "transparent",
     borderRightColor: "transparent",
-    borderBottomColor: "#5de383",
+    borderBottomColor: "#de822c",
     transform: [{ rotate: "180deg" }],
   },
   progressText: {
@@ -613,7 +669,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   label: {
-    color: "#5de383",
+    color: "#de822c",
     fontSize: 16,
     marginTop: 5,
   },
@@ -625,7 +681,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   sectionTitle: {
-    color: "#5de383",
+    color: "#de822c",
     fontSize: 18,
     fontWeight: "bold",
     marginBottom: 25,
@@ -654,10 +710,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#1E1E1E",
     borderRadius: 15,
     borderWidth: 1,
-    borderColor: "#5de383",
+    borderColor: "#de822c",
   },
   promptQuestion: {
-    color: "#5de383",
+    color: "#de822c",
     fontSize: 16,
     fontWeight: "bold",
     marginBottom: 8,
@@ -665,6 +721,32 @@ const styles = StyleSheet.create({
   promptAnswer: {
     color: "#FFF",
     fontSize: 14,
+  },
+  counterIcon: {
+    width: 18,
+    height: 18,
+  },
+
+  counterContainer: {
+    flexDirection: "row",
+    borderRadius: 15,
+  },
+  counterText: {
+    color: "white",
+    marginLeft: 2,
+    fontWeight: "bold",
+    fontSize: 20,
+    paddingHorizontal: 1,
+    paddingTop: 15,
+  },
+  activateNowButton: {
+    backgroundColor: "#de822c",
+    borderRadius: 15,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  activateNowButtonText: {
+    color: "white",
   },
 });
 

@@ -108,10 +108,10 @@ const NotificationsScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#121212", padding: 20 },
-  header: { fontSize: 30, fontWeight: "bold", color: "#5de383", textAlign: "center", marginBottom: 20 },
+  container: { flex: 1, backgroundColor: "black", padding: 20 },
+  header: { fontSize: 30, fontWeight: "bold", color: "#de822c", textAlign: "center", marginBottom: 20 },
   noNotifications: { fontSize: 16, color: "#B0B0B0", textAlign: "center" },
-  card: { backgroundColor: "#1E1E1E", padding: 20, borderRadius: 15, marginBottom: 20, borderColor: "#5de383", borderWidth: 1 },
+  card: { backgroundColor: "#1E1E1E", padding: 20, borderRadius: 15, marginBottom: 20, borderColor: "#de822c", borderWidth: 1 },
   message: { fontSize: 16, color: "white", marginBottom: 5 },
   time: { fontSize: 14, color: "#B0B0B0" },
 });

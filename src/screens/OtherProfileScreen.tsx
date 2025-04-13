@@ -75,7 +75,7 @@ const OtherProfileScreen = () => {
   if (loading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#5de383" />
+        <ActivityIndicator size="large" color="#de822c" />
       </View>
     );
   }

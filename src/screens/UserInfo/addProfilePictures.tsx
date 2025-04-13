@@ -173,7 +173,7 @@ const AddProfilePictures: React.FC<Props> = ({ navigation }) => {
 
 {/* Rules Section */}
 <ScrollView style={styles.rulesContainer} contentContainerStyle={styles.rulesContent}>
-  <Text style={{ color: '#5de383', fontSize: 18, marginBottom: 10, fontWeight: 'bold' }}>Photo Guidelines</Text>
+  <Text style={{ color: '#de822c', fontSize: 18, marginBottom: 10, fontWeight: 'bold' }}>Photo Guidelines</Text>
   {/* Rule 1 */}
   <View style={styles.ruleItem}>
     <Text style={styles.emoji}>•</Text>
@@ -265,12 +265,12 @@ const AddProfilePictures: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: 'black',
     alignItems: 'center',
   },
   backButtonContainer: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: 'black',
   },
   photoContainer: {
     width: 140, // Adjusted width to fit 2 containers in a row
@@ -283,7 +283,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 0.5,
     elevation: 5,
-    shadowColor: '#5de383',
+    shadowColor: '#de822c',
     shadowOpacity: 1,
     shadowOffset: { width: 0, height: 2 },
     borderColor: 'white',
@@ -333,7 +333,7 @@ const styles = StyleSheet.create({
     color: '#FFF',
   },
   uploadButton: {
-    backgroundColor: '#5de383',
+    backgroundColor: '#de822c',
     paddingVertical: 15,
     borderRadius: 10,
     width: '100%',

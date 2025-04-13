@@ -110,7 +110,7 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
     return <LoadingScreen description='Fetching your chats'/>;
     // return (
     //   <View style={styles.loaderContainer}>
-    //     <ActivityIndicator size="large" color="#5de383" />
+    //     <ActivityIndicator size="large" color="#de822c" />
     //   </View>
     // );
   }
@@ -203,7 +203,7 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: 'black',
     padding: 20,
   },
   headingText: {
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   chatName: {
-    color: '#5de383',
+    color: '#de822c',
     fontSize: 18,
     fontWeight: 'bold',
   },
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   unreadMessage: {
-    color: '#5de383',
+    color: '#de822c',
     fontWeight: 'bold',
   },
   noChatsText: {
@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
 
   },
   backButton: {
-    color: '#5de383',
+    color: '#de822c',
     
   },
   

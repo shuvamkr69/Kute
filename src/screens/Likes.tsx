@@ -63,7 +63,7 @@ const Likes: React.FC<Props> = ({ navigation}) => {
           });
         }}
       >
-        <Icon name="comments" size={20} color="#5de383" />
+        <Icon name="comments" size={20} color="#de822c" />
       </TouchableOpacity>
     </View>
   );
@@ -74,7 +74,7 @@ const Likes: React.FC<Props> = ({ navigation}) => {
       <Text style={styles.heading}>Matches</Text>
 
       {loading ? (
-        <ActivityIndicator size="large" color="#5de383" />
+        <ActivityIndicator size="large" color="#de822c" />
       ) : likedUsers.length === 0 ? (
         <View style ={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
             <Image source={require('../assets/icons/broken-heart.png')} style={{ width: 150, height: 150, alignSelf: 'center' }} />
@@ -102,7 +102,7 @@ export default Likes;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: 'black',
     padding: 10, // Reduced padding for better grid spacing
   },
   heading: {

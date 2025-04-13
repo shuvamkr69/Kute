@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Icon from 'react-native-vector-icons/Ionicons';
 import api from '../utils/api';
@@ -20,16 +20,19 @@ const BoostsAndLikesScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   return (
-    <LinearGradient colors={['#121212', '#1E1E1E']} style={styles.container}>
-        <BackButton title = {"Boost and Likes"}/>
+    <LinearGradient colors={['black', '#1E1E1E']} style={styles.container}>
+        <BackButton title = {"Buy Boost and Likes"}/>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <Text style={styles.header}>Get Noticed Instantly!</Text>
+        <Text style={styles.header}>Being Discovered is Fun!</Text>
         <Text style={styles.subtitle}>Boost your profile or send Super Likes to stand out.</Text>
 
         {/* Boost Section */}
         <View style={styles.card}>
-          <Icon name="flash" size={50} color="#FFA62B" />
-          <Text style={styles.title}>Boost Your Profile</Text>
+          <Image
+            source={require("../assets/icons/popularity.png")}
+            style={{ width: 50, height: 50 }}
+          />
+                    <Text style={styles.title}>Boost Your Profile</Text>
           <Text style={styles.description}>Increase visibility and get 3x more matches.</Text>
           <TouchableOpacity onPress={() => handlePurchase('Boost')} style={styles.button}>
             <Text style={styles.buttonText}>Buy Boosts</Text>
@@ -38,7 +41,10 @@ const BoostsAndLikesScreen: React.FC<Props> = ({ navigation }) => {
 
         {/* Super Likes Section */}
         <View style={styles.card}>
-          <Icon name="heart" size={50} color="#FF69B4" />
+        <Image
+            source={require("../assets/icons/super-like.png")}
+            style={{ width: 50, height: 50 }}
+          />
           <Text style={styles.title}>Send Super Likes</Text>
           <Text style={styles.description}>Let someone special know you really like them!</Text>
           <TouchableOpacity onPress={() => handlePurchase('Super Like')} style={styles.button}>
@@ -95,13 +101,13 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   button: {
-    backgroundColor: '#5de383',
+    backgroundColor: '#de822c',
     paddingVertical: 12,
     paddingHorizontal: 30,
     borderRadius: 25,
   },
   buttonText: {
-    color: '#121212',
+    color: 'black',
     fontSize: 16,
     fontWeight: 'bold',
   },

@@ -185,8 +185,8 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
           <Switch
             value={visibility}
             onValueChange={setVisibility}
-            thumbColor={visibility ? '#5de383' : '#B0B0B0'}
-            trackColor={{ false: '#555', true: '#5de383' }}
+            thumbColor={visibility ? '#de822c' : '#B0B0B0'}
+            trackColor={{ false: '#555', true: '#de822c' }}
           />
         </View>
         
@@ -241,12 +241,12 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: 'black',
     paddingHorizontal: 20,
   },
   backButtonContainer: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: 'black',
   },
   title: {
     fontSize: 19,
@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   locationButton: {
-    backgroundColor: '#5de383',
+    backgroundColor: '#de822c',
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 20,

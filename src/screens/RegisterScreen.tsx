@@ -39,7 +39,7 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
       <Text style={styles.tagline}>Create your account</Text>
 
       <View style={styles.inputContainer}>
-        <Icon name="user" size={20} color="#5de383" style={styles.icon} />
+        <Icon name="user" size={20} color="#de822c" style={styles.icon} />
         <TextInput
           style={styles.input}
           placeholder="Full Name"
@@ -50,7 +50,7 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
       </View>
 
       <View style={styles.inputContainer}>
-        <Icon name="envelope" size={20} color="#5de383" style={styles.icon} />
+        <Icon name="envelope" size={20} color="#de822c" style={styles.icon} />
         <TextInput
           style={styles.input}
           placeholder="Email"
@@ -62,7 +62,7 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
       </View>
 
       <View style={styles.inputContainer}>
-        <Icon name="lock" size={20} color="#5de383" style={styles.icon} />
+        <Icon name="lock" size={20} color="#de822c" style={styles.icon} />
         <TextInput
           style={styles.input}
           placeholder="Password"
@@ -90,14 +90,14 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: 'black',
     paddingHorizontal: 20,
     justifyContent: 'center',
   },
   logo: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#5de383',
+    color: '#de822c',
     textAlign: 'center',
     marginBottom: 10,
   },
@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     paddingHorizontal: 15,
     borderWidth: 1,
-    borderColor: '#5de383',
+    borderColor: '#de822c',
   },
   input: {
     flex: 1,
@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   button: {
-    backgroundColor: '#5de383',
+    backgroundColor: '#de822c',
     borderRadius: 10,
     paddingVertical: 15,
     alignItems: 'center',
@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   loginLink: {
-    color: '#5de383',
+    color: '#de822c',
     fontWeight: 'bold',
   },
 });

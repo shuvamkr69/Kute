@@ -7,6 +7,19 @@ import SplashScreenComponent from "./src/components/SplashScreen";
 import { registerForPushNotifications } from "./src/utils/notifications";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { decode as atob, encode as btoa } from 'base-64';
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { ClerkProvider } from '@clerk/clerk-react';
+import { BrowserRouter } from 'react-router-dom';
+import  * as SecureStore  from "expo-secure-store";
+
+const tokenCache = {
+  async getToken(key) {
+    return SecureStore.getItemAsync(key);
+  },
+  async saveToken(key, value) {
+    return SecureStore.setItemAsync(key, value);
+  },
+};
 
 // Polyfill atob (needed for jwt-decode)
 if (!global.atob) {
@@ -72,10 +85,17 @@ const MainApp = () => {
 
 export default function App() {
   return (
-    <RegistrationProvider>
-      <AuthProvider>
-        <MainApp />
-      </AuthProvider>
-    </RegistrationProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ClerkProvider 
+        publishableKey={process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY}
+        tokenCache={tokenCache}
+      >
+        <RegistrationProvider>
+          <AuthProvider>
+            <MainApp />
+          </AuthProvider>
+        </RegistrationProvider>
+      </ClerkProvider>
+    </GestureHandlerRootView>
   );
-};
+}

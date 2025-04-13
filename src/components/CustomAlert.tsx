@@ -25,9 +25,9 @@ const CustomAlert: React.FC<CustomAlertProps> = ({
   return (
     <Modal transparent visible={visible} animationType="fade">
       <View style={styles.overlay}>
-        <LinearGradient colors={['#121212', '#1E1E1E']} style={styles.modalContainer}>
+        <LinearGradient colors={['black', '#1E1E1E']} style={styles.modalContainer}>
           <View style={styles.iconContainer}>
-            <Icon name="exclamation-circle" size={40} color="#5de383" />
+            <Icon name="exclamation-circle" size={40} color="#de822c" />
           </View>
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.message}>{message}</Text>
@@ -35,7 +35,7 @@ const CustomAlert: React.FC<CustomAlertProps> = ({
           <View style={styles.buttonContainer}>
             {onConfirm && (
               <TouchableOpacity onPress={onConfirm} style={styles.confirmButton}>
-                <LinearGradient colors={['#5de383', '#00FFFF']} style={styles.gradientButton}>
+                <LinearGradient colors={['#de822c', '#00FFFF']} style={styles.gradientButton}>
                   <Text style={styles.buttonText}>{confirmText}</Text>
                 </LinearGradient>
               </TouchableOpacity>

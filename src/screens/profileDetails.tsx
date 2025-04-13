@@ -51,13 +51,70 @@ const ProfileDetails: React.FC<NativeStackScreenProps<any, 'ProfileDetails'>> = 
 
 
 const styles = StyleSheet.create({
+  headerContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 25,
+    width: '100%',
+  },
+  name: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 5,
+  },
+  location: {
+    fontSize: 16,
+    color: '#B0B0B0',
+    marginBottom: 15,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#333',
+    marginVertical: 20,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#de822c',
+    marginBottom: 12,
+  },
+  sectionText: {
+    fontSize: 16,
+    lineHeight: 24,
+    color: '#FFFFFF',
+    opacity: 0.9,
+  },
+  interestsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 10,
+  },
+  interestTag: {
+    backgroundColor: '#de822c',
+    borderRadius: 15,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  interestText: {
+    color: '#121212',
+    fontSize: 14,
+    fontWeight: '500',
+  },
   container: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: '#000',
   },
   scrollContainer: {
-    paddingBottom: 40,
-    alignItems: 'center',
+    padding: 20,
+    paddingTop: 70, // Space for close button
+  },
+  profileImage: {
+    width: '100%',
+    height: 400,
+    borderRadius: 0, // Full-width image
+    marginBottom: 20,
   },
   closeButton: {
     position: 'absolute',
@@ -83,26 +140,16 @@ const styles = StyleSheet.create({
     padding: 20,
     width: '100%',
   },
-  name: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginBottom: 5,
-  },
+  
   relationshipType: {
     fontSize: 20,
-    color: '#5de383',
+    color: '#de822c',
     marginBottom: 25,
   },
   section: {
     marginBottom: 30,
   },
-  sectionTitle: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginBottom: 15,
-  },
+ 
   bio: {
     fontSize: 16,
     lineHeight: 24,
@@ -124,7 +171,6 @@ const styles = StyleSheet.create({
     zIndex: 5,
     backgroundColor: "rgba(0,0,0,0.7)",
     borderRadius: 20,
-    padding: 10,
   },
   fullScreenImageContainer: {
     width,

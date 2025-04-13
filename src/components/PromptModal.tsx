@@ -48,7 +48,7 @@ const PromptModal: React.FC<PromptModalProps> = ({ visible, onClose, onSave }) =
             <View key={index} style={styles.promptBox}>
               <TouchableOpacity onPress={() => handleSelectPrompt(index, '')} style={styles.promptSelection}>
                 <Text style={styles.promptText}>{prompt || "Select a prompt"}</Text>
-                <Icon name="plus" size={16} color="#5de383" />
+                <Icon name="plus" size={16} color="#de822c" />
               </TouchableOpacity>
               <TextInput
                 style={styles.answerInput}
@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modalTitle: {
-    color: '#5de383',
+    color: '#de822c',
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 20,
@@ -110,10 +110,10 @@ const styles = StyleSheet.create({
   promptSelection: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: '#121212',
+    backgroundColor: 'black',
     borderRadius: 10,
     padding: 10,
-    borderColor: '#5de383',
+    borderColor: '#de822c',
     borderWidth: 1,
   },
   promptText: {
@@ -123,24 +123,24 @@ const styles = StyleSheet.create({
     marginTop: 10,
     color: '#FFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#5de383',
+    borderBottomColor: '#de822c',
   },
   promptOption: {
     padding: 10,
-    borderBottomColor: '#5de383',
+    borderBottomColor: '#de822c',
     borderBottomWidth: 0.5,
   },
   optionText: {
     color: '#FFF',
   },
   saveButton: {
-    backgroundColor: '#5de383',
+    backgroundColor: '#de822c',
     padding: 15,
     borderRadius: 10,
     marginTop: 20,
   },
   saveButtonText: {
-    color: '#121212',
+    color: 'black',
     textAlign: 'center',
     fontWeight: 'bold',
   },

@@ -122,7 +122,7 @@ const PremiumScreen: React.FC<Props> = ({ navigation }) => {
             {
               transform: [{ rotate }, { scale }],
               opacity,
-              borderColor: isSelected ? "#5de383" : "white",
+              borderColor: isSelected ? "#de822c" : "white",
               shadowOpacity: isSelected ? 0.6 : 0.2,
               elevation: isSelected ? 10 : 4,
             },
@@ -209,7 +209,7 @@ const PremiumScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#121212",
+    backgroundColor: "black",
   },
   planDetailsBox: {
     backgroundColor: "#1E1E1E",
@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
   selectedPlanTitle: {
     fontSize: 30,
     fontWeight: "900",
-    color: "#5de383",
+    color: "#de822c",
     marginBottom: 12,
   },
   selectedPlanPrice: {
@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   subscribeButton: {
-    backgroundColor: "#5de383",
+    backgroundColor: "#de822c",
     position: "absolute",
     bottom: 0,
     alignSelf: "center",

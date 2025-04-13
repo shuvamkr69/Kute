@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { deleteAccount, editUserProfile, homescreenProfiles, powerUps, premiumActive, registerUser, updatePushToken, userProfile } from "../controllers/user.controller.js";
+import { deleteAccount, distanceFetcher, editUserProfile, homescreenProfiles, powerUps, premiumActive, registerUser, updatePushToken, userProfile } from "../controllers/user.controller.js";
 import {loginUser} from "../controllers/user.controller.js";
 import { logoutUser } from "../controllers/user.controller.js";
 import {upload} from "../middlewares/multer.middleware.js";
@@ -7,6 +7,7 @@ import { verifyJWT } from "../middlewares/auth.middleware.js";
 import { User } from "../models/user.model.js";
 import { getLikedUsers } from "../controllers/liked.controller.js";
 import { otherProfile } from "../controllers/user.controller.js";
+
 
 
 
@@ -65,9 +66,15 @@ UserRouter.route("/deleteAccount").delete(                    //delete account
   deleteAccount
 )
 
-UserRouter.route("/get/:userId").get(                               //get user profile
+UserRouter.route("/get/:userId").get(                               //get others user profile
   verifyJWT,
   otherProfile,
+)
+
+
+UserRouter.route("/distance/:userId").get(                               //get user distance
+  verifyJWT,
+  distanceFetcher,
 )
 
 

@@ -39,13 +39,13 @@ const GamesScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: 'black',
     paddingTop: 5,
   },
   header: {
     fontSize: 30,
     fontWeight: 'bold',
-    color: '#5de383',
+    color: '#de822c',
     textAlign: 'center',
     marginBottom: 3,
   },

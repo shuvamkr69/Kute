@@ -85,14 +85,14 @@ const TruthDareScreen: React.FC<NativeStackScreenProps<any, 'TruthDare'>> = ({ r
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: 'black',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   header: {
     fontSize: 32,
-    color: '#5de383',
+    color: '#de822c',
     fontWeight: 'bold',
     marginBottom: 20,
   },
@@ -107,13 +107,13 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   button: {
-    backgroundColor: '#5de383',
+    backgroundColor: '#de822c',
     padding: 20,
     borderRadius: 10,
     marginHorizontal: 10,
   },
   buttonText: {
-    color: '#121212',
+    color: 'black',
     fontSize: 18,
     fontWeight: 'bold',
   },

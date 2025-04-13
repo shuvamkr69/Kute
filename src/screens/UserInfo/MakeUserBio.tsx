@@ -77,13 +77,16 @@ const MakeBio: React.FC<Props> = ({ navigation }) => {
       formData.append("relationshipType", userData.relationshipType);
       formData.append("bio", bio.trim());
       formData.append("genderOrientation", userData.genderOrientation);
-      formData.append("location", userData.location);
+      const locationArray = userData.location
+        .split(",")
+        .map((n: string) => Number(n.trim()));
+      formData.append("location", JSON.stringify(locationArray)); // Important
       formData.append("country", userData.country);
       formData.append("pushToken", userData.pushToken || ""); // Ensure pushToken is included
       formData.append("religion", userData.religion);
 
       console.log("Form Data:", formData);
-      
+
       photos.forEach((photoUri: string, index: number) => {
         formData.append(`avatar${index + 1}`, {
           uri: photoUri,
@@ -92,7 +95,6 @@ const MakeBio: React.FC<Props> = ({ navigation }) => {
         } as any);
       });
 
-      // Using api util instead of fetch
       const response = await api.post("/api/v1/users/register", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
@@ -140,20 +142,18 @@ const MakeBio: React.FC<Props> = ({ navigation }) => {
             {bio.length}/500
           </Text>
         </View>
-
-        
       </SafeAreaView>
       <TouchableOpacity
-          style={[styles.submitButton, isUploading && styles.disabledButton]}
-          onPress={submitData}
-          disabled={isUploading}
-        >
-          {isUploading ? (
-            <ActivityIndicator color="#FFF" />
-          ) : (
-            <Text style={styles.buttonText}>Submit</Text>
-          )}
-        </TouchableOpacity>
+        style={[styles.submitButton, isUploading && styles.disabledButton]}
+        onPress={submitData}
+        disabled={isUploading}
+      >
+        {isUploading ? (
+          <ActivityIndicator color="#FFF" />
+        ) : (
+          <Text style={styles.buttonText}>Submit</Text>
+        )}
+      </TouchableOpacity>
     </View>
   );
 };
@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
   header: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#5de383",
+    color: "#de822c",
     marginBottom: 20,
   },
   inputContainer: {
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#5de383",
+    borderColor: "#de822c",
     textAlignVertical: "top",
   },
   charCount: {
@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
   },
 
   submitButton: {
-    backgroundColor: "#5de383",
+    backgroundColor: "#de822c",
     paddingVertical: 15,
     borderRadius: 10,
     width: "100%",
