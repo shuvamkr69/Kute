@@ -53,8 +53,8 @@ const HomeTabs: React.FC<Props> = ({ navigation }) => {
           }}
         >
           <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <Image source={require('../assets/icons/logo.png')} style={{ width: 28, height: 28 }}/> 
-              <Text style = {styles.uteText}>ute</Text>
+              <Image source={require('../assets/icons/logo.webp')} style={{ width: 56, height: 56, left: -15 }}/> 
+              
           </View>
 
           

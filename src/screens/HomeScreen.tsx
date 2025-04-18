@@ -14,19 +14,24 @@ import {
   UIManager,
   Platform,
   Dimensions,
+  Button,
 } from "react-native";
 import Swiper from "react-native-deck-swiper";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import api from "../utils/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
-import { getUserId } from "../utils/constants";
+
 const VerificationImage = require("../assets/icons/verified-logo.png");
 
 const screenHeight = Dimensions.get("window").height;
 const topBarHeight = 55; // Your top bar height
 const bottomTabHeight = Platform.OS === "ios" ? 70 : 55; // Your bottom tab height
 const availableHeight = screenHeight - topBarHeight - bottomTabHeight;
+
+
+
+
 
 type SwipeFeedbackType = "like" | "reject" | "superLike";
 
@@ -64,6 +69,8 @@ if (
 }
 
 const HomeScreen: React.FC<Props> = ({ navigation }) => {
+
+  
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
@@ -80,6 +87,25 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const screenWidth = Dimensions.get("window").width;
   const SWIPE_THRESHOLD = screenWidth * 0.7;
   const SWIPE_VERTICAL_THRESHOLD = 150; // Adjust this value (higher = needs more extreme swipe)
+  
+  const [isModalAnimated, setIsModalAnimated] = useState(false);
+  const modalAnimatedValue = new Animated.Value(0);
+
+  const modalSlideIn = () => {
+    Animated.timing(modalAnimatedValue, {
+      toValue: 1,
+      duration: 500,
+      useNativeDriver: true,
+    }).start(() => setIsModalAnimated(true));
+  };
+  
+  const modalSlideOut = () => {
+    Animated.timing(modalAnimatedValue, {
+      toValue: 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => setIsModalAnimated(false));
+  };
 
   const borderColor = swipeX.interpolate({
     inputRange: [-SWIPE_THRESHOLD, 0, SWIPE_THRESHOLD],
@@ -105,6 +131,8 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   }>({ visible: false, type: null });
 
   const feedbackAnim = useRef(new Animated.Value(0)).current;
+
+  
 
   const renderFeedbackSticker = () => {
     if (!swipeFeedback.visible || !swipeFeedback.type) return null;
@@ -177,7 +205,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
               profile.location[1]
             )
           : null,
-        
+
         occupation: profile.occupation,
         workingAt: profile.workingAt,
         pronouns: profile.pronouns,
@@ -384,8 +412,8 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         Math.sin(dLon / 2);
 
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    console.log("Haversine calculation:", R*c);
-    return (R*c); // Distance in kilometers
+    console.log("Haversine calculation:", R * c);
+    return R * c; // Distance in kilometers
     setDistance(R * c); // Distance in kilometers
   };
 
@@ -525,7 +553,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
                   <View style={styles.detailsContainer}>
                     <View style={styles.nameContainer}>
                       <Text style={styles.name}>
-                        {profile.fullName?.split(" ")[0] || "User"}
+                        {profile.fullName?.split(" ")[0] || "User"} {profile.age}
                       </Text>
                       {profile.verifiedUser && (
                         <Image
@@ -545,6 +573,11 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
                     <Text style={styles.relationship}>
                       {profile.relationshipType || ""}
                     </Text>
+                    <Text style={styles.modalLocation}>
+                    <Text style={styles.distance}>
+                      {Math.round(profile.distance) + " km away"}
+                    </Text>
+                  </Text>
                     <Text style={styles.name}>{""}</Text>
                   </View>
                 </View>
@@ -611,7 +644,10 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         visible={!!selectedProfile}
         transparent={true}
         animationType="slide"
-        onRequestClose={() => setSelectedProfile(null)}
+        onRequestClose={() => {
+          modalSlideOut();
+          setSelectedProfile(null);
+        }}
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
@@ -652,7 +688,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
                               },
                             ],
                             backgroundColor:
-                              currentImageIndex === index ? "#00FFFF" : "#777",
+                              currentImageIndex === index ? "#de822c" : "#777",
                             width: currentImageIndex === index ? 30 : 30,
                           },
                         ]}
@@ -664,7 +700,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
                 {/* Profile Details */}
                 <View style={styles.modalDetails}>
                   <Text style={styles.modalName}>
-                  {selectedProfile.fullName} {selectedProfile.age} {" "}
+                    {selectedProfile.fullName} {selectedProfile.age}{" "}
                     {selectedProfile.verifiedUser && (
                       <Image
                         source={require("../assets/icons/verified-logo.png")}
@@ -710,7 +746,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
                       {selectedProfile.workout}
                     </Text>
                   </View>
-                    <View style={styles.divider} />
+                  <View style={styles.divider} />
 
                   <View style={styles.modalInfoContainer}>
                     <Image
@@ -721,7 +757,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
                       {selectedProfile.smoking}
                     </Text>
                   </View>
-                    <View style={styles.divider} />
+                  <View style={styles.divider} />
 
                   <View style={styles.modalInfoContainer}>
                     <Image
@@ -743,7 +779,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
                       {selectedProfile.zodiac}
                     </Text>
                   </View>
-                    <View style={styles.divider} />
+                  <View style={styles.divider} />
                 </View>
 
                 {/* Close Button */}
@@ -821,7 +857,7 @@ const styles = StyleSheet.create({
 
   detailsContainer: {
     position: "absolute",
-    bottom: "5%", // Responsive bottom positioning
+    bottom: "0%", // Responsive bottom positioning
     left: "5%", // Adjust left margin for consistent alignment
     width: "90%", // Maintain responsiveness across screens
     padding: 10,
@@ -836,7 +872,7 @@ const styles = StyleSheet.create({
     width: 27,
     height: 27,
     top: "0.5%",
-    marginLeft: 15,
+    marginLeft: 5,
   },
   // Inside styles
   superLikeFeedback: {
@@ -859,15 +895,16 @@ const styles = StyleSheet.create({
   },
 
   name: {
-    fontSize: Dimensions.get("window").width * 0.07, // Responsive font size
+    fontSize: Dimensions.get("window").width * 0.08, // Responsive font size
     fontWeight: "bold",
     color: "#FFFFFF",
   },
 
   relationship: {
-    fontSize: Dimensions.get("window").width * 0.045, // Responsive font size
-    color: "#de822c",
+    fontSize: Dimensions.get("window").width * 0.055, // Responsive font size
+    color: "white",
     marginTop: 5,
+    fontWeight: "bold",
   },
 
   gradientOverlay: {
@@ -891,11 +928,11 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0, 0, 0, 0.8)",
   },
   modalContent: {
-    width: '100%', // Changed from '90%' to '100%'
-    height: '100%', // Changed from '80%' to '100%'
-    backgroundColor: '#121212',
+    width: "100%", // Changed from '90%' to '100%'
+    height: "100%", // Changed from '80%' to '100%'
+    backgroundColor: "#121212",
     borderRadius: 15, // You might want to remove this if you want full screen
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   modalScrollContainer: {
     paddingBottom: 20,
@@ -993,13 +1030,13 @@ const styles = StyleSheet.create({
   },
   myInterestsText: {
     marginTop: 20,
-    fontSize: 20,
-    color: "#de822c",
+    fontSize: 24,
+    color: "white",
     paddingBottom: 3,
     borderRadius: 20,
   },
   distance: {
-    color: "#de822c",
+    color: "white",
     fontSize: 20,
     paddingLeft: 50,
     paddingTop: 10,
@@ -1008,15 +1045,16 @@ const styles = StyleSheet.create({
   divider: {
     borderBottomColor: "#de822c",
     height: 1,
-    backgroundColor: "#ccc", // Light gray
+    backgroundColor: "rgb(103, 103, 103)", // Light gray
     marginVertical: 10,
   },
   closeIcon: {
-    width: 60, // Adjust as per your need
-    height: 60,
+    width: 30, // Adjust as per your need
+    height: 30,
     alignSelf: "center",
     marginTop: 30,
     marginBottom: 30,
+    tintColor: "#de822c",
   },
   modalInfoContainer: {
     flexDirection: "row",
@@ -1030,7 +1068,6 @@ const styles = StyleSheet.create({
     width: 28,
     marginLeft: 10,
     marginTop: 10,
-   
   },
 });
 

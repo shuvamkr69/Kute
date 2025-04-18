@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -9,20 +9,19 @@ import {
   ActivityIndicator,
   Alert,
   RefreshControl, // ✅ Import RefreshControl
-} from 'react-native';
-import moment from 'moment';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import api from '../utils/api';
-import { getUserId } from '../utils/constants';
-import { io } from 'socket.io-client';
+} from "react-native";
+import moment from "moment";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import api from "../utils/api";
+import { getUserId } from "../utils/constants";
+import { io } from "socket.io-client";
 import Icon from "react-native-vector-icons/FontAwesome";
-import LoadingScreen from './LoadingScreen';
+import LoadingScreen from "./LoadingScreen";
 
+const socket = io("http://192.168.193.211:3000");
 
-const socket = io('http://192.168.193.211:3000');
-
-type Props = NativeStackScreenProps<any, 'AllChatScreen'>;
+type Props = NativeStackScreenProps<any, "AllChatScreen">;
 
 interface Participant {
   _id: string;
@@ -58,17 +57,20 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
       setChats(response.data);
 
       // ✅ Cache data in AsyncStorage
-      await AsyncStorage.setItem('chats', JSON.stringify(response.data));
+      await AsyncStorage.setItem("chats", JSON.stringify(response.data));
     } catch (error) {
-      console.error('Error fetching chats:', error);
+      console.error("Error fetching chats:", error);
 
       // ✅ Fallback to cached data if API fails
-      const storedChats = await AsyncStorage.getItem('chats');
+      const storedChats = await AsyncStorage.getItem("chats");
       if (storedChats) {
         setChats(JSON.parse(storedChats));
-        Alert.alert('Offline Mode', 'Showing cached chats.');
+        Alert.alert("Offline Mode", "Showing cached chats.");
       } else {
-        Alert.alert('Error', 'Unable to load chats. Please check your connection.');
+        Alert.alert(
+          "Error",
+          "Unable to load chats. Please check your connection."
+        );
       }
     } finally {
       setLoading(false);
@@ -79,9 +81,9 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
   useEffect(() => {
     fetchChats();
     if (userId) {
-      socket.emit('join', userId); // Join the chat room based on userId
+      socket.emit("join", userId); // Join the chat room based on userId
 
-      socket.on('newMessage', (newMessage) => {
+      socket.on("newMessage", (newMessage) => {
         setChats((prevChats) => {
           return prevChats.map((chat) =>
             chat._id === newMessage.conversationId
@@ -102,12 +104,12 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
     }
 
     return () => {
-      socket.off('newMessage');
+      socket.off("newMessage");
     };
   }, [userId]);
 
   if (loading) {
-    return <LoadingScreen description='Fetching your chats'/>;
+    return <LoadingScreen description="Fetching your chats" />;
     // return (
     //   <View style={styles.loaderContainer}>
     //     <ActivityIndicator size="large" color="#de822c" />
@@ -124,29 +126,31 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
   // ✅ Render each chat item
   const renderChatItem = ({ item }: { item: Chat }) => {
     if (!userId) return null;
-  
-    const otherParticipant = item?.otherParticipant || item?.participants?.find((p) => p._id !== userId);
+
+    const otherParticipant =
+      item?.otherParticipant ||
+      item?.participants?.find((p) => p._id !== userId);
     if (!otherParticipant) {
       console.warn("Invalid chat data: No participants available", item);
       return null;
     }
-  
+
     const lastMessage = item?.lastMessage;
     const lastMessageText = lastMessage?.senderId
       ? lastMessage.senderId === userId
         ? `You: ${lastMessage.message}`
         : `${lastMessage.message}`
-      : 'No messages yet';
-  
+      : "No messages yet";
+
     const formattedTime = lastMessage?.createdAt
-      ? moment(lastMessage.createdAt).format('hh:mm A')
-      : '';
-  
+      ? moment(lastMessage.createdAt).format("hh:mm A")
+      : "";
+
     return (
       <TouchableOpacity
         style={styles.chatItem}
         onPress={() =>
-          navigation.navigate('Chat', {
+          navigation.navigate("Chat", {
             likedUserId: otherParticipant._id,
             userName: otherParticipant.fullName,
             loggedInUserId: userId,
@@ -155,18 +159,28 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
         }
       >
         <Image
-          source={{ uri: otherParticipant?.avatar1 || 'https://via.placeholder.com/150' }}
+          source={{
+            uri: otherParticipant?.avatar1 || "https://via.placeholder.com/150",
+          }}
           style={styles.chatAvatar}
         />
         <View style={styles.chatDetails}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
             <Text style={styles.chatName}>{otherParticipant?.fullName}</Text>
             <Text style={styles.chatTime}>{formattedTime}</Text>
           </View>
           <Text
             style={[
               styles.lastMessage,
-              lastMessage?.isRead === false && lastMessage.senderId !== userId ? styles.unreadMessage : {},
+              lastMessage?.isRead === false && lastMessage.senderId !== userId
+                ? styles.unreadMessage
+                : {},
             ]}
             numberOfLines={1}
           >
@@ -176,26 +190,30 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
       </TouchableOpacity>
     );
   };
-  
 
   return (
-    <View style={styles.container}>      
-    <Text style={styles.headingText}>Your Chats</Text>
-
-      {chats.length === 0 ? (
-        <View style ={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
-          <Image source={require('../assets/icons/koala.png')} style={{ width: 150, height: 150, alignSelf: 'center' }} />
-          <Text style={styles.noChatsText}>No DMs? Clearly, they fear the power of the perfect reply</Text>
-        </View>
-        
-      ) : (
-        <FlatList
-          data={chats}
-          keyExtractor={(item) => item._id}
-          renderItem={renderChatItem}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />} // ✅ Pull-to-refresh
-        />
-      )}
+    <View style={styles.container}>
+      <Text style={styles.headingText}>Your Chats</Text>
+  
+      <FlatList
+        data={chats}
+        keyExtractor={(item) => item._id}
+        renderItem={renderChatItem}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+        ListEmptyComponent={
+          <View style={styles.emptyStateContainer}>
+            <Image
+              source={require("../assets/icons/koala.png")}
+              style={{ width: 150, height: 150, marginBottom: 20 }}
+            />
+            <Text style={styles.noChatsText}>
+              No DMs? Clearly, they fear the power of the perfect reply
+            </Text>
+          </View>
+        }
+      />
     </View>
   );
 };
@@ -203,31 +221,37 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'black',
+    backgroundColor: "black",
     padding: 20,
   },
   headingText: {
     marginLeft: 2,
-    color: 'white',
+    color: "white",
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 20,
   },
   chatTime: {
-    color: '#B0B0B0',
+    color: "#B0B0B0",
     fontSize: 12,
     marginLeft: 10,
   },
-  
-  loaderContainer: {
+  emptyStateContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    height: '100%',
+    padding: 20,
+  },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   chatItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1E1E1E',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#1E1E1E",
     padding: 15,
     borderRadius: 10,
     marginBottom: 10,
@@ -242,30 +266,27 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   chatName: {
-    color: '#de822c',
+    color: "#de822c",
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   lastMessage: {
-    color: '#B0B0B0',
+    color: "#B0B0B0",
     fontSize: 14,
   },
   unreadMessage: {
-    color: '#de822c',
-    fontWeight: 'bold',
+    color: "#de822c",
+    fontWeight: "bold",
   },
   noChatsText: {
-    color: '#B0B0B0',
+    color: "#B0B0B0",
     fontSize: 16,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 90,
-
   },
   backButton: {
-    color: '#de822c',
-    
+    color: "#de822c",
   },
-  
 });
 
 export default ChatsScreen;

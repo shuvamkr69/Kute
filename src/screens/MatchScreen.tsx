@@ -74,7 +74,7 @@ const MatchScreen: React.FC<Props> = ({ navigation, route }) => {
         activeOpacity={0.9}
       >
         <LinearGradient
-          colors={["#1b5f49", "#004d4d"]}
+          colors={["#de822c", "#ff172e"]}
           style={styles.fullWidthGradient}
         >
           <Text style={styles.buttonText}>Keep the momentum. Keep swiping</Text>

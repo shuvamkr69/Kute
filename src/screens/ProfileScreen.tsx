@@ -175,22 +175,22 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
       profilePhoto !==
       "https://www.shutterstock.com/image-photo/very-random-pose-asian-men-260nw-2423213779.jpg"
     )
-      progress += 5;
-    if (name) progress += 5;
-    if (bio) progress += 5;
-    if (age) progress += 5;
-    if (isVerified) progress += 8;
-    if (workingAt) progress += 8;
-    if (bodyType) progress += 8;
-    if (height) progress += 8;
-    if (zodiac) progress += 8;
-    if (loveLanguage) progress += 8;
-    if (genderOrientation) progress += 8;
-    if (languages) progress += 8;
-    if (occupation) progress += 8;
-    if (pronouns) progress += 8;
-    if (religion) progress += 8;
-    if (familyPlanning) progress += 8;
+      progress += 7;
+    if (name) progress += 7;
+    if (bio) progress += 7;
+    if (age) progress += 7;
+    if (isVerified) progress += 6;
+    if (workingAt) progress += 6;
+    if (bodyType) progress += 6;
+    if (height) progress += 6;
+    if (zodiac) progress += 6;
+    if (loveLanguage) progress += 6;
+    if (genderOrientation) progress += 6;
+    if (languages) progress += 6;
+    if (occupation) progress += 6;
+    if (pronouns) progress += 6;
+    if (religion) progress += 6;
+    if (familyPlanning) progress += 6;
 
     setProfileProgress(progress);
   }, [
@@ -267,18 +267,36 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
     >
       {/* Profile Section */}
       <View style={styles.profileContainer}>
-        <View style={styles.profileImageContainer}>
-          {/* Profile Image */}
-          <Image source={{ uri: profilePhoto }} style={styles.profileImage} />
+      <View style={styles.profileImageContainer}>
+  {/* Gradient Border Wrapper */}
+  <LinearGradient
+    colors={["#de822c", "#ff172e"]}
+    start={{ x: 0, y: 0 }}
+    end={{ x: 1, y: 1 }}
+    style={styles.gradientBorder}
+  >
+    {/* Profile Image with inner container to create border effect */}
+    <View style={styles.profileImageInner}>
+      <Image source={{ uri: profilePhoto }} style={styles.profileImage} />
+    </View>
+  </LinearGradient>
 
-          {/* Edit Icon */}
-          <TouchableOpacity
-            style={styles.editIcon}
-            onPress={() => navigation.navigate("EditProfile")}
-          >
-            <Icon name="pencil" size={14} color="black" />
-          </TouchableOpacity>
-        </View>
+  {/* Edit Icon (keep your existing one) */}
+  {/* Gradient Edit Icon */}
+<LinearGradient
+  colors={["#de822c", "#ff172e"]}
+  start={{ x: 0, y: 0 }}
+  end={{ x: 1, y: 1 }}
+  style={styles.editIconGradient}
+>
+  <TouchableOpacity
+    style={styles.editIconButton}
+    onPress={() => navigation.navigate("EditProfile")}
+  >
+    <Icon name="pencil" size={14} color="white" />
+  </TouchableOpacity>
+</LinearGradient>
+</View>
 
         <Text style={styles.username}>
           {name} {age}
@@ -305,7 +323,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
           styles.premiumImage,
           {
             tintColor: ActivePremiumPlan ? null : "#B0B0B0",
-            opacity: isVerified ? 1 : 0.5,
+            opacity: ActivePremiumPlan ? 1 : 0.5,
           },
         ]}
       />
@@ -317,7 +335,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
             style={[styles.progressFill, { width: animatedProgress }]}
           >
             <LinearGradient
-              colors={["#ff172e", "#de822c"]}
+              colors={["#de822c", "#ff172e"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.gradient}
@@ -357,14 +375,21 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
       />
 
       {/* Interests Section - Special Handling */}
+
       <View style={styles.sectionContainer}>
         <Text style={styles.sectionTitle}>Interests</Text>
         {interests.length > 0 ? (
           <View style={styles.interestsContainer}>
             {interests.map((interest, index) => (
-              <View key={index} style={styles.interestBox}>
+              <LinearGradient
+                key={index}
+                colors={["#FFA500", "#FF4500"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.interestBox}
+              >
                 <Text style={styles.interestText}>{interest}</Text>
-              </View>
+              </LinearGradient>
             ))}
           </View>
         ) : (
@@ -455,6 +480,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
           <Text style={styles.cardText}>Unlock all the premium features</Text>
         </TouchableOpacity>
       </View>
+      
     </ScrollView>
   );
 };
@@ -471,26 +497,42 @@ const styles = StyleSheet.create({
   },
   profileImageContainer: {
     position: "relative",
-    width: 200,
-    height: 200,
+    width: 210, // Slightly larger to accommodate border
+    height: 210,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-
-  profileImage: {
-    width: "100%",
-    height: "100%",
+  gradientBorder: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 105, // Half of width/height to make it circular
+    padding: 5, // This creates the border thickness
+  },
+  profileImageInner: {
+    width: '100%',
+    height: '100%',
     borderRadius: 100,
-    borderWidth: 1,
-    borderColor: "white",
+    overflow: 'hidden', // Ensures the image stays within the rounded bounds
   },
+  profileImage: {
+    width: '100%',
+    height: '100%',
+  },
+  // Keep your existing editIcon style
 
-  editIcon: {
+  editIconGradient: {
     position: "absolute",
     top: 10,
     right: 10,
-    backgroundColor: "#de822c",
     borderRadius: 15,
+    padding: 2, // This creates the border effect
+  },
+  editIconButton: {
+    backgroundColor: "black", // Inner color
+    borderRadius: 13, // Slightly smaller than the gradient container
     padding: 7,
-    elevation: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   verificationImage: {
@@ -505,7 +547,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     width: 38,
     height: 38,
-    marginTop: 10,
+    marginTop: 30,
   },
 
   username: {
@@ -568,7 +610,7 @@ const styles = StyleSheet.create({
   },
 
   upgradeButtonText: {
-    color: "#de822c",
+    color: "white",
     fontSize: 18,
     fontWeight: "bold",
   },

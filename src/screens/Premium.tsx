@@ -36,7 +36,7 @@ const PremiumScreen: React.FC<Props> = ({ navigation }) => {
       case "shiny-diamond.png":
         return require("../assets/icons/shiny-diamond.png");
       default:
-        return require("../assets/icons/logo.png"); // fallback image
+        return require("../assets/icons/logo.webp"); // fallback image
     }
   };
 

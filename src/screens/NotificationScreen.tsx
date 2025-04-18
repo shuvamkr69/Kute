@@ -2,8 +2,9 @@ import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, Alert } from "react-native";
 import * as Notifications from "expo-notifications";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import api from "../utils/api"; 
+import api from "../utils/api";
 import { getUserId } from "../utils/constants";
+import Backbutton from "../components/BackButton";
 
 interface NotificationItem {
   message: string;
@@ -13,7 +14,6 @@ interface NotificationItem {
 
 const NotificationsScreen: React.FC = () => {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-
 
   // Store notifications to AsyncStorage
   const storeNotification = async (notification: NotificationItem[]) => {
@@ -29,13 +29,17 @@ const NotificationsScreen: React.FC = () => {
   const loadNotifications = async () => {
     try {
       const userId = await getUserId();
-      console.log(userId)
+      console.log(userId);
       const response = await api.get(`/api/v1/users/notifications/${userId}`);
-      
+      console.log("API Response:", response.data);
+
       if (response.data) {
         const formattedNotifications = response.data.map((notif: any) => ({
           message: notif.message,
-          time: new Date(notif.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          time: new Date(notif.createdAt).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
         }));
         setNotifications(formattedNotifications);
         storeNotification(formattedNotifications);
@@ -45,19 +49,28 @@ const NotificationsScreen: React.FC = () => {
       const storedNotifications = await AsyncStorage.getItem("notifications");
       if (storedNotifications) {
         setNotifications(JSON.parse(storedNotifications));
-        Alert.alert("Offline Mode", "Showing notifications from local storage.");
+        Alert.alert(
+          "Offline Mode",
+          "Showing notifications from local storage."
+        );
       } else {
-        Alert.alert("Error", "Failed to load notifications. Please check your connection.");
+        Alert.alert(
+          "Error",
+          "Failed to load notifications. Please check your connection."
+        );
       }
     }
   };
-
 
   // Post Notification to Backend
   const postNotification = async (newNotification: NotificationItem) => {
     try {
       const userId = await getUserId();
-      await api.post(`/api/v1/users/notifications/${userId}`, {userId: userId, title: newNotification.title, message: newNotification.message});
+      await api.post(`/api/v1/users/notifications/${userId}`, {
+        userId: userId,
+        title: newNotification.title,
+        message: newNotification.message,
+      });
       console.log("Notification posted to backend.");
     } catch (error) {
       console.error("Error posting notification:", error);
@@ -70,20 +83,25 @@ const NotificationsScreen: React.FC = () => {
 
   // Listen for Notifications in Foreground
   useEffect(() => {
-    const receivedSubscription = Notifications.addNotificationReceivedListener((notification) => {
-      const newNotification: NotificationItem = {
-        message: notification.request.content.body || "New notification",
-        title: notification.request.content.title || "Notification",
-        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      };
+    const receivedSubscription = Notifications.addNotificationReceivedListener(
+      (notification) => {
+        const newNotification: NotificationItem = {
+          message: notification.request.content.body || "New notification",
+          title: notification.request.content.title || "Notification",
+          time: new Date().toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        };
 
-      setNotifications((prev) => {
-        const updatedNotifications = [newNotification, ...prev];
-        storeNotification(updatedNotifications);
-        postNotification(newNotification); // Send to backend
-        return updatedNotifications;
-      });
-    });
+        setNotifications((prev) => {
+          const updatedNotifications = [newNotification, ...prev];
+          storeNotification(updatedNotifications);
+          postNotification(newNotification); // Send to backend
+          return updatedNotifications;
+        });
+      }
+    );
 
     return () => {
       receivedSubscription.remove();
@@ -109,9 +127,22 @@ const NotificationsScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "black", padding: 20 },
-  header: { fontSize: 30, fontWeight: "bold", color: "#de822c", textAlign: "center", marginBottom: 20 },
+  header: {
+    fontSize: 30,
+    fontWeight: "bold",
+    color: "#de822c",
+    textAlign: "center",
+    marginBottom: 20,
+  },
   noNotifications: { fontSize: 16, color: "#B0B0B0", textAlign: "center" },
-  card: { backgroundColor: "#1E1E1E", padding: 20, borderRadius: 15, marginBottom: 20, borderColor: "#de822c", borderWidth: 1 },
+  card: {
+    backgroundColor: "#1E1E1E",
+    padding: 20,
+    borderRadius: 15,
+    marginBottom: 20,
+    borderColor: "#de822c",
+    borderWidth: 1,
+  },
   message: { fontSize: 16, color: "white", marginBottom: 5 },
   time: { fontSize: 14, color: "#B0B0B0" },
 });

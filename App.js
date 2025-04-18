@@ -9,7 +9,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { decode as atob, encode as btoa } from 'base-64';
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { ClerkProvider } from '@clerk/clerk-react';
-import { BrowserRouter } from 'react-router-dom';
 import  * as SecureStore  from "expo-secure-store";
 
 const tokenCache = {
@@ -34,8 +33,10 @@ if (!global.btoa) {
 const MainApp = () => {
   const { user, loading } = useAuth(); // Fetch user authentication state
   const [isSplashVisible, setIsSplashVisible] = useState(true);
+  
 
   useEffect(() => {
+
     const updatePushToken = async () => {
       const token = await registerForPushNotifications();
 
@@ -43,6 +44,7 @@ const MainApp = () => {
         const storedToken = await AsyncStorage.getItem("pushToken");
         const userToken = await AsyncStorage.getItem("accessToken"); // Get JWT
         console.log("User JWT:", userToken);
+        console.log("Push Token:", token);
         if (storedToken !== token) {
           // Send to backend only if changed
           await api.patch("/api/v1/users/updatePushToken", { pushToken: token });

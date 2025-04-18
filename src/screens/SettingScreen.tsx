@@ -166,6 +166,11 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
         <TouchableOpacity style={styles.option}>
           <Text style={styles.optionText}>Email Preferences</Text>
         </TouchableOpacity>
+        <TouchableOpacity style={styles.option} onPress={() => { navigation.navigate("PhotoVerification"); } }>
+          <Text style={styles.optionText}>Verify your account</Text>
+        </TouchableOpacity>
+
+        
       </View>
 
       {/* Privacy Settings */}

@@ -7,7 +7,6 @@ import TDRouter from "./TruthOrDare/truthOrDare.routes.js";
 import filterRouter from "./filter.route.js";
 import getPremiumPlans from "./premiumPlans.route.js";
 import AiChatbotRouter from "./AiChatbot.route.js";
-import firebaseRouter from "./auth.route.js";
 
 const router = Router()
 
@@ -19,7 +18,6 @@ router.use(TDRouter)
 router.use(filterRouter)
 router.use(getPremiumPlans)
 router.use(AiChatbotRouter)
-router.use(firebaseRouter)
 
 
 export default router

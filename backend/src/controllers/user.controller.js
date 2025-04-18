@@ -505,6 +505,7 @@ const editUserProfile = async (req, res) => {
     const currentUserId = req.user._id;
     const {
       relationshipType,
+      interests,
       bio,
       height,
       occupation,
@@ -520,9 +521,10 @@ const editUserProfile = async (req, res) => {
       smoking,
       workout,
       religion,
+      isVerified
     } = req.body;
 
-    const interests = JSON.parse(req.body.interests);
+    
     const fieldNames = [
       "avatar1",
       "avatar2",
@@ -555,6 +557,9 @@ const editUserProfile = async (req, res) => {
     }
 
     // Update other fields if provided
+    if (req.body.interests) {
+      interests = JSON.parse(req.body.interests);
+    }
     const updatedFields = {
       relationshipType,
       interests,
@@ -573,6 +578,7 @@ const editUserProfile = async (req, res) => {
       smoking,
       workout,
       religion,
+      isVerified,
     };
 
     for (const [key, value] of Object.entries(updatedFields)) {
