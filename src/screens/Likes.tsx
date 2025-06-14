@@ -54,8 +54,8 @@ const Likes: React.FC<Props> = ({ navigation }) => {
     try {
       await fetchLikedUsers();
     } catch (error) {
-      console.error('Error refreshing likes:', error);
-      Alert.alert('Error', 'Failed to refresh likes.');
+      console.error("Error refreshing likes:", error);
+      Alert.alert("Error", "Failed to refresh likes.");
     } finally {
       setRefreshing(false);
     }
@@ -87,14 +87,17 @@ const Likes: React.FC<Props> = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <Text style={styles.heading}>Matches</Text>
-  
+
       <FlatList
         data={likedUsers}
         keyExtractor={(item) => item._id}
         renderItem={renderItem}
         numColumns={2}
         columnWrapperStyle={styles.columnWrapper}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[
+          styles.list,
+          likedUsers.length === 0 && { flex: 1, justifyContent: "center" },
+        ]}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
@@ -120,10 +123,10 @@ export default Likes;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'black',
+    backgroundColor: "black",
     padding: 10,
   },
-  
+
   list: {
     paddingBottom: 20,
     paddingHorizontal: 10,
@@ -136,23 +139,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10, // Added horizontal padding
   },
   emptyStateContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: '100%',
+    justifyContent: "center",
+    alignItems: "center",
     padding: 20,
   },
-  
+
   noLikes: {
     fontSize: 18,
     color: "#B0B0B0",
-    textAlign: 'center',
-    justifyContent: 'center',
-    alignItems: 'center',
+    textAlign: "center",
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 20,
     paddingHorizontal: 10,
   },
-  
+
   columnWrapper: {
     justifyContent: "space-between",
     paddingHorizontal: 10,

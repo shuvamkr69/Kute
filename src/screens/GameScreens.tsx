@@ -26,11 +26,11 @@ const GamesScreen: React.FC<Props> = ({ navigation }) => {
       <Text style={styles.subtitle}>Play and break the ice!</Text>
 
       <View style={styles.grid}>
-        <GameCard name="Truth or Dare 🔥" image={require('../assets/gameScreenImages/truth-or-dare_orig.png')} onPress={() => handlePlay('TruthDare')} />
-        <GameCard name="Would You Rather ❓" image={require('../assets/gameScreenImages/would-you-rather-questions.jpg')} onPress={() => handlePlay('Would You Rather')} />
-        <GameCard name="Couple Quiz 💕" image={require('../assets/gameScreenImages/would-you-rather-questions.jpg')} onPress={() => handlePlay('Couple Quiz')} />
-        <GameCard name="Flirty Questions 💌" image={require('../assets/gameScreenImages/flirty-questions.jpeg')} onPress={() => handlePlay('Flirty Questions')} />
-        <GameCard name="Never Have I Ever 🍸" image={require('../assets/gameScreenImages/never-have-i-ever.jpeg')} onPress={() => handlePlay('Never Have I Ever')} />
+        <GameCard name="Truth or Dare 🔥" image={require('../../assets/gameScreenImages/truth-or-dare_orig.png')} onPress={() => handlePlay('TruthOrDareModeSelection')} />
+        <GameCard name="Would You Rather ❓" image={require('../../assets/gameScreenImages/would-you-rather-questions.jpg')} onPress={() => handlePlay('Would You Rather')} />
+        <GameCard name="Couple Quiz 💕" image={require('../../assets/gameScreenImages/would-you-rather-questions.jpg')} onPress={() => handlePlay('Couple Quiz')} />
+        <GameCard name="Flirty Questions 💌" image={require('../../assets/gameScreenImages/flirty-questions.jpeg')} onPress={() => handlePlay('Flirty Questions')} />
+        <GameCard name="Never Have I Ever 🍸" image={require('../../assets/gameScreenImages/never-have-i-ever.jpeg')} onPress={() => handlePlay('Never Have I Ever')} />
       </View>
     </View>
   );

@@ -23,6 +23,7 @@
     "expo-application": "~5.3.0",
     "expo-auth-session": "~5.0.2",
     "expo-av": "~13.4.1",
+    "expo-blur": "^14.1.5",
     "expo-constants": "~14.4.2",
     "expo-dev-client": "^5.0.14",
     "expo-device": "~5.4.0",

@@ -89,7 +89,7 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ClerkProvider 
-        publishableKey={process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY}
+        publishableKey="pk_test_bWF0dXJlLW9jdG9wdXMtNTkuY2xlcmsuYWNjb3VudHMuZGV2JA"
         tokenCache={tokenCache}
       >
         <RegistrationProvider>

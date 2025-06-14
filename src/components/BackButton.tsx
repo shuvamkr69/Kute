@@ -3,13 +3,13 @@ import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 
-interface HeaderProps {
+interface BackButtonProps {
   title: string;
   color?: string;
   size?: number;
 }
 
-const Header: React.FC<HeaderProps> = ({ title, color = "#FFFFFF", size = 24 }) => {
+const BackButton: React.FC<BackButtonProps> = ({ title, color = "#FFFFFF", size = 24 }) => {
   const navigation = useNavigation();
 
   return (
@@ -40,4 +40,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Header;
+export default BackButton;

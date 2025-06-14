@@ -53,7 +53,7 @@
 
   type Props = NativeStackScreenProps<any, "Chat">;
 
-  const socket = io("http://192.168.193.211:3000");
+  const socket = io("http://192.168.18.150:3000");
 
   const MessageItem = memo(
     ({
@@ -510,7 +510,7 @@
                   </View>
                 )}
               </TouchableOpacity>
-              <Text style={styles.chatHeader}>{userName.split(" ")[0]}</Text>
+              <Text style={styles.chatBackButton}>{userName.split(" ")[0]}</Text>
             </View>
           </View>
 
@@ -666,7 +666,7 @@
       shadowOffset: { width: 0, height: 2 },
       shadowRadius: 4,
     },
-    chatHeader: {
+    chatBackButton: {
       fontSize: 18,
       fontWeight: "bold",
       color: "white",

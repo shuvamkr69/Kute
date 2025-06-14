@@ -17,7 +17,7 @@ import api from "../utils/api";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
 import Icon from "react-native-vector-icons/FontAwesome";
-import Header from "../components/BackButton";
+import BackButton from "../components/BackButton";
 
 type Props = NativeStackScreenProps<any, "PhotoVerification">;
 
@@ -244,7 +244,7 @@ const getProfilePhoto = async () => {
 
   return (
     <View style={styles.backButtonContainer}>
-      <Header title="Photo Verification" />
+      <BackButton title="Photo Verification" />
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>Show them you're real</Text>
         <Text style={styles.subtitle}>

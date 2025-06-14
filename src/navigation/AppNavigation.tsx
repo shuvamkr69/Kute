@@ -21,11 +21,15 @@ import "react-native-gesture-handler";
 import MatchScreen from "../screens/MatchScreen";
 import ChatScreen from "../screens/ChatScreen";
 import ChatsScreen from "../screens/AllChats";
-import TruthDareScreen from "../screens/games/TruthOrDare";
 import BoostsAndLikesScreen from "../screens/BoostsAndLikes";
 import AdvancedFilteringScreen from "../screens/AdvancedFiltering"; // Import your Advanced Filtering screen
 import OtherProfileScreen from "../screens/OtherProfileScreen";
 import PhotoVerificationScreen from "../screens/PhotoVerification";
+import ModeSelection from "../screens/games/TruthOrDare/ModeSelection";
+import SinglePlayerGame from "../screens/games/TruthOrDare/SinglePlayerGame";
+import MultiplayerGame from "../screens/games/TruthOrDare/MultiPlayerGame";
+import TruthAnswerScreen from "../screens/games/TruthOrDare/TruthAnswerScreen";
+import TruthPromptSelectionScreen from "../screens/games/TruthOrDare/TruthPromptSelectionScreen";
 
 const Stack = createNativeStackNavigator(); // Standard Stack Navigator
 
@@ -62,11 +66,17 @@ export default function AppNavigation() {
             <Stack.Screen name="MatchScreen" component={MatchScreen} />
             <Stack.Screen name="Chat" component={ChatScreen} />
             <Stack.Screen name="AllChatScreen" component={ChatsScreen} />
-            <Stack.Screen name="TruthDare" component={TruthDareScreen} />
             <Stack.Screen name="BoostsAndLikes" component={BoostsAndLikesScreen} />
             <Stack.Screen name="AdvancedFiltering" component={AdvancedFilteringScreen} />
             <Stack.Screen name="OtherProfile" component={OtherProfileScreen} />
             <Stack.Screen name="PhotoVerification" component={PhotoVerificationScreen} />
+            <Stack.Screen name="SinglePlayerGame" component={SinglePlayerGame} />
+            <Stack.Screen name="TruthOrDareModeSelection" component={ModeSelection} />
+            <Stack.Screen name="MultiPlayerGame" component={MultiplayerGame} />
+            <Stack.Screen name="TruthAnswerScreen" component={TruthAnswerScreen} />
+            <Stack.Screen name="TruthPromptSelectionScreen" component={TruthPromptSelectionScreen} />
+
+
 
           </>
         ) : (

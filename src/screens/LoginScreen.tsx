@@ -147,7 +147,6 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
           Register
         </Text>
       </Text>
-      <Button title="Photo Screen" onPress={() => navigation.navigate('AddProfilePictures')} />
     </View>
   );
 };

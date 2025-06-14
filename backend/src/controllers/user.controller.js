@@ -50,7 +50,6 @@ const registerUser = asyncHandler(async (req, res) => {
     pushToken,
     religion,
   } = req.body;
-  console.log("Request Body:", req.body);
   // Parse location string to array of numbers if needed
   let parsedLocation = location;
   if (typeof location === "string") {

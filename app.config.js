@@ -47,7 +47,7 @@ export default {
     },
     extra: {
       eas: {
-        projectId: "f594befe-5db9-4f21-8da2-62d2e3f41100"
+        projectId: "cdf1fe10-b5fb-47b9-9847-db1763012342"
       },
       FACE_API_KEY: process.env.FACE_API_KEY,
       FACE_API_SECRET: process.env.FACE_API_SECRET

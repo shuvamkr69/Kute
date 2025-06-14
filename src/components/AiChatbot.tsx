@@ -17,7 +17,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import api from "../utils/api";
 import { Animated, PanResponder, Dimensions } from "react-native";
-import Header from "./BackButton";
+import BackButton from "./BackButton";
 import { Ionicons } from "@expo/vector-icons";
 
 type Message = {

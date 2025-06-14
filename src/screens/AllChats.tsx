@@ -19,7 +19,7 @@ import { io } from "socket.io-client";
 import Icon from "react-native-vector-icons/FontAwesome";
 import LoadingScreen from "./LoadingScreen";
 
-const socket = io("http://192.168.193.211:3000");
+const socket = io("http://192.168.18.150:3000");
 
 type Props = NativeStackScreenProps<any, "AllChatScreen">;
 
@@ -196,24 +196,28 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
       <Text style={styles.headingText}>Your Chats</Text>
   
       <FlatList
-        data={chats}
-        keyExtractor={(item) => item._id}
-        renderItem={renderChatItem}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyStateContainer}>
-            <Image
-              source={require("../assets/icons/koala.png")}
-              style={{ width: 150, height: 150, marginBottom: 20 }}
-            />
-            <Text style={styles.noChatsText}>
-              No DMs? Clearly, they fear the power of the perfect reply
-            </Text>
-          </View>
-        }
+  data={chats}
+  keyExtractor={(item) => item._id}
+  renderItem={renderChatItem}
+  refreshControl={
+    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+  }
+  contentContainerStyle={[
+    chats.length === 0 && { flex: 1, justifyContent: 'center' },
+  ]}
+  ListEmptyComponent={
+    <View style={styles.emptyStateContainer}>
+      <Image
+        source={require("../assets/icons/koala.png")}
+        style={{ width: 150, height: 150, marginBottom: 20 }}
       />
+      <Text style={styles.noChatsText}>
+        No DMs? Clearly, they fear the power of the perfect reply
+      </Text>
+    </View>
+  }
+/>
+
     </View>
   );
 };
@@ -237,12 +241,11 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   emptyStateContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: '100%',
-    padding: 20,
-  },
+  justifyContent: 'center',
+  alignItems: 'center',
+  padding: 20,
+},
+
   loaderContainer: {
     flex: 1,
     justifyContent: "center",
