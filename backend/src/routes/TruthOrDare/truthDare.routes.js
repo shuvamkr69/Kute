@@ -1,33 +1,29 @@
 import express from 'express';
 import {
-  getPrompt,
-  submitResult,
-  getLeaderboard,
   leaveQueue,
   joinQueue,
   sendTruthQuestion,
   submitTruthAnswer,
   rateTruthAnswer,
-  submitFeedback,
   getMatchStatus,
+  choosePrompt,
 } from '../../controllers/TruthOrDare/truthDare.controller.js';
 import { matchPlayer } from '../../controllers/TruthOrDare/truthDare.controller.js';
 
 const TDrouter = express.Router();
 
-TDrouter.get('/prompt', getPrompt);
-TDrouter.get('/leaderboard', getLeaderboard);
-TDrouter.get("/status/:matchId", getMatchStatus);
 
 
-TDrouter.post('/match', matchPlayer); // 👈 Register the match endpoint
-TDrouter.post('/submit', submitResult);
-TDrouter.post("/leave", leaveQueue); // ✅ Add this line
-TDrouter.post('/join', joinQueue);
-TDrouter.post("/sendQuestion", sendTruthQuestion);
-TDrouter.post("/submitAnswer", submitTruthAnswer);
-TDrouter.post("/rateAnswer", rateTruthAnswer);
-TDrouter.post("/feedback", submitFeedback);
+TDrouter.post("/join", joinQueue);           // Player joins matchmaking
+TDrouter.post("/leave", leaveQueue);         // Player leaves matchmaking
+TDrouter.post("/match", matchPlayer);        // Match players
+TDrouter.get("/status/:matchId", getMatchStatus); // 🔁 Used for polling
+TDrouter.post("/sendQuestion", sendTruthQuestion); // P2 sends truth question
+TDrouter.post("/submitAnswer", submitTruthAnswer); // P1 submits answer
+TDrouter.post("/rateAnswer", rateTruthAnswer);     // P2 rates answer
+TDrouter.post("/choosePrompt", choosePrompt);
+
+
 
 
 export default TDrouter;

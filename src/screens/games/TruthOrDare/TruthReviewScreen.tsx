@@ -1,91 +1,68 @@
+// screens/TruthReviewScreen.tsx
+
 import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
+  StyleSheet,
   ActivityIndicator,
 } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useSocket } from "../../../hooks/useSocket";
 import api from "../../../utils/api";
 
 type RootStackParamList = {
-  TruthReviewScreen: {
-    matchId: string;
-    currentUserId: string;
-  };
+  TruthReviewScreen: { matchId: string; answer: string };
+  MultiPlayerGame: { currentUserId: string };
 };
 
 type Props = NativeStackScreenProps<RootStackParamList, "TruthReviewScreen">;
 
 const TruthReviewScreen: React.FC<Props> = ({ route, navigation }) => {
-  const { matchId, currentUserId } = route.params;
-  const socket = useSocket();
+  const { matchId, answer } = route.params;
+  const [submitting, setSubmitting] = useState(false);
 
-  const [answer, setAnswer] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [feedbackGiven, setFeedbackGiven] = useState(false);
-
-  useEffect(() => {
-    if (!socket) return;
-
-    socket.emit("join_match", { matchId, userId: currentUserId });
-
-    socket.on("receive_truth_answer", ({ answer }) => {
-      setAnswer(answer);
-      setLoading(false);
-    });
-
-    return () => {
-      socket.off("receive_truth_answer");
-    };
-  }, [socket]);
-
-  const handleFeedback = async (liked: boolean) => {
+  const rateAnswer = async (isThumbsUp: boolean) => {
     try {
-      await api.post("/api/v1/truthDare/feedback", {
+      setSubmitting(true);
+
+      await api.post("/api/v1/truth-dare/rate-answer", {
         matchId,
-        fromUserId: currentUserId,
-        liked,
+        isThumbsUp,
       });
-      setFeedbackGiven(true);
-    } catch (error) {
-      console.error("Feedback error:", error);
+
+      navigation.navigate("MultiPlayerGame", {
+        currentUserId: "", // 👈 Replace with actual user ID if needed
+      });
+    } catch (err) {
+      console.error("❌ Failed to rate answer:", err);
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
     <View style={styles.container}>
-      {loading ? (
-        <>
-          <Text style={styles.text}>Opponent is answering...</Text>
-          <ActivityIndicator size="large" color="#FF6F61" />
-        </>
-      ) : (
-        <>
-          <Text style={styles.title}>Opponent's Answer:</Text>
-          <Text style={styles.answer}>{answer}</Text>
+      <Text style={styles.title}>Your opponent's answer:</Text>
+      <Text style={styles.answer}>{answer}</Text>
 
-          {!feedbackGiven ? (
-            <View style={styles.buttonRow}>
-              <TouchableOpacity
-                style={[styles.feedbackButton, { backgroundColor: "#28a745" }]}
-                onPress={() => handleFeedback(true)}
-              >
-                <Text style={styles.feedbackText}>👍 Thumbs Up</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.feedbackButton, { backgroundColor: "#dc3545" }]}
-                onPress={() => handleFeedback(false)}
-              >
-                <Text style={styles.feedbackText}>👎 Thumbs Down</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <Text style={styles.thanks}>Thanks for your feedback!</Text>
-          )}
-        </>
+      {submitting ? (
+        <ActivityIndicator size="large" color="#FF6F61" />
+      ) : (
+        <View style={styles.buttonRow}>
+          <TouchableOpacity
+            style={[styles.button, styles.up]}
+            onPress={() => rateAnswer(true)}
+          >
+            <Text style={styles.buttonText}>👍 Thumbs Up</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.button, styles.down]}
+            onPress={() => rateAnswer(false)}
+          >
+            <Text style={styles.buttonText}>👎 Thumbs Down</Text>
+          </TouchableOpacity>
+        </View>
       )}
     </View>
   );
@@ -97,45 +74,43 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#121212",
-    justifyContent: "center",
-    alignItems: "center",
     padding: 20,
-  },
-  text: {
-    color: "#ccc",
-    fontSize: 18,
-    textAlign: "center",
-    marginBottom: 20,
+    justifyContent: "center",
   },
   title: {
     fontSize: 20,
     color: "#fff",
-    fontWeight: "bold",
-    marginBottom: 10,
+    marginBottom: 12,
+    textAlign: "center",
   },
   answer: {
     fontSize: 18,
-    color: "#f0f0f0",
+    color: "#eee",
     marginBottom: 30,
+    padding: 12,
+    borderRadius: 10,
+    backgroundColor: "#1e1e1e",
+    borderColor: "#444",
+    borderWidth: 1,
     textAlign: "center",
   },
   buttonRow: {
     flexDirection: "row",
-    justifyContent: "center",
-    gap: 20,
+    justifyContent: "space-around",
   },
-  feedbackButton: {
-    padding: 14,
+  button: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
     borderRadius: 10,
-    marginHorizontal: 10,
   },
-  feedbackText: {
+  up: {
+    backgroundColor: "#28a745",
+  },
+  down: {
+    backgroundColor: "#dc3545",
+  },
+  buttonText: {
     color: "#fff",
     fontSize: 16,
-  },
-  thanks: {
-    color: "#66ff99",
-    fontSize: 16,
-    marginTop: 20,
   },
 });

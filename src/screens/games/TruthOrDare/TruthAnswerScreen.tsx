@@ -1,118 +1,66 @@
 // screens/TruthAnswerScreen.tsx
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
   TextInput,
   TouchableOpacity,
   StyleSheet,
+  Alert,
 } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useSocket } from "../../../hooks/useSocket";
-import { ScrollView, RefreshControl } from "react-native";
+import api from "../../../utils/api";
 
 type RootStackParamList = {
-  TruthAnswerScreen: { matchId: string; currentUserId: string };
-  TruthReviewScreen: { matchId: string; currentUserId: string; answer: string };
+  TruthAnswerScreen: {
+    matchId: string;
+    currentUserId: string;
+    question: string;
+  };
+  TruthReviewScreen: { matchId: string; answer: string };
 };
 
 type Props = NativeStackScreenProps<RootStackParamList, "TruthAnswerScreen">;
 
 const TruthAnswerScreen: React.FC<Props> = ({ route, navigation }) => {
-  const { matchId, currentUserId } = route.params;
-  const socket = useSocket();
-
-  const [question, setQuestion] = useState<string | null>(null);
-  const [typing, setTyping] = useState(false);
+  const { matchId, currentUserId, question } = route.params;
   const [answer, setAnswer] = useState("");
-  const [refreshing, setRefreshing] = useState(false);
 
+  const handleSubmit = async () => {
+    if (answer.trim() === "") return;
 
+    try {
+      await api.post("/api/v1/truth-dare/submit-answer", {
+        matchId,
+        fromUserId: currentUserId,
+        answer,
+      });
 
-  const handleRefresh = () => {
-    setRefreshing(true);
-
-    if (socket) {
-      socket.emit("join_match", { matchId, userId: currentUserId });
+      navigation.navigate("TruthReviewScreen", { matchId, answer });
+    } catch (error) {
+      console.error("❌ Failed to submit answer:", error);
+      Alert.alert("Error", "Could not submit your answer. Please try again.");
     }
-
-    setTimeout(() => {
-      setRefreshing(false);
-    }, 1000); // simulate quick refresh delay
-  };
-
-
-
-  
-  useEffect(() => {
-    if (!socket) return;
-
-    socket.emit("join_match", { matchId, userId: currentUserId });
-
-    socket.on("truth_typing", () => {
-      setTyping(true);
-      setTimeout(() => setTyping(false), 1500); // auto-hide after brief period
-    });
-
-    socket.on("receive_truth_question", ({ question }) => {
-      setQuestion(question);
-    });
-
-    return () => {
-      socket.off("truth_typing");
-      socket.off("receive_truth_question");
-    };
-  }, [socket]);
-
-  const handleSubmit = () => {
-    if (!answer.trim()) return;
-
-    socket?.emit("submit_truth_answer", {
-      matchId,
-      fromUserId: currentUserId,
-      answer,
-    });
-
-    navigation.navigate("TruthReviewScreen", {
-      matchId,
-      currentUserId,
-      answer,
-    });
   };
 
   return (
-    <ScrollView
-      contentContainerStyle={[styles.container, { flexGrow: 1 }]}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-      }
-    >
-      {!question ? (
-        <>
-          <Text style={styles.status}>Waiting for question...</Text>
-          {typing && <Text style={styles.typing}>Opponent is typing...</Text>}
-        </>
-      ) : (
-        <>
-          <Text style={styles.questionLabel}>Question:</Text>
-          <Text style={styles.questionText}>{question}</Text>
+    <View style={styles.container}>
+      <Text style={styles.questionText}>{question}</Text>
 
-          <TextInput
-            value={answer}
-            onChangeText={setAnswer}
-            placeholder="Type your answer..."
-            placeholderTextColor="#777"
-            style={styles.input}
-            multiline
-          />
+      <TextInput
+        style={styles.input}
+        value={answer}
+        onChangeText={setAnswer}
+        placeholder="Your answer..."
+        placeholderTextColor="#888"
+        multiline
+      />
 
-          <TouchableOpacity onPress={handleSubmit} style={styles.button}>
-            <Text style={styles.buttonText}>Submit Answer</Text>
-          </TouchableOpacity>
-        </>
-      )}
-    </ScrollView>
+      <TouchableOpacity style={styles.button} onPress={handleSubmit}>
+        <Text style={styles.buttonText}>Submit Answer</Text>
+      </TouchableOpacity>
+    </View>
   );
 };
 
@@ -125,42 +73,33 @@ const styles = StyleSheet.create({
     padding: 20,
     justifyContent: "center",
   },
-  questionLabel: { color: "#aaa", fontSize: 16, marginBottom: 6 },
   questionText: {
     color: "#fff",
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: "bold",
     marginBottom: 20,
-  },
-  status: {
-    color: "#aaa",
-    fontSize: 18,
     textAlign: "center",
-    marginBottom: 10,
-  },
-  typing: {
-    color: "#FF6F61",
-    fontSize: 16,
-    textAlign: "center",
-    marginBottom: 10,
   },
   input: {
     backgroundColor: "#1e1e1e",
     color: "#fff",
-    padding: 16,
-    borderRadius: 10,
-    borderColor: "#333",
+    borderColor: "#444",
     borderWidth: 1,
+    padding: 14,
+    borderRadius: 10,
     fontSize: 16,
     minHeight: 100,
-    marginBottom: 20,
     textAlignVertical: "top",
+    marginBottom: 20,
   },
   button: {
-    backgroundColor: "#FF6F61",
+    backgroundColor: "#28a745",
     padding: 14,
     borderRadius: 10,
     alignItems: "center",
   },
-  buttonText: { color: "#fff", fontSize: 18 },
+  buttonText: {
+    color: "#fff",
+    fontSize: 18,
+  },
 });

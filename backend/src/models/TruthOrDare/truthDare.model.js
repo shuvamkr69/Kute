@@ -14,19 +14,23 @@ const scoreSchema = new mongoose.Schema({
   rating: { type: Number, default: 1000 }, // new field
 });
 
-
 const waitingSchema = new mongoose.Schema({
   userId: { type: String, unique: true },
   genderPreference: String,
   status: { type: String, default: "waiting" }, // 'waiting' or 'matched'
   matchId: { type: String, default: null },
   isChooser: Boolean,
-  promptType: { type: String, enum: ["truth", "dare"], default: null }, // ✅ ADD THIS
   truthQuestion: { type: String, default: null },
   hasAnswered: { type: Boolean, default: false },
   receivedAnswer: { type: String, default: null },
-});
 
+  // 👇 Add this field for TTL
+  createdAt: {
+    type: Date,
+    default: Date.now,
+    expires: 21600 // 6 hours = 21600 seconds
+  }
+});
 
 
 

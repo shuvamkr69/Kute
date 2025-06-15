@@ -1,3 +1,5 @@
+// src/screens/TruthOrDare/MultiPlayerGame.tsx
+
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -7,14 +9,13 @@ import {
   ActivityIndicator,
   Dimensions,
   Image,
-  Modal,
   RefreshControl,
   ScrollView,
 } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import api from "../../../utils/api";
 import { useFocusEffect } from "@react-navigation/native";
-import { useSocket } from "../../../hooks/useSocket"; // ✅ Ensure this exists
+import { LinearGradient } from "expo-linear-gradient";
 
 const { width } = Dimensions.get("window");
 const genders = ["Male", "Female", "Others"];
@@ -33,7 +34,6 @@ type Props = NativeStackScreenProps<RootStackParamList, "MultiPlayerGame">;
 
 const MultiplayerGame: React.FC<Props> = ({ navigation, route }) => {
   const { currentUserId } = route.params;
-  const socket = useSocket();
 
   const [selectedGender, setSelectedGender] = useState<string | null>(null);
   const [waiting, setWaiting] = useState(false);
@@ -41,137 +41,89 @@ const MultiplayerGame: React.FC<Props> = ({ navigation, route }) => {
   const [isSpinnerDone, setSpinnerDone] = useState(false);
   const [amIChooser, setAmIChooser] = useState<"me" | "opponent" | null>(null);
   const [promptType, setPromptType] = useState<"truth" | "dare" | null>(null);
-  const [dareOptions, setDareOptions] = useState<string[]>([]);
-  const [selectedDare, setSelectedDare] = useState<string | null>(null);
-  const [customDare, setCustomDare] = useState<string>("");
-  const [uploadModal, setUploadModal] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [chooserId, setChooserId] = useState<string | null>(null);
-
-//   const handleRefresh = async () => {
-//   setRefreshing(true);
-
-//   try {
-//     if (!matchedUser) return;
-
-//     // Rejoin room if needed
-//     socket?.emit("join_match", {
-//       matchId: matchedUser.matchId,
-//       userId: currentUserId,
-//     });
-
-//     // Get updated match info
-//     const res = await api.get(`/api/v1/users/status/${matchedUser.matchId}`);
-//     const players = res.data;
-    
-
-//     const me = players.find((p) => p.userId === currentUserId);
-//     const other = players.find((p) => p.userId !== currentUserId);
-
-//     if (!me || !other) return;
-
-//     const chosenPrompt = other.promptType;
-
-//     if (chosenPrompt === "truth" || chosenPrompt === "dare") {
-//       setPromptType(chosenPrompt);
-//       console.log("navigated :   ",chosenPrompt)
-
-//       // If I am NOT the chooser and truth is selected, navigate to TruthSetScreen ----p2
-//       if (chosenPrompt === "truth" && !me.isChooser) {
-//         navigation.navigate("TruthSetScreen", {
-//           matchId: matchedUser.matchId,
-//           currentUserId,
-//         });
-//       }
-
-//       // If you're the answerer and question already came (optional fallback) -----p1
-//       if (me.truthQuestion) {
-//         navigation.navigate("TruthAnswerScreen", {
-//           matchId: matchedUser.matchId,
-//           currentUserId,
-//           question: me.truthQuestion,
-//         });
-//       }
-
-      
-//     }
-//   } catch (error) {
-//     console.error("Refresh error:", error);
-//   } finally {
-//     setRefreshing(false);
-//   }
-// };
-
-
-useEffect(() => {
-  const interval = setInterval(async () => {
-    try {
-      if (!matchedUser) return;
-
-      // Rejoin room if needed
-      socket?.emit("join_match", {
-        matchId: matchedUser.matchId,
-        userId: currentUserId,
-      });
-
-      // Get updated match info
-      const res = await api.get(`/api/v1/users/status/${matchedUser.matchId}`);
-      const players = res.data;
-
-      const me = players.find((p: any) => p.userId === currentUserId);
-      const other = players.find((p: any) => p.userId !== currentUserId);
-
-      if (!me || !other) return;
-
-      const chosenPrompt = other.promptType;
-
-      if (chosenPrompt === "truth" || chosenPrompt === "dare") {
-        setPromptType(chosenPrompt);
-        console.log("Prompt selected by opponent:", chosenPrompt);
-
-        if (chosenPrompt === "truth" && !me.isChooser) {
-          navigation.navigate("TruthSetScreen", {
-            matchId: matchedUser.matchId,
-            currentUserId,
-          });
-        }
-
-        // if (chosenPrompt === "dare" && !me.isChooser) {
-        //   navigation.navigate("DareSetScreen", {
-        //     matchId: matchedUser.matchId,
-        //     currentUserId,
-        //   }); // 🛠️ Implement this screen later
-        // }
-
-        if (me.truthQuestion) {
-          navigation.navigate("TruthAnswerScreen", {
-            matchId: matchedUser.matchId,
-            currentUserId,
-            question: me.truthQuestion,
-          });
-        }
-      }
-    } catch (error) {
-      console.error("Refresh error:", error);
-    }
-  }, 2000);
-
-  return () => clearInterval(interval);
-}, [matchedUser]);
-
-
-
 
   useFocusEffect(
     React.useCallback(() => {
       return () => {
-        api
-          .post("/api/v1/users/leave", { userId: currentUserId })
-          .catch((err) => console.error("Leave queue error:", err.message));
+        if (!matchedUser) {
+          api
+            .post("/api/v1/users/leave", { userId: currentUserId })
+            .catch((err) => console.error("Leave queue error:", err.message));
+        } else {
+          console.log("✅ Skipping leave because user is matched");
+        }
       };
-    }, [currentUserId])
+    }, [currentUserId, matchedUser])
   );
+
+  const handleRefresh = async () => {
+    if (!matchedUser?.matchId) {
+      console.warn("⚠️ No matchedUser or matchId during refresh");
+      return;
+    }
+
+    setRefreshing(true);
+    try {
+      console.log("🔄 Polling match status for:", matchedUser.matchId);
+
+      const res = await api.get(`/api/v1/users/status/${matchedUser.matchId}`);
+      const players = res.data;
+
+      if (!Array.isArray(players) || players.length < 2) {
+        console.warn("⏳ Match not complete yet. Waiting for both players...");
+        return;
+      }
+
+      const me = players.find((p: any) => p.userId === currentUserId);
+      const other = players.find((p: any) => p.userId !== currentUserId);
+
+      if (!me || !other) {
+        console.warn("❌ Could not identify current or opponent player");
+        return;
+      }
+
+      const prompt = other.promptType;
+
+      if (prompt === "truth" && !me.isChooser) {
+        console.log("➡️ Navigating to TruthSetScreen (P2)");
+        navigation.navigate("TruthSetScreen", {
+          matchId: matchedUser.matchId,
+          currentUserId,
+        });
+      }
+
+      if (me.truthQuestion && me.isChooser) {
+        console.log("➡️ Navigating to TruthAnswerScreen (P1)");
+        navigation.navigate("TruthAnswerScreen", {
+          matchId: matchedUser.matchId,
+          currentUserId,
+          question: me.truthQuestion,
+        });
+      }
+    } catch (err: any) {
+      if (err.response?.status === 404) {
+        console.log("⏳ Match not found yet (404), retrying later...");
+      } else {
+        console.error("Manual refresh failed:", err.message);
+      }
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const handleGenderSelect = async (gender: string) => {
+    try {
+      const res = await api.post("/api/v1/users/join", {
+        userId: currentUserId,
+        genderPreference: gender,
+      });
+      if (res.data.success) setSelectedGender(gender);
+    } catch (err) {
+      console.error("Join error:", err.message);
+    }
+  };
 
   useEffect(() => {
     if (!selectedGender) return;
@@ -197,12 +149,11 @@ useEffect(() => {
           );
 
           setMatchedUser({
-            ...otherPlayer,
             matchId: res.data.players[0].matchId,
           });
-          setWaiting(false);
           setAmIChooser(currentPlayer.isChooser ? "me" : "opponent");
           setCountdown(5);
+          setWaiting(false);
         } else {
           timeoutId = setTimeout(tryMatch, 3000);
         }
@@ -235,38 +186,99 @@ useEffect(() => {
     return () => clearTimeout(timer);
   }, [countdown]);
 
-  const handleGenderSelect = async (gender: string) => {
+  // 🟡 Polling for game updates (prompt selection or question arrival)               ----------error causing
+  useEffect(() => {
+    if (!matchedUser?.matchId) {
+      console.warn("⛔ matchedUser or matchId is missing, skipping polling.");
+      return;
+    }
+
+    console.log("📡 Starting polling for matchId:", matchedUser.matchId);
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await api.get(
+          `/api/v1/users/status/${matchedUser.matchId}`
+        );
+        const players = res.data;
+
+        console.log("📥 Players from API:", players);
+
+        const me = players.find((p: any) => p.userId === currentUserId);
+        const other = players.find((p: any) => p.userId !== currentUserId);
+
+        if (!me || !other) {
+          console.warn("⚠️ Could not find both players.");
+          return;
+        }
+
+        const prompt = other.promptType;
+
+        // P2 navigates to TruthSetScreen
+        if (prompt === "truth" && !me.isChooser) {
+          console.log("🧭 Navigating to TruthSetScreen");
+          setPromptType("truth");
+          navigation.navigate("TruthSetScreen", {
+            matchId: matchedUser.matchId,
+            currentUserId,
+          });
+        }
+
+        // P1 navigates to TruthAnswerScreen when question received
+        if (me.truthQuestion && me.isChooser) {
+          console.log("🧭 Navigating to TruthAnswerScreen");
+          navigation.navigate("TruthAnswerScreen", {
+            matchId: matchedUser.matchId,
+            currentUserId,
+            question: me.truthQuestion,
+          });
+        }
+      } catch (err: any) {
+        console.error("❌ Polling error:", err?.response?.data || err.message);
+      }
+    }, 2000);
+
+    return () => {
+      console.log("🛑 Stopping polling interval");
+      clearInterval(interval);
+    };
+  }, [matchedUser]);
+
+  const handlePromptSelect = async (type: "truth" | "dare") => {
+    if (!matchedUser) return;
+
     try {
-      const res = await api.post("/api/v1/users/join", {
+      await api.post("/api/v1/users/choosePrompt", {
+        matchId: matchedUser.matchId,
         userId: currentUserId,
-        genderPreference: gender,
+        promptType: type,
       });
-      if (res.data.success) setSelectedGender(gender);
+
+      setPromptType(type);
     } catch (err) {
-      console.error("Join error:", err.message);
+      console.error("Prompt selection failed:", err.message);
     }
   };
 
-  useEffect(() => {
-    if (!socket || !matchedUser || !promptType || amIChooser !== "me") return;
-
-    socket.emit("join_match", {
-      matchId: matchedUser.matchId,
-      userId: currentUserId,
-    });
-
-    socket.on("receive_truth_question", ({ question }) => {
-      navigation.navigate("TruthAnswerScreen", {
-        matchId: matchedUser.matchId,
-        currentUserId,
-        question,
-      });
-    });
-
-    return () => {
-      socket.off("receive_truth_question");
-    };
-  }, [socket, matchedUser, promptType, amIChooser]);
+  const renderTruthOrDareChoice = () => (
+    <View style={styles.centered}>
+      <Text style={styles.text}>You were chosen! Pick Truth or Dare:</Text>
+      <View style={styles.buttonRow}>
+        <TouchableOpacity
+          style={[styles.choiceButton, { backgroundColor: "#3498db" }]}
+          onPress={() => handlePromptSelect("truth")}
+        >
+          <Text style={styles.choiceText}>Truth</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.choiceButton, { backgroundColor: "#e67e22" }]}
+          onPress={() => handlePromptSelect("dare")}
+        >
+          <Text style={styles.choiceText}>Dare</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
 
   const renderGenderSelection = () => (
     <View style={styles.genderContainer}>
@@ -286,106 +298,6 @@ useEffect(() => {
     </View>
   );
 
-  const renderWaiting = () => (
-    <View style={styles.backButtonContainer}>
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#FF6F61" />
-        <Text style={styles.text}>Finding your match...</Text>
-      </View>
-    </View>
-  );
-
-  const renderSpinner = () => (
-    <View style={styles.centered}>
-      <Image
-        source={require("../../../assets/images/wine-bottle.jpg")}
-        style={{ width: 150, height: 150 }}
-      />
-      <Text style={styles.text}>Spinning bottle...</Text>
-    </View>
-  );
-
-  useEffect(() => {
-    if (!socket || !matchedUser || amIChooser === null) return;
-
-    socket.emit("join_match", {
-      matchId: matchedUser.matchId,
-      userId: currentUserId,
-    });
-
-    const handlePromptChosen = ({ chosenPrompt }: any) => {
-      setPromptType(chosenPrompt);
-
-      // If I am NOT the chooser and prompt is truth, navigate to TruthSetScreen
-      if (chosenPrompt === "truth" && amIChooser === "opponent") {
-        navigation.navigate("TruthSetScreen", {
-          matchId: matchedUser.matchId,
-          currentUserId,
-        });
-      }
-    };
-
-    socket.on("prompt_chosen", handlePromptChosen);
-
-    return () => {
-      socket.off("prompt_chosen", handlePromptChosen);
-    };
-  }, [socket, matchedUser, amIChooser]);
-
-  const renderTruthOrDareChoice = () => (
-    <View style={styles.centered}>
-      <Text style={styles.text}>You were chosen! Pick Truth or Dare:</Text>
-      <View style={styles.buttonRow}>
-        <TouchableOpacity
-          style={[styles.choiceButton, { backgroundColor: "#3498db" }]}
-          onPress={() => {
-            setPromptType("truth");
-
-            // ADD THIS:
-            socket?.emit("prompt_chosen", {
-              matchId: matchedUser.matchId,
-              chosenPrompt: "truth",
-              fromUserId: currentUserId,
-            });
-          }}
-        >
-          <Text style={styles.choiceText}>Truth</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.choiceButton, { backgroundColor: "#e67e22" }]}
-          onPress={() => setPromptType("dare")}
-        >
-          <Text style={styles.choiceText}>Dare</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-
-  const renderDareOptions = () => (
-    <View style={styles.centered}>
-      <Text style={styles.text}>Choose or type a dare:</Text>
-      {dareOptions.map((dare, i) => (
-        <TouchableOpacity
-          key={i}
-          style={[
-            styles.dareOption,
-            selectedDare === dare && styles.selectedDareOption,
-          ]}
-          onPress={() => setSelectedDare(dare)}
-        >
-          <Text style={styles.dareText}>{dare}</Text>
-        </TouchableOpacity>
-      ))}
-      <Text style={[styles.text, { marginTop: 10 }]}>or write your own:</Text>
-      <TouchableOpacity
-        style={styles.customDareButton}
-        onPress={() => setUploadModal(true)}
-      >
-        <Text style={styles.choiceText}>Upload Dare Evidence</Text>
-      </TouchableOpacity>
-    </View>
-  );
-
   const renderCountdown = () => (
     <View style={styles.centered}>
       <Text style={[styles.text, { fontSize: 32 }]}>Match found!</Text>
@@ -401,87 +313,85 @@ useEffect(() => {
   );
 
   return (
-    <ScrollView
-      contentContainerStyle={[styles.container, { flexGrow: 1 }]}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={renderCountdown} />
-      }
-    >
-      {!selectedGender ? (
-        renderGenderSelection()
-      ) : waiting && !matchedUser ? (
-        renderWaiting()
-      ) : countdown !== null ? (
-        renderCountdown()
-      ) : !isSpinnerDone ? (
-        renderSpinner()
-      ) : amIChooser === "me" ? (
-        !promptType ? (
-          renderTruthOrDareChoice()
-        ) : promptType === "dare" ? (
-          renderDareOptions()
+    <LinearGradient colors={["#1a1a1a", "#121212"]} style={styles.container}>
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1 }}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+        }
+      >
+        {!selectedGender ? (
+          renderGenderSelection()
+        ) : waiting && !matchedUser ? (
+          <ActivityIndicator size="large" color="#FF6F61" />
+        ) : countdown !== null ? (
+          renderCountdown()
+        ) : !isSpinnerDone ? (
+          <Text style={styles.text}>Spinning bottle...</Text>
+        ) : amIChooser === "me" ? (
+          !promptType ? (
+            renderTruthOrDareChoice()
+          ) : (
+            <Text style={styles.text}>
+              Waiting for question from opponent...
+            </Text>
+          )
         ) : (
-          <Text style={styles.text}>Waiting for question from opponent...</Text>
-        )
-      ) : (
-        <Text style={styles.text}>Opponent is choosing Truth or Dare...</Text>
-      )}
-    </ScrollView>
+          <Text style={styles.text}>Opponent is choosing Truth or Dare...</Text>
+        )}
+      </ScrollView>
+    </LinearGradient>
   );
 };
 
 export default MultiplayerGame;
 
 const styles = StyleSheet.create({
-  backButtonContainer: { flex: 1, backgroundColor: "#121212" },
-  container: { flex: 1, backgroundColor: "#121212", padding: 20 },
-  centered: { alignItems: "center", justifyContent: "center", flex: 1 },
-  title: { color: "#fff", fontSize: 22, fontWeight: "bold", marginBottom: 20 },
+  container: { flex: 1, padding: 24 },
+  centered: { flex: 1, alignItems: "center", justifyContent: "center" },
   text: {
     color: "#ccc",
-    fontSize: 16,
+    fontSize: 18,
     textAlign: "center",
-    marginVertical: 10,
+    marginVertical: 12,
+  },
+  title: {
+    fontSize: 26,
+    fontWeight: "bold",
+    color: "#fff",
+    textAlign: "center",
+    marginBottom: 16,
   },
   genderContainer: { flex: 1, justifyContent: "center" },
   genderButton: {
-    backgroundColor: "#1e1e1e",
-    padding: 12,
+    backgroundColor: "#222",
+    padding: 14,
     marginVertical: 10,
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#444",
+    borderColor: "#555",
+    elevation: 3,
   },
-  selectedGender: { borderColor: "#FF6F61", backgroundColor: "#2e2e2e" },
+  selectedGender: {
+    borderColor: "#FF6F61",
+    backgroundColor: "#2e2e2e",
+  },
   genderText: { color: "#fff", fontSize: 18, textAlign: "center" },
   buttonRow: {
     flexDirection: "row",
     justifyContent: "center",
     gap: 20,
-    marginTop: 20,
+    marginTop: 24,
   },
-  choiceButton: { padding: 16, borderRadius: 14 },
-  choiceText: { color: "#fff", fontSize: 18 },
-  dareOption: {
-    backgroundColor: "#1e1e1e",
-    padding: 10,
-    marginVertical: 6,
-    borderRadius: 10,
-    borderColor: "#444",
-    borderWidth: 1,
+  choiceButton: {
+    paddingVertical: 16,
+    paddingHorizontal: 30,
+    borderRadius: 20,
+    elevation: 4,
   },
-  selectedDareOption: { backgroundColor: "#FF6F61" },
-  dareText: { color: "#fff" },
-  customDareButton: {
-    backgroundColor: "#28a745",
-    padding: 12,
-    borderRadius: 10,
-    marginTop: 12,
-  },
-  modalContent: {
-    flex: 1,
-    backgroundColor: "#121212",
-    justifyContent: "center",
-    alignItems: "center",
+  choiceText: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#fff",
   },
 });

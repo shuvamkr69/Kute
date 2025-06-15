@@ -145,38 +145,22 @@ export const leaveQueue = async (req, res) => {
   }
 
   try {
+    const player = await WaitingPlayer.findOne({ userId });
+
+    if (!player) {
+      return res.status(404).json({ error: "Player not found" });
+    }
+
+    if (player.status === "matched") {
+      // 🛑 Do NOT remove matched players!
+      return res.json({ message: "User is matched — not removing." });
+    }
+
     await WaitingPlayer.deleteOne({ userId });
-    res.json({ success: true });
+    return res.json({ message: "User removed from waiting list" });
   } catch (err) {
-    console.error("Error removing user from queue:", err);
-    res.status(500).json({ error: "Failed to leave queue" });
-  }
-};
-
-
-
-//truth controller
-
-export const sendTruthQuestion = async (req, res) => {
-  const { matchId, fromUserId, question } = req.body;
-
-  try {
-    await WaitingPlayer.updateMany(
-      { matchId },
-      {
-        $set: {
-          truthQuestion: question,
-          truthQuestionGiven: true, // ✅ set flag
-          hasAnswered: false,
-          receivedAnswer: null,
-        },
-      }
-    );
-
-    res.status(200).json({ message: "Question sent" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Could not send truth question" });
+    console.error("Error in leaveQueue:", err);
+    return res.status(500).json({ error: "Server error" });
   }
 };
 
@@ -184,26 +168,10 @@ export const sendTruthQuestion = async (req, res) => {
 
 
 
-export const submitTruthAnswer = async (req, res) => {
-  const { matchId, fromUserId, answer } = req.body;
 
-  try {
-    await WaitingPlayer.updateOne(
-      { matchId, userId: fromUserId },
-      {
-        $set: {
-          receivedAnswer: answer,
-          hasAnswered: true,
-        },
-      }
-    );
 
-    res.status(200).json({ message: "Answer submitted" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to submit answer" });
-  }
-};
+
+
 
 //rating the truth
 export const rateTruthAnswer = async (req, res) => {
@@ -222,7 +190,32 @@ export const rateTruthAnswer = async (req, res) => {
 };
 
 
-// controllers/truthDare.controller.js (or wherever your controllers are)
+
+
+
+export const submitFeedback = async (req, res) => {
+  const { matchId, fromUserId, liked } = req.body;
+  const points = liked ? 10 : -10;
+
+  await WaitingPlayer.updateOne(
+    { matchId, userId: { $ne: fromUserId } }, // Update opponent's score
+    { $inc: { rating: points } }
+  );
+
+  res.json({ success: true });
+};
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 export const getMatchStatus = async (req, res) => {
@@ -238,18 +231,11 @@ export const getMatchStatus = async (req, res) => {
     if (!players || players.length !== 2) {
       return res.status(404).json({ error: "Match not found or incomplete" });
     }
+    console.log("🔍 Match ID:", matchId);
+console.log("🧑‍🤝‍🧑 Players in match:", players);
 
-    // Include promptType and relevant fields
-    const response = players.map((player) => ({
-      userId: player.userId,
-      isChooser: player.isChooser,
-      truthQuestion: player.truthQuestion,
-      hasAnswered: player.hasAnswered,
-      receivedAnswer: player.receivedAnswer,
-      promptType: player.promptType, // ✅ make sure this is returned
-    }));
 
-    return res.json(response);
+    return res.json(players);
   } catch (err) {
     console.error("Error in getMatchStatus:", err);
     res.status(500).json({ error: "Server error" });
@@ -258,14 +244,107 @@ export const getMatchStatus = async (req, res) => {
 
 
 
-export const submitFeedback = async (req, res) => {
-  const { matchId, fromUserId, liked } = req.body;
-  const points = liked ? 10 : -10;
 
-  await WaitingPlayer.updateOne(
-    { matchId, userId: { $ne: fromUserId } }, // Update opponent's score
-    { $inc: { rating: points } }
-  );
 
-  res.json({ success: true });
+export const sendTruthQuestion = async (req, res) => {
+  const { matchId, question } = req.body;
+
+  if (!matchId || !question) {
+    return res.status(400).json({ error: "Missing matchId or question" });
+  }
+
+  try {
+    const players = await WaitingPlayer.find({ matchId });
+
+    const chooser = players.find((p) => p.isChooser === true);
+    const nonChooser = players.find((p) => p.isChooser === false);
+
+    if (!chooser || !nonChooser) {
+      return res.status(404).json({ error: "Players not found" });
+    }
+
+    // Store the question in chooser's doc
+    await WaitingPlayer.updateOne(
+      { userId: chooser.userId },
+      { $set: { truthQuestion: question } }
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Error in sendTruthQuestion:", err);
+    res.status(500).json({ error: "Server error" });
+  }
 };
+
+export const submitTruthAnswer = async (req, res) => {
+  const { matchId, answer } = req.body;
+
+  if (!matchId || !answer) {
+    return res.status(400).json({ error: "Missing matchId or answer" });
+  }
+
+  try {
+    const players = await WaitingPlayer.find({ matchId });
+
+    const nonChooser = players.find((p) => p.isChooser === false);
+
+    if (!nonChooser) {
+      return res.status(404).json({ error: "Opponent not found" });
+    }
+
+    await WaitingPlayer.updateOne(
+      { userId: nonChooser.userId },
+      { $set: { receivedAnswer: answer } }
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Error in submitTruthAnswer:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+
+export const choosePrompt = async (req, res) => {
+  const { userId, matchId, promptType } = req.body;
+
+  if (!userId || !matchId || !promptType) {
+    return res
+      .status(400)
+      .json({ error: "Missing userId, matchId, or promptType" });
+  }
+
+  const normalizedPrompt = promptType.toLowerCase();
+
+  if (normalizedPrompt !== "truth" && normalizedPrompt !== "dare") {
+    return res.status(400).json({ error: "Invalid promptType. Must be 'truth' or 'dare'." });
+  }
+
+  try {
+    const players = await WaitingPlayer.find({ matchId });
+
+    if (!players || players.length !== 2) {
+      return res.status(404).json({ error: "Match not found or incomplete" });
+    }
+
+    const targetPlayer = players.find(p => p.userId === userId);
+
+    if (!targetPlayer) {
+      return res.status(404).json({ error: "User not found in match" });
+    }
+
+    const updated = await WaitingPlayer.findOneAndUpdate(
+      { userId, matchId },
+      { promptType: normalizedPrompt },
+      { new: true }
+    );
+
+    console.log(`🎯 Prompt set to '${normalizedPrompt}' by user ${userId} in match ${matchId}`);
+
+    return res.json({ success: true, updated });
+  } catch (err) {
+    console.error("❌ Error in choosePrompt:", err);
+    return res.status(500).json({ error: "Server error" });
+  }
+};
+
