@@ -29,7 +29,7 @@ import ModeSelection from "../screens/games/TruthOrDare/ModeSelection";
 import SinglePlayerGame from "../screens/games/TruthOrDare/SinglePlayerGame";
 import MultiplayerGame from "../screens/games/TruthOrDare/MultiPlayerGame";
 import TruthAnswerScreen from "../screens/games/TruthOrDare/TruthAnswerScreen";
-import TruthPromptSelectionScreen from "../screens/games/TruthOrDare/TruthPromptSelectionScreen";
+import TruthSetScreen from "../screens/games/TruthOrDare/TruthSetScreen";
 
 const Stack = createNativeStackNavigator(); // Standard Stack Navigator
 
@@ -74,7 +74,7 @@ export default function AppNavigation() {
             <Stack.Screen name="TruthOrDareModeSelection" component={ModeSelection} />
             <Stack.Screen name="MultiPlayerGame" component={MultiplayerGame} />
             <Stack.Screen name="TruthAnswerScreen" component={TruthAnswerScreen} />
-            <Stack.Screen name="TruthPromptSelectionScreen" component={TruthPromptSelectionScreen} />
+            <Stack.Screen name="TruthSetScreen" component={TruthSetScreen} />
 
 
 

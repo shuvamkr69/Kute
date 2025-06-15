@@ -1,5 +1,3 @@
-// Updated MultiplayerGame.tsx with gender-based matchmaking logic
-
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -10,21 +8,18 @@ import {
   Dimensions,
   Image,
   Modal,
-  Alert,
-  Button,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { Video } from "expo-av";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import axios from "axios";
 import api from "../../../utils/api";
 import { useFocusEffect } from "@react-navigation/native";
+import { useSocket } from "../../../hooks/useSocket"; // ✅ Ensure this exists
+
 const { width } = Dimensions.get("window");
 const genders = ["Male", "Female", "Others"];
 
 export type RootStackParamList = {
   MultiPlayerGame: { currentUserId: string };
-  TruthAnswerScreen: { matchId: string; currentUserId: string };
+TruthAnswerScreen: { matchId: string; currentUserId: string; question: string };
   TruthSetScreen: { matchId: string; currentUserId: string };
 };
 
@@ -32,13 +27,13 @@ type Props = NativeStackScreenProps<RootStackParamList, "MultiPlayerGame">;
 
 const MultiplayerGame: React.FC<Props> = ({ navigation, route }) => {
   const { currentUserId } = route.params;
+  const socket = useSocket();
+
   const [selectedGender, setSelectedGender] = useState<string | null>(null);
   const [waiting, setWaiting] = useState(false);
   const [matchedUser, setMatchedUser] = useState<any>(null);
   const [isSpinnerDone, setSpinnerDone] = useState(false);
-  const [chosenPlayer, setChosenPlayer] = useState<"me" | "opponent" | null>(
-    null
-  );
+  const [amIChooser, setAmIChooser] = useState<"me" | "opponent" | null>(null);
   const [promptType, setPromptType] = useState<"truth" | "dare" | null>(null);
   const [dareOptions, setDareOptions] = useState<string[]>([]);
   const [selectedDare, setSelectedDare] = useState<string | null>(null);
@@ -48,30 +43,21 @@ const MultiplayerGame: React.FC<Props> = ({ navigation, route }) => {
 
   useFocusEffect(
     React.useCallback(() => {
-      // Screen is focused
-
       return () => {
-        // Screen is unfocused (navigated back or away)
         api
-          .post("/api/v1/users/leave", {
-            userId: currentUserId,
-          })
-          .catch((err) => {
-            console.error("Leave queue error:", err.message);
-          });
+          .post("/api/v1/users/leave", { userId: currentUserId })
+          .catch((err) => console.error("Leave queue error:", err.message));
       };
     }, [currentUserId])
   );
 
   useEffect(() => {
     if (!selectedGender) return;
-
     let isCancelled = false;
     let timeoutId: NodeJS.Timeout;
 
     const tryMatch = async () => {
       if (isCancelled) return;
-
       setWaiting(true);
 
       try {
@@ -88,13 +74,13 @@ const MultiplayerGame: React.FC<Props> = ({ navigation, route }) => {
             (p: any) => p.userId !== currentUserId
           );
 
-          setMatchedUser(otherPlayer);
+          setMatchedUser({
+            ...otherPlayer,
+            matchId: res.data.players[0].matchId,
+          });
           setWaiting(false);
-          console.log("choosen: ", currentPlayer.isChooser, " ", currentUserId)
-          setChosenPlayer(currentPlayer.isChooser ? "me" : "opponent");
+          setAmIChooser(currentPlayer.isChooser ? "me" : "opponent");
           setCountdown(5);
-
-          
         } else {
           timeoutId = setTimeout(tryMatch, 3000);
         }
@@ -105,12 +91,27 @@ const MultiplayerGame: React.FC<Props> = ({ navigation, route }) => {
     };
 
     tryMatch();
-
     return () => {
       isCancelled = true;
       clearTimeout(timeoutId);
     };
   }, [selectedGender]);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (countdown !== null && countdown > 0) {
+      timer = setTimeout(() => {
+        setCountdown((prev) => (prev ?? 1) - 1);
+      }, 1000);
+    }
+
+    if (countdown === 0) {
+      setSpinnerDone(true);
+      setCountdown(null);
+    }
+
+    return () => clearTimeout(timer);
+  }, [countdown]);
 
   const handleGenderSelect = async (gender: string) => {
     try {
@@ -118,14 +119,51 @@ const MultiplayerGame: React.FC<Props> = ({ navigation, route }) => {
         userId: currentUserId,
         genderPreference: gender,
       });
-
-      if (res.data.success) {
-        setSelectedGender(gender);
-      }
+      if (res.data.success) setSelectedGender(gender);
     } catch (err) {
       console.error("Join error:", err.message);
     }
   };
+
+  useEffect(() => {
+    if (!socket || !matchedUser || !promptType || amIChooser !== "me") return;
+
+    socket.emit("join_match", {
+      matchId: matchedUser.matchId,
+      userId: currentUserId,
+    });
+    console.log(matchedUser.matchId, "     ", currentUserId);
+
+    socket.on("receive_truth_question", ({ question }) => {
+  navigation.navigate("TruthAnswerScreen", {
+    matchId: matchedUser.matchId,
+    currentUserId,
+    question, // ✅ pass it to match the route type
+  });
+});
+
+
+    return () => {
+      socket.off("receive_truth_question");
+    };
+  }, [socket, matchedUser, promptType, amIChooser]);
+
+  useEffect(() => {
+    if (!promptType || !matchedUser) return;
+
+    // I am the chooser → I type the question
+    if (promptType === "truth" && amIChooser) {
+      navigation.navigate("TruthSetScreen", {
+        matchId: matchedUser.matchId,
+        currentUserId,
+      });
+    }
+
+    // I am the one chosen → wait for question
+    if (promptType === "truth" && !amIChooser) {
+      console.log("I was chosen. Waiting for question...");
+    }
+  }, [promptType, amIChooser, matchedUser]);
 
   const renderGenderSelection = () => (
     <View style={styles.genderContainer}>
@@ -164,13 +202,70 @@ const MultiplayerGame: React.FC<Props> = ({ navigation, route }) => {
     </View>
   );
 
+  useEffect(() => {
+  if (!socket || !matchedUser) return;
+
+  socket.emit("join_match", {
+    matchId: matchedUser.matchId,
+    userId: currentUserId,
+  });
+
+  socket.on("prompt_chosen", ({ chosenPrompt }) => {
+    setPromptType(chosenPrompt);
+  });
+
+  return () => {
+    socket.off("prompt_chosen");
+  };
+}, [socket, matchedUser]);
+
+
+
+//use effect for question fetching form p2
+useEffect(() => {
+  if (!matchedUser) return;
+
+  const interval = setInterval(async () => {
+    try {
+      const res = await api.get(`/api/v1/users/status/${matchedUser.matchId}`);
+      const me = res.data.find((p) => p.userId === currentUserId);
+
+      if (me?.truthQuestionGiven && me.truthQuestion) {
+        clearInterval(interval);
+
+        navigation.navigate("TruthAnswerScreen", {
+          matchId: matchedUser.matchId,
+          currentUserId,
+          question: me.truthQuestion,
+        });
+      }
+    } catch (err) {
+      console.error("Polling error:", err);
+    }
+  }, 2000);
+
+  return () => clearInterval(interval);
+}, [matchedUser]);
+
+
+
+
   const renderTruthOrDareChoice = () => (
     <View style={styles.centered}>
       <Text style={styles.text}>You were chosen! Pick Truth or Dare:</Text>
       <View style={styles.buttonRow}>
         <TouchableOpacity
           style={[styles.choiceButton, { backgroundColor: "#3498db" }]}
-          onPress={() => setPromptType("truth")}
+          onPress={() => {
+            setPromptType("truth");
+
+            // ADD THIS:
+            socket?.emit("prompt_chosen", {
+              matchId: matchedUser.matchId,
+              chosenPrompt: "truth",
+              fromUserId: currentUserId,
+            });
+          }}
         >
           <Text style={styles.choiceText}>Truth</Text>
         </TouchableOpacity>
@@ -183,39 +278,6 @@ const MultiplayerGame: React.FC<Props> = ({ navigation, route }) => {
       </View>
     </View>
   );
-
-  const renderCountdown = () => (
-    <View style={styles.centered}>
-      <Text style={[styles.text, { fontSize: 32 }]}>Match found!</Text>
-      <Text
-        style={[
-          styles.text,
-          { fontSize: 48, fontWeight: "bold", color: "#FF6F61" },
-        ]}
-      >
-        {countdown}
-      </Text>
-    </View>
-  );
-
-  useEffect(() => {
-  if (!promptType || !matchedUser) return;
-
-  if (promptType === "truth" && chosenPlayer === "me") {
-    navigation.navigate("TruthAnswerScreen", {
-      matchId: matchedUser.matchId,
-      currentUserId,
-    });
-  }
-
-  if (promptType === "truth" && chosenPlayer === "opponent") {
-    navigation.navigate("TruthSetScreen", {
-      matchId: matchedUser.matchId,
-      currentUserId,
-    });
-  }
-}, [promptType, chosenPlayer, matchedUser]);
-
 
   const renderDareOptions = () => (
     <View style={styles.centered}>
@@ -242,22 +304,19 @@ const MultiplayerGame: React.FC<Props> = ({ navigation, route }) => {
     </View>
   );
 
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-
-    if (countdown !== null && countdown > 0) {
-      timer = setTimeout(() => {
-        setCountdown((prev) => (prev ?? 1) - 1);
-      }, 1000);
-    }
-
-    if (countdown === 0) {
-      setSpinnerDone(true);
-      setCountdown(null);
-    }
-
-    return () => clearTimeout(timer);
-  }, [countdown]);
+  const renderCountdown = () => (
+    <View style={styles.centered}>
+      <Text style={[styles.text, { fontSize: 32 }]}>Match found!</Text>
+      <Text
+        style={[
+          styles.text,
+          { fontSize: 48, fontWeight: "bold", color: "#FF6F61" },
+        ]}
+      >
+        {countdown}
+      </Text>
+    </View>
+  );
 
   return (
     <View style={styles.container}>
@@ -269,19 +328,18 @@ const MultiplayerGame: React.FC<Props> = ({ navigation, route }) => {
         renderCountdown()
       ) : !isSpinnerDone ? (
         renderSpinner()
-      ) : chosenPlayer === "me" ? (
+      ) : amIChooser === "me" ? (
         !promptType ? (
           renderTruthOrDareChoice()
         ) : promptType === "dare" ? (
           renderDareOptions()
         ) : (
-          <Text style={styles.text}>Answer the truth question here...</Text>
+          <Text style={styles.text}>Waiting for question from opponent...</Text>
         )
       ) : (
         <Text style={styles.text}>Opponent is choosing Truth or Dare...</Text>
       )}
 
-      {/* Upload Modal (for Dare) */}
       <Modal visible={uploadModal} animationType="slide">
         <View style={styles.modalContent}>
           <Text style={styles.text}>

@@ -11,7 +11,9 @@ const gameSchema = new mongoose.Schema({
 const scoreSchema = new mongoose.Schema({
   userId: { type: String, unique: true },
   wins: { type: Number, default: 0 },
+  rating: { type: Number, default: 1000 }, // new field
 });
+
 
 const waitingSchema = new mongoose.Schema({
   userId: { type: String, unique: true },
@@ -19,10 +21,10 @@ const waitingSchema = new mongoose.Schema({
   status: { type: String, default: "waiting" }, // 'waiting' or 'matched'
   matchId: { type: String, default: null },
   isChooser: Boolean,
-  truthQuestion: { type: String, default: null },
+  truthQuestion: { type: String, default: null },       // the actual question
+  truthQuestionGiven: { type: Boolean, default: false }, // ✅ NEW FLAG
   hasAnswered: { type: Boolean, default: false },
   receivedAnswer: { type: String, default: null },
-  
 });
 
 

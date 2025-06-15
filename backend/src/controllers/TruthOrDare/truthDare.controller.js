@@ -159,15 +159,14 @@ export const sendTruthQuestion = async (req, res) => {
   try {
     await WaitingPlayer.updateMany(
       { matchId },
-      [
-        {
-          $set: {
-            truthQuestion: question,
-            hasAnswered: false,
-            receivedAnswer: null,
-          },
+      {
+        $set: {
+          truthQuestion: question,
+          truthQuestionGiven: true, // ✅ set flag
+          hasAnswered: false,
+          receivedAnswer: null,
         },
-      ]
+      }
     );
 
     res.status(200).json({ message: "Question sent" });
@@ -176,6 +175,17 @@ export const sendTruthQuestion = async (req, res) => {
     res.status(500).json({ error: "Could not send truth question" });
   }
 };
+
+export const getMatchStatus = async (req, res) => {
+  const { matchId } = req.params;
+  try {
+    const players = await WaitingPlayer.find({ matchId });
+    res.status(200).json(players);
+  } catch {
+    res.status(500).json({ error: "Failed to get match status" });
+  }
+};
+
 
 
 export const submitTruthAnswer = async (req, res) => {
@@ -199,5 +209,20 @@ export const submitTruthAnswer = async (req, res) => {
   }
 };
 
+//rating the truth
+export const rateTruthAnswer = async (req, res) => {
+  const { targetUserId, ratingDelta } = req.body;
+
+  try {
+    await Score.findOneAndUpdate(
+      { userId: targetUserId },
+      { $inc: { rating: ratingDelta } },
+      { upsert: true, new: true }
+    );
+    res.status(200).json({ message: "Rating updated" });
+  } catch {
+    res.status(500).json({ error: "Failed to update rating" });
+  }
+};
 
 

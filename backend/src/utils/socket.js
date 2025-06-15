@@ -1,48 +1,41 @@
+// utils/socket.js
 import { Server } from "socket.io";
 import { Message } from "../models/message.model.js";
+import { Score } from "../models/TruthOrDare/truthDare.model.js";
 
 let io = null;
-
 
 export const initializeSocket = (server) => {
   io = new Server(server, {
     cors: {
-      origin: "*", // Update with your frontend URL
+      origin: "*", // Update for production
       methods: ["GET", "POST"],
-      credentials: true
-    }
+      credentials: true,
+    },
   });
 
   io.on("connection", (socket) => {
     console.log("🔵 New client connected:", socket.id);
 
-    // ✅ Join conversation room
+    // Chat System
     socket.on("joinConversation", (convId) => {
       socket.join(convId);
       console.log(`📢 User joined conversation: ${convId}`);
     });
 
-    // ✅ Listen for new messages and broadcast them
     socket.on("sendMessage", (message) => {
-      console.log("📩 New message received:", message);
-
-      if (!message.convId) {
-        console.error("❌ Error: No conversation ID provided.");
-        return;
-      }
-
-      // ✅ Emit the message to all users in the room
+      if (!message.convId) return console.error("❌ No conversation ID.");
       io.to(message.convId).emit("newMessage", message);
     });
-    // 🟡 Typing event
+
     socket.on("typing", ({ convId, senderId }) => {
       socket.to(convId).emit("typing", { senderId });
     });
 
-    // ⚪ Stop typing event
     socket.on("stopTyping", ({ convId, senderId }) => {
       socket.to(convId).emit("stopTyping", { senderId });
     });
+
     socket.on("messageRead", async ({ conversationId, receiverId }) => {
       try {
         await Message.updateMany(
@@ -53,18 +46,54 @@ export const initializeSocket = (server) => {
           },
           { isRead: true }
         );
-    
+
         io.to(conversationId).emit("messageRead", {
           conversationId,
           seenBy: receiverId,
         });
       } catch (error) {
-        console.error("Failed to update message read status:", error);
+        console.error("❌ Failed to update message read status:", error);
       }
     });
-    
 
-    // ✅ Handle disconnection
+    // 🎯 Truth or Dare Game System
+
+    // Join match room
+    socket.on("join_match", ({ matchId, userId }) => {
+      socket.join(matchId);
+      console.log(`🎮 ${userId} joined match room ${matchId}`);
+    });
+
+    // Send truth question
+    socket.on("send_truth_question", ({ matchId, question, fromUserId }) => {
+      socket.to(matchId).emit("receive_truth_question", { question, fromUserId });
+    });
+
+    // Submit truth answer
+    socket.on("submit_truth_answer", ({ matchId, answer, fromUserId }) => {
+      socket.to(matchId).emit("receive_truth_answer", { answer, fromUserId });
+    });
+
+    // Rate answer (+10 or -10)
+    socket.on("rate_answer", async ({ targetUserId, isThumbsUp }) => {
+      const delta = isThumbsUp ? 10 : -10;
+
+      try {
+        await Score.findOneAndUpdate(
+          { userId: targetUserId },
+          { $inc: { rating: delta } },
+          { upsert: true, new: true }
+        );
+
+        // Optionally emit the new rating
+        socket.to(targetUserId).emit("rating_updated", { ratingChange: delta });
+
+        console.log(`📈 Rating ${isThumbsUp ? "increased" : "decreased"} by ${Math.abs(delta)} for user ${targetUserId}`);
+      } catch (err) {
+        console.error("❌ Failed to update rating:", err.message);
+      }
+    });
+
     socket.on("disconnect", () => {
       console.log("🔴 Client disconnected:", socket.id);
     });
