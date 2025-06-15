@@ -8,6 +8,8 @@ import {
   Dimensions,
   Image,
   Modal,
+  RefreshControl,
+  ScrollView,
 } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import api from "../../../utils/api";
@@ -19,7 +21,11 @@ const genders = ["Male", "Female", "Others"];
 
 export type RootStackParamList = {
   MultiPlayerGame: { currentUserId: string };
-TruthAnswerScreen: { matchId: string; currentUserId: string; question: string };
+  TruthAnswerScreen: {
+    matchId: string;
+    currentUserId: string;
+    question: string;
+  };
   TruthSetScreen: { matchId: string; currentUserId: string };
 };
 
@@ -40,6 +46,122 @@ const MultiplayerGame: React.FC<Props> = ({ navigation, route }) => {
   const [customDare, setCustomDare] = useState<string>("");
   const [uploadModal, setUploadModal] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [chooserId, setChooserId] = useState<string | null>(null);
+
+//   const handleRefresh = async () => {
+//   setRefreshing(true);
+
+//   try {
+//     if (!matchedUser) return;
+
+//     // Rejoin room if needed
+//     socket?.emit("join_match", {
+//       matchId: matchedUser.matchId,
+//       userId: currentUserId,
+//     });
+
+//     // Get updated match info
+//     const res = await api.get(`/api/v1/users/status/${matchedUser.matchId}`);
+//     const players = res.data;
+    
+
+//     const me = players.find((p) => p.userId === currentUserId);
+//     const other = players.find((p) => p.userId !== currentUserId);
+
+//     if (!me || !other) return;
+
+//     const chosenPrompt = other.promptType;
+
+//     if (chosenPrompt === "truth" || chosenPrompt === "dare") {
+//       setPromptType(chosenPrompt);
+//       console.log("navigated :   ",chosenPrompt)
+
+//       // If I am NOT the chooser and truth is selected, navigate to TruthSetScreen ----p2
+//       if (chosenPrompt === "truth" && !me.isChooser) {
+//         navigation.navigate("TruthSetScreen", {
+//           matchId: matchedUser.matchId,
+//           currentUserId,
+//         });
+//       }
+
+//       // If you're the answerer and question already came (optional fallback) -----p1
+//       if (me.truthQuestion) {
+//         navigation.navigate("TruthAnswerScreen", {
+//           matchId: matchedUser.matchId,
+//           currentUserId,
+//           question: me.truthQuestion,
+//         });
+//       }
+
+      
+//     }
+//   } catch (error) {
+//     console.error("Refresh error:", error);
+//   } finally {
+//     setRefreshing(false);
+//   }
+// };
+
+
+useEffect(() => {
+  const interval = setInterval(async () => {
+    try {
+      if (!matchedUser) return;
+
+      // Rejoin room if needed
+      socket?.emit("join_match", {
+        matchId: matchedUser.matchId,
+        userId: currentUserId,
+      });
+
+      // Get updated match info
+      const res = await api.get(`/api/v1/users/status/${matchedUser.matchId}`);
+      const players = res.data;
+
+      const me = players.find((p: any) => p.userId === currentUserId);
+      const other = players.find((p: any) => p.userId !== currentUserId);
+
+      if (!me || !other) return;
+
+      const chosenPrompt = other.promptType;
+
+      if (chosenPrompt === "truth" || chosenPrompt === "dare") {
+        setPromptType(chosenPrompt);
+        console.log("Prompt selected by opponent:", chosenPrompt);
+
+        if (chosenPrompt === "truth" && !me.isChooser) {
+          navigation.navigate("TruthSetScreen", {
+            matchId: matchedUser.matchId,
+            currentUserId,
+          });
+        }
+
+        // if (chosenPrompt === "dare" && !me.isChooser) {
+        //   navigation.navigate("DareSetScreen", {
+        //     matchId: matchedUser.matchId,
+        //     currentUserId,
+        //   }); // 🛠️ Implement this screen later
+        // }
+
+        if (me.truthQuestion) {
+          navigation.navigate("TruthAnswerScreen", {
+            matchId: matchedUser.matchId,
+            currentUserId,
+            question: me.truthQuestion,
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Refresh error:", error);
+    }
+  }, 2000);
+
+  return () => clearInterval(interval);
+}, [matchedUser]);
+
+
+
 
   useFocusEffect(
     React.useCallback(() => {
@@ -132,38 +254,19 @@ const MultiplayerGame: React.FC<Props> = ({ navigation, route }) => {
       matchId: matchedUser.matchId,
       userId: currentUserId,
     });
-    console.log(matchedUser.matchId, "     ", currentUserId);
 
     socket.on("receive_truth_question", ({ question }) => {
-  navigation.navigate("TruthAnswerScreen", {
-    matchId: matchedUser.matchId,
-    currentUserId,
-    question, // ✅ pass it to match the route type
-  });
-});
-
+      navigation.navigate("TruthAnswerScreen", {
+        matchId: matchedUser.matchId,
+        currentUserId,
+        question,
+      });
+    });
 
     return () => {
       socket.off("receive_truth_question");
     };
   }, [socket, matchedUser, promptType, amIChooser]);
-
-  useEffect(() => {
-    if (!promptType || !matchedUser) return;
-
-    // I am the chooser → I type the question
-    if (promptType === "truth" && amIChooser) {
-      navigation.navigate("TruthSetScreen", {
-        matchId: matchedUser.matchId,
-        currentUserId,
-      });
-    }
-
-    // I am the one chosen → wait for question
-    if (promptType === "truth" && !amIChooser) {
-      console.log("I was chosen. Waiting for question...");
-    }
-  }, [promptType, amIChooser, matchedUser]);
 
   const renderGenderSelection = () => (
     <View style={styles.genderContainer}>
@@ -203,52 +306,31 @@ const MultiplayerGame: React.FC<Props> = ({ navigation, route }) => {
   );
 
   useEffect(() => {
-  if (!socket || !matchedUser) return;
+    if (!socket || !matchedUser || amIChooser === null) return;
 
-  socket.emit("join_match", {
-    matchId: matchedUser.matchId,
-    userId: currentUserId,
-  });
+    socket.emit("join_match", {
+      matchId: matchedUser.matchId,
+      userId: currentUserId,
+    });
 
-  socket.on("prompt_chosen", ({ chosenPrompt }) => {
-    setPromptType(chosenPrompt);
-  });
+    const handlePromptChosen = ({ chosenPrompt }: any) => {
+      setPromptType(chosenPrompt);
 
-  return () => {
-    socket.off("prompt_chosen");
-  };
-}, [socket, matchedUser]);
-
-
-
-//use effect for question fetching form p2
-useEffect(() => {
-  if (!matchedUser) return;
-
-  const interval = setInterval(async () => {
-    try {
-      const res = await api.get(`/api/v1/users/status/${matchedUser.matchId}`);
-      const me = res.data.find((p) => p.userId === currentUserId);
-
-      if (me?.truthQuestionGiven && me.truthQuestion) {
-        clearInterval(interval);
-
-        navigation.navigate("TruthAnswerScreen", {
+      // If I am NOT the chooser and prompt is truth, navigate to TruthSetScreen
+      if (chosenPrompt === "truth" && amIChooser === "opponent") {
+        navigation.navigate("TruthSetScreen", {
           matchId: matchedUser.matchId,
           currentUserId,
-          question: me.truthQuestion,
         });
       }
-    } catch (err) {
-      console.error("Polling error:", err);
-    }
-  }, 2000);
+    };
 
-  return () => clearInterval(interval);
-}, [matchedUser]);
+    socket.on("prompt_chosen", handlePromptChosen);
 
-
-
+    return () => {
+      socket.off("prompt_chosen", handlePromptChosen);
+    };
+  }, [socket, matchedUser, amIChooser]);
 
   const renderTruthOrDareChoice = () => (
     <View style={styles.centered}>
@@ -319,7 +401,12 @@ useEffect(() => {
   );
 
   return (
-    <View style={styles.container}>
+    <ScrollView
+      contentContainerStyle={[styles.container, { flexGrow: 1 }]}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={renderCountdown} />
+      }
+    >
       {!selectedGender ? (
         renderGenderSelection()
       ) : waiting && !matchedUser ? (
@@ -339,18 +426,7 @@ useEffect(() => {
       ) : (
         <Text style={styles.text}>Opponent is choosing Truth or Dare...</Text>
       )}
-
-      <Modal visible={uploadModal} animationType="slide">
-        <View style={styles.modalContent}>
-          <Text style={styles.text}>
-            Upload your photo or video (view-once)
-          </Text>
-          <TouchableOpacity onPress={() => setUploadModal(false)}>
-            <Text style={{ color: "red", marginTop: 20 }}>Close</Text>
-          </TouchableOpacity>
-        </View>
-      </Modal>
-    </View>
+    </ScrollView>
   );
 };
 

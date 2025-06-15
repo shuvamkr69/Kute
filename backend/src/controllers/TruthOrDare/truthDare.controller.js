@@ -45,7 +45,11 @@ export const matchPlayer = async (req, res) => {
     return res.json({ matched: true, players });
   }
 
-  // Step 2: Try to find a match
+  if (!existing) {
+  return res.status(400).json({ error: "Player not in waiting queue." });
+}
+
+
   // Step 2: Try to find a match based on strict gender preference logic
 const match = await WaitingPlayer.findOne({
   userId: { $ne: userId },
@@ -176,15 +180,7 @@ export const sendTruthQuestion = async (req, res) => {
   }
 };
 
-export const getMatchStatus = async (req, res) => {
-  const { matchId } = req.params;
-  try {
-    const players = await WaitingPlayer.find({ matchId });
-    res.status(200).json(players);
-  } catch {
-    res.status(500).json({ error: "Failed to get match status" });
-  }
-};
+
 
 
 
@@ -226,3 +222,50 @@ export const rateTruthAnswer = async (req, res) => {
 };
 
 
+// controllers/truthDare.controller.js (or wherever your controllers are)
+
+
+export const getMatchStatus = async (req, res) => {
+  const { matchId } = req.params;
+
+  if (!matchId) {
+    return res.status(400).json({ error: "Missing matchId" });
+  }
+
+  try {
+    const players = await WaitingPlayer.find({ matchId });
+
+    if (!players || players.length !== 2) {
+      return res.status(404).json({ error: "Match not found or incomplete" });
+    }
+
+    // Include promptType and relevant fields
+    const response = players.map((player) => ({
+      userId: player.userId,
+      isChooser: player.isChooser,
+      truthQuestion: player.truthQuestion,
+      hasAnswered: player.hasAnswered,
+      receivedAnswer: player.receivedAnswer,
+      promptType: player.promptType, // ✅ make sure this is returned
+    }));
+
+    return res.json(response);
+  } catch (err) {
+    console.error("Error in getMatchStatus:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+
+
+export const submitFeedback = async (req, res) => {
+  const { matchId, fromUserId, liked } = req.body;
+  const points = liked ? 10 : -10;
+
+  await WaitingPlayer.updateOne(
+    { matchId, userId: { $ne: fromUserId } }, // Update opponent's score
+    { $inc: { rating: points } }
+  );
+
+  res.json({ success: true });
+};

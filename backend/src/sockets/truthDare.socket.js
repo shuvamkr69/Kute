@@ -14,12 +14,24 @@ export const registerTruthDareHandlers = (io) => {
 
     // Send truth question
     socket.on("send_truth_question", ({ matchId, question, fromUserId }) => {
-      socket.to(matchId).emit("receive_truth_question", { question, fromUserId });
+      socket
+        .to(matchId)
+        .emit("receive_truth_question", { question, fromUserId });
     });
 
     socket.on("prompt_chosen", ({ matchId, chosenPrompt, fromUserId }) => {
-  socket.to(matchId).emit("prompt_chosen", { chosenPrompt, fromUserId });
-});
+      socket.to(matchId).emit("prompt_chosen", { chosenPrompt, fromUserId });
+    });
+
+    // P2 shows "opponent is typing"
+    socket.on("truth_typing", ({ matchId }) => {
+      socket.to(matchId).emit("truth_typing");
+    });
+
+    // P2 receives the answer after P1 submits
+    socket.on("submit_truth_answer", ({ matchId, answer, fromUserId }) => {
+      socket.to(matchId).emit("receive_truth_answer", { answer, fromUserId });
+    });
 
     // Submit truth answer
     socket.on("submit_truth_answer", ({ matchId, answer, fromUserId }) => {
@@ -42,7 +54,11 @@ export const registerTruthDareHandlers = (io) => {
           ratingChange: delta,
         });
 
-        console.log(`✅ Rating updated for ${targetUserId}: ${delta > 0 ? "+" : ""}${delta}`);
+        console.log(
+          `✅ Rating updated for ${targetUserId}: ${
+            delta > 0 ? "+" : ""
+          }${delta}`
+        );
       } catch (err) {
         console.error("❌ Failed to update rating:", err.message);
       }

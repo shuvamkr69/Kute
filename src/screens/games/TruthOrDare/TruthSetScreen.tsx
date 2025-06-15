@@ -22,6 +22,7 @@ const TruthSetScreen: React.FC<Props> = ({ route, navigation }) => {
   const { matchId, currentUserId } = route.params;
   const socket = useSocket();
   const [question, setQuestion] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     if (socket) {
@@ -67,9 +68,25 @@ const TruthSetScreen: React.FC<Props> = ({ route, navigation }) => {
 export default TruthSetScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#121212", padding: 20, justifyContent: "center" },
-  header: { color: "#fff", fontSize: 22, fontWeight: "bold", marginBottom: 10, textAlign: "center" },
-  subtext: { color: "#ccc", fontSize: 16, marginBottom: 20, textAlign: "center" },
+  container: {
+    flex: 1,
+    backgroundColor: "#121212",
+    padding: 20,
+    justifyContent: "center",
+  },
+  header: {
+    color: "#fff",
+    fontSize: 22,
+    fontWeight: "bold",
+    marginBottom: 10,
+    textAlign: "center",
+  },
+  subtext: {
+    color: "#ccc",
+    fontSize: 16,
+    marginBottom: 20,
+    textAlign: "center",
+  },
   input: {
     backgroundColor: "#1e1e1e",
     color: "#fff",

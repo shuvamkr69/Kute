@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useSocket } from "../../../hooks/useSocket";
+import { ScrollView, RefreshControl } from "react-native";
 
 type RootStackParamList = {
   TruthAnswerScreen: { matchId: string; currentUserId: string };
@@ -25,7 +26,25 @@ const TruthAnswerScreen: React.FC<Props> = ({ route, navigation }) => {
   const [question, setQuestion] = useState<string | null>(null);
   const [typing, setTyping] = useState(false);
   const [answer, setAnswer] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
 
+
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+
+    if (socket) {
+      socket.emit("join_match", { matchId, userId: currentUserId });
+    }
+
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 1000); // simulate quick refresh delay
+  };
+
+
+
+  
   useEffect(() => {
     if (!socket) return;
 
@@ -63,7 +82,12 @@ const TruthAnswerScreen: React.FC<Props> = ({ route, navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView
+      contentContainerStyle={[styles.container, { flexGrow: 1 }]}
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+      }
+    >
       {!question ? (
         <>
           <Text style={styles.status}>Waiting for question...</Text>
@@ -88,14 +112,19 @@ const TruthAnswerScreen: React.FC<Props> = ({ route, navigation }) => {
           </TouchableOpacity>
         </>
       )}
-    </View>
+    </ScrollView>
   );
 };
 
 export default TruthAnswerScreen;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#121212", padding: 20, justifyContent: "center" },
+  container: {
+    flex: 1,
+    backgroundColor: "#121212",
+    padding: 20,
+    justifyContent: "center",
+  },
   questionLabel: { color: "#aaa", fontSize: 16, marginBottom: 6 },
   questionText: {
     color: "#fff",
@@ -103,8 +132,18 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 20,
   },
-  status: { color: "#aaa", fontSize: 18, textAlign: "center", marginBottom: 10 },
-  typing: { color: "#FF6F61", fontSize: 16, textAlign: "center", marginBottom: 10 },
+  status: {
+    color: "#aaa",
+    fontSize: 18,
+    textAlign: "center",
+    marginBottom: 10,
+  },
+  typing: {
+    color: "#FF6F61",
+    fontSize: 16,
+    textAlign: "center",
+    marginBottom: 10,
+  },
   input: {
     backgroundColor: "#1e1e1e",
     color: "#fff",

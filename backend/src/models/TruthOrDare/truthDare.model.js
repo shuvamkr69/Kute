@@ -21,8 +21,8 @@ const waitingSchema = new mongoose.Schema({
   status: { type: String, default: "waiting" }, // 'waiting' or 'matched'
   matchId: { type: String, default: null },
   isChooser: Boolean,
-  truthQuestion: { type: String, default: null },       // the actual question
-  truthQuestionGiven: { type: Boolean, default: false }, // ✅ NEW FLAG
+  promptType: { type: String, enum: ["truth", "dare"], default: null }, // ✅ ADD THIS
+  truthQuestion: { type: String, default: null },
   hasAnswered: { type: Boolean, default: false },
   receivedAnswer: { type: String, default: null },
 });
@@ -31,6 +31,5 @@ const waitingSchema = new mongoose.Schema({
 
 
 export const WaitingPlayer = mongoose.model("WaitingPlayer", waitingSchema);
-
 export const Game = mongoose.model("Game", gameSchema);
 export const Score = mongoose.model("Score", scoreSchema);

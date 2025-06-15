@@ -2,7 +2,7 @@
 import { useEffect, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 
-const SOCKET_URL = "http://localhost:5000"; // 🔁 Replace with your actual server
+const SOCKET_URL = "http://192.168.18.150:3000"; // 🔁 Replace with your actual server
 
 export const useSocket = () => {
   const socketRef = useRef<Socket | null>(null);
