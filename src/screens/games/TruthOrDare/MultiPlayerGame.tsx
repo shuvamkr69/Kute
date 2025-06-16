@@ -44,20 +44,6 @@ const MultiplayerGame: React.FC<Props> = ({ navigation, route }) => {
   const [countdown, setCountdown] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  useFocusEffect(
-    React.useCallback(() => {
-      return () => {
-        if (!matchedUser) {
-          api
-            .post("/api/v1/users/leave", { userId: currentUserId })
-            .catch((err) => console.error("Leave queue error:", err.message));
-        } else {
-          console.log("✅ Skipping leave because user is matched");
-        }
-      };
-    }, [currentUserId, matchedUser])
-  );
-
   const handleRefresh = async () => {
     if (!matchedUser?.matchId) {
       console.warn("⚠️ No matchedUser or matchId during refresh");
@@ -86,11 +72,24 @@ const MultiplayerGame: React.FC<Props> = ({ navigation, route }) => {
 
       const prompt = other.promptType;
 
-      if (prompt === "truth" && !me.isChooser) {
-        console.log("➡️ Navigating to TruthSetScreen (P2)");
-        navigation.navigate("TruthSetScreen", {
-          matchId: matchedUser.matchId,
-          currentUserId,
+      if (prompt === "truth" && !me.isChooser && promptType !== "truth") {
+        console.log(
+          "🧭 Navigating P2 to TruthSetScreen (promptType:",
+          prompt,
+          ")"
+        );
+        setPromptType("truth"); // prevent re-navigation
+        navigation.reset({
+          index: 0,
+          routes: [
+            {
+              name: "TruthSetScreen",
+              params: {
+                matchId: matchedUser.matchId,
+                currentUserId,
+              },
+            },
+          ],
         });
       }
 
@@ -186,10 +185,9 @@ const MultiplayerGame: React.FC<Props> = ({ navigation, route }) => {
     return () => clearTimeout(timer);
   }, [countdown]);
 
-  // 🟡 Polling for game updates (prompt selection or question arrival)               ----------error causing
+  // 🟡 Polling for game updates (prompt selection or question arrival)               
   useEffect(() => {
     if (!matchedUser?.matchId) {
-      console.warn("⛔ matchedUser or matchId is missing, skipping polling.");
       return;
     }
 
@@ -295,6 +293,31 @@ const MultiplayerGame: React.FC<Props> = ({ navigation, route }) => {
           <Text style={styles.genderText}>{g}</Text>
         </TouchableOpacity>
       ))}
+
+      {/*temporary button to remove waiting list*/}
+      <TouchableOpacity
+        style={{
+          marginTop: 40,
+          backgroundColor: "red",
+          padding: 12,
+          borderRadius: 10,
+        }}
+        onPress={async () => {
+          try {
+            const res = await api.delete("/api/v1/users/clear-waiting");
+            console.log("🧹 Cleared waiting list:", res.data);
+            alert("Waiting list cleared!");
+          } catch (err) {
+            console.error("Error clearing waiting list:", err.message);
+          }
+        }}
+      >
+        <Text
+          style={{ color: "white", fontWeight: "bold", textAlign: "center" }}
+        >
+          Clear Waiting List
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 

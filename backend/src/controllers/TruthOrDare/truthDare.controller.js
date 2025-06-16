@@ -348,3 +348,15 @@ export const choosePrompt = async (req, res) => {
   }
 };
 
+
+//clearing waiting list from mongo db button
+
+export const clearWaitingList = async (req, res) => {
+  try {
+    await WaitingPlayer.deleteMany({});
+    res.json({ success: true, message: "Waiting list cleared" });
+  } catch (err) {
+    console.error("❌ Failed to clear waiting list:", err);
+    res.status(500).json({ error: "Failed to clear waiting list" });
+  }
+};

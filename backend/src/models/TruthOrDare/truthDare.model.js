@@ -20,9 +20,11 @@ const waitingSchema = new mongoose.Schema({
   status: { type: String, default: "waiting" }, // 'waiting' or 'matched'
   matchId: { type: String, default: null },
   isChooser: Boolean,
+  promptType: { type: String, enum: ["truth", "dare", null], default: null },
   truthQuestion: { type: String, default: null },
   hasAnswered: { type: Boolean, default: false },
   receivedAnswer: { type: String, default: null },
+  
 
   // 👇 Add this field for TTL
   createdAt: {

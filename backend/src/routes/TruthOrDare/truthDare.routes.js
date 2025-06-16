@@ -7,6 +7,7 @@ import {
   rateTruthAnswer,
   getMatchStatus,
   choosePrompt,
+  clearWaitingList,
 } from '../../controllers/TruthOrDare/truthDare.controller.js';
 import { matchPlayer } from '../../controllers/TruthOrDare/truthDare.controller.js';
 
@@ -24,6 +25,7 @@ TDrouter.post("/rateAnswer", rateTruthAnswer);     // P2 rates answer
 TDrouter.post("/choosePrompt", choosePrompt);
 
 
+TDrouter.delete("/clear-waiting", clearWaitingList); // 🚨 DELETE route for admin use
 
 
 export default TDrouter;
