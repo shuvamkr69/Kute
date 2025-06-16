@@ -32,6 +32,11 @@ import TruthAnswerScreen from "../screens/games/TruthOrDare/TruthAnswerScreen";
 import TruthSetScreen from "../screens/games/TruthOrDare/TruthSetScreen";
 import TruthReviewScreen from "../screens/games/TruthOrDare/TruthReviewScreen";
 import WaitingForAnswerScreen from "../screens/games/TruthOrDare/WaitingForAnswerScreen";
+import GroupSizeSelectorScreen from "../screens/games/NeverHaveIEver/GroupSizeSelectorScreen";
+import SubmitPromptScreen from "../screens/games/NeverHaveIEver/SubmitPromptScreen";
+import WaitingForPromptScreen from "../screens/games/NeverHaveIEver/WaitingForPromptScreen";
+import WaitingRoomScreen from "../screens/games/NeverHaveIEver/WaitingRoomScreen";
+import AnswerPromptScreen from "../screens/games/NeverHaveIEver/AnswerPromptScreen";
 
 const Stack = createNativeStackNavigator(); // Standard Stack Navigator
 
@@ -73,12 +78,23 @@ export default function AppNavigation() {
             <Stack.Screen name="OtherProfile" component={OtherProfileScreen} />
             <Stack.Screen name="PhotoVerification" component={PhotoVerificationScreen} />
             <Stack.Screen name="SinglePlayerGame" component={SinglePlayerGame} />
+            
+            {/* truth and dare */}
             <Stack.Screen name="TruthOrDareModeSelection" component={ModeSelection} />
             <Stack.Screen name="MultiPlayerGame" component={MultiplayerGame} />
             <Stack.Screen name="TruthAnswerScreen" component={TruthAnswerScreen} />
             <Stack.Screen name="TruthSetScreen" component={TruthSetScreen} />
             <Stack.Screen name="TruthReviewScreen" component={TruthReviewScreen} />
             <Stack.Screen name="WaitingForAnswerScreen" component={WaitingForAnswerScreen} />
+
+            {/* never have i ever */}
+            <Stack.Screen name="GroupSizeSelectorScreen" component={GroupSizeSelectorScreen} />
+            <Stack.Screen name="SubmitPromptScreen" component={SubmitPromptScreen} />
+            <Stack.Screen name="WaitingForPromptScreen" component={WaitingForPromptScreen} />
+            <Stack.Screen name="WaitingRoomScreen" component={WaitingRoomScreen} />
+            <Stack.Screen name="AnswerPromptScreen" component={AnswerPromptScreen} />
+
+
 
 
           </>

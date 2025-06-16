@@ -9,7 +9,6 @@ export const verifyJWT = asyncHandler(async (req, res, next) => {
             (req.header("Authorization")?.startsWith("Bearer ") 
                 ? req.header("Authorization").replace("Bearer ", "") 
                 : null);
-                console.log("Extracted Token:", token);
         if (!token) {
             throw new ApiError(401, "Authorization token required");
         }

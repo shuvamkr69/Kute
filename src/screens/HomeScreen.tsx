@@ -29,10 +29,6 @@ const topBarHeight = 55; // Your top bar height
 const bottomTabHeight = Platform.OS === "ios" ? 70 : 55; // Your bottom tab height
 const availableHeight = screenHeight - topBarHeight - bottomTabHeight;
 
-
-
-
-
 type SwipeFeedbackType = "like" | "reject" | "superLike";
 
 type Props = NativeStackScreenProps<any, "Home">;
@@ -69,8 +65,6 @@ if (
 }
 
 const HomeScreen: React.FC<Props> = ({ navigation }) => {
-
-  
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
@@ -87,7 +81,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const screenWidth = Dimensions.get("window").width;
   const SWIPE_THRESHOLD = screenWidth * 0.7;
   const SWIPE_VERTICAL_THRESHOLD = 150; // Adjust this value (higher = needs more extreme swipe)
-  
+
   const [isModalAnimated, setIsModalAnimated] = useState(false);
   const modalAnimatedValue = new Animated.Value(0);
 
@@ -98,7 +92,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
       useNativeDriver: true,
     }).start(() => setIsModalAnimated(true));
   };
-  
+
   const modalSlideOut = () => {
     Animated.timing(modalAnimatedValue, {
       toValue: 0,
@@ -131,8 +125,6 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   }>({ visible: false, type: null });
 
   const feedbackAnim = useRef(new Animated.Value(0)).current;
-
-  
 
   const renderFeedbackSticker = () => {
     if (!swipeFeedback.visible || !swipeFeedback.type) return null;
@@ -553,7 +545,8 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
                   <View style={styles.detailsContainer}>
                     <View style={styles.nameContainer}>
                       <Text style={styles.name}>
-                        {profile.fullName?.split(" ")[0] || "User"} {profile.age}
+                        {profile.fullName?.split(" ")[0] || "User"}{" "}
+                        {profile.age}
                       </Text>
                       {profile.verifiedUser && (
                         <Image
@@ -574,10 +567,10 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
                       {profile.relationshipType || ""}
                     </Text>
                     <Text style={styles.modalLocation}>
-                    <Text style={styles.distance}>
-                      {Math.round(profile.distance) + " km away"}
+                      <Text style={styles.distance}>
+                        {Math.round(profile.distance) + " km away"}
+                      </Text>
                     </Text>
-                  </Text>
                     <Text style={styles.name}>{""}</Text>
                   </View>
                 </View>
