@@ -305,6 +305,7 @@ export const submitTruthAnswer = async (req, res) => {
 };
 
 
+
 export const choosePrompt = async (req, res) => {
   const { userId, matchId, promptType } = req.body;
 

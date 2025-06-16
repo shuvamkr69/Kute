@@ -28,6 +28,16 @@ export type RootStackParamList = {
     question: string;
   };
   TruthSetScreen: { matchId: string; currentUserId: string };
+  WaitingForAnswerScreen: {
+    matchId: string;
+    currentUserId: string;
+  };
+
+  TruthReviewScreen: {
+    matchId: string;
+    currentUserId: string;
+    answer: string;
+  };
 };
 
 type Props = NativeStackScreenProps<RootStackParamList, "MultiPlayerGame">;
@@ -43,6 +53,10 @@ const MultiplayerGame: React.FC<Props> = ({ navigation, route }) => {
   const [promptType, setPromptType] = useState<"truth" | "dare" | null>(null);
   const [countdown, setCountdown] = useState<number | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [hasNavigatedToSetScreen, setHasNavigatedToSetScreen] = useState(false);
+  const [hasNavigatedToAnswerScreen, setHasNavigatedToAnswerScreen] =
+    useState(false);
+  const [hasSeenReview, setHasSeenReview] = useState(false);
 
   const handleRefresh = async () => {
     if (!matchedUser?.matchId) {
@@ -72,29 +86,31 @@ const MultiplayerGame: React.FC<Props> = ({ navigation, route }) => {
 
       const prompt = other.promptType;
 
-      if (prompt === "truth" && !me.isChooser && promptType !== "truth") {
-        console.log(
-          "🧭 Navigating P2 to TruthSetScreen (promptType:",
-          prompt,
-          ")"
-        );
-        setPromptType("truth"); // prevent re-navigation
-        navigation.reset({
-          index: 0,
-          routes: [
-            {
-              name: "TruthSetScreen",
-              params: {
-                matchId: matchedUser.matchId,
-                currentUserId,
-              },
-            },
-          ],
+      if (prompt === "truth" && !me.isChooser && !hasNavigatedToSetScreen) {
+        console.log("🧭 Navigating to TruthSetScreen (P2)");
+        setHasNavigatedToSetScreen(true);
+        setPromptType("truth");
+
+        navigation.navigate("TruthSetScreen", {
+          matchId: matchedUser.matchId,
+          currentUserId,
+        });
+      }
+      // P2 navigates to TruthReviewScreen when answer is received
+      if (other.receivedAnswer && !me.isChooser && !hasSeenReview) {
+        console.log("📨 Navigating P2 to TruthReviewScreen");
+        setHasSeenReview(true);
+
+        navigation.navigate("TruthReviewScreen", {
+          matchId: matchedUser.matchId,
+          currentUserId,
+          answer: me.receivedAnswer,
         });
       }
 
-      if (me.truthQuestion && me.isChooser) {
+      if (me.truthQuestion && me.isChooser && !hasNavigatedToAnswerScreen) {
         console.log("➡️ Navigating to TruthAnswerScreen (P1)");
+        setHasNavigatedToAnswerScreen(true);
         navigation.navigate("TruthAnswerScreen", {
           matchId: matchedUser.matchId,
           currentUserId,
@@ -185,7 +201,7 @@ const MultiplayerGame: React.FC<Props> = ({ navigation, route }) => {
     return () => clearTimeout(timer);
   }, [countdown]);
 
-  // 🟡 Polling for game updates (prompt selection or question arrival)               
+  // 🟡 Polling for game updates (prompt selection or question arrival)
   useEffect(() => {
     if (!matchedUser?.matchId) {
       return;

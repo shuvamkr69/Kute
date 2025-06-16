@@ -31,9 +31,8 @@ const TruthAnswerScreen: React.FC<Props> = ({ route, navigation }) => {
     if (answer.trim() === "") return;
 
     try {
-      await api.post("/api/v1/truth-dare/submit-answer", {
+      await api.post("/api/v1/users/submitAnswer", {
         matchId,
-        fromUserId: currentUserId,
         answer,
       });
 

@@ -31,6 +31,7 @@ import MultiplayerGame from "../screens/games/TruthOrDare/MultiPlayerGame";
 import TruthAnswerScreen from "../screens/games/TruthOrDare/TruthAnswerScreen";
 import TruthSetScreen from "../screens/games/TruthOrDare/TruthSetScreen";
 import TruthReviewScreen from "../screens/games/TruthOrDare/TruthReviewScreen";
+import WaitingForAnswerScreen from "../screens/games/TruthOrDare/WaitingForAnswerScreen";
 
 const Stack = createNativeStackNavigator(); // Standard Stack Navigator
 
@@ -77,7 +78,7 @@ export default function AppNavigation() {
             <Stack.Screen name="TruthAnswerScreen" component={TruthAnswerScreen} />
             <Stack.Screen name="TruthSetScreen" component={TruthSetScreen} />
             <Stack.Screen name="TruthReviewScreen" component={TruthReviewScreen} />
-
+            <Stack.Screen name="WaitingForAnswerScreen" component={WaitingForAnswerScreen} />
 
 
           </>

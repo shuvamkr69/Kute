@@ -18,26 +18,21 @@ const TruthSetScreen: React.FC<Props> = ({ navigation, route }) => {
   const [question, setQuestion] = useState("");
 
   const handleSubmit = async () => {
-    if (!question.trim()) {
-      Alert.alert("Enter a question");
-      return;
-    }
+    if (!question.trim()) return;
 
     try {
-      const res = await api.post("/api/v1/users/sendQuestion", {
+      await api.post("/api/v1/users/sendQuestion", {
         matchId,
         question,
-        fromUserId: currentUserId,
       });
 
-      if (res.data.success) {
-        navigation.goBack(); // You can also navigate to a loading screen if you want
-      } else {
-        Alert.alert("Failed to send question");
-      }
+      // ✅ Navigate to WaitingForAnswerScreen
+      navigation.navigate("WaitingForAnswerScreen", {
+        matchId,
+        currentUserId,
+      });
     } catch (err) {
-      console.error("Submit error:", err);
-      Alert.alert("Something went wrong");
+      console.error("Error sending truth question:", err.message);
     }
   };
 
