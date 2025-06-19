@@ -1,13 +1,16 @@
 import React, { useEffect } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, Alert, BackHandler } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import api from "../../../utils/api";
+import { useFocusEffect } from "@react-navigation/native";
 
 type Props = NativeStackScreenProps<any, "WaitingForAnswerScreen">;
 
 const WaitingForAnswerScreen: React.FC<Props> = ({ navigation, route }) => {
-  const { currentUserId, matchId } = route.params;
+  const { currentUserId, matchId } = route?.params || {};
+
+  
 
   useEffect(() => {
     const interval = setInterval(async () => {

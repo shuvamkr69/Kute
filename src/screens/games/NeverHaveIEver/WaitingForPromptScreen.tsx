@@ -1,14 +1,90 @@
 // WaitingForPromptScreen.tsx
 import React, { useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, ActivityIndicator, StyleSheet, Alert, BackHandler } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import axios from 'axios';
 import api from '../../../utils/api';
+import { useFocusEffect } from '@react-navigation/native';
 
 type Props = NativeStackScreenProps<any, "WaitingForPromptScreen">;
 
 const WaitingForPromptScreen: React.FC<Props> = ({ navigation }) => {
   const [timeElapsed, setTimeElapsed] = useState(0);
+  const [hasNavigated, setHasNavigated] = useState(false);
+
+  useEffect(() => {
+    console.log("🧭 [NAVIGATION] Current screen: WaitingForPromptScreen");
+  }, []);
+
+  useEffect(() => {
+  const poll = setInterval(async () => {
+    const res = await api.get('/api/v1/users/neverhaveiever/current-turn');
+    const { userId, chanceHolderId, gamePhase, promptSubmitted } = res.data;
+    const isChanceHolder = userId === chanceHolderId;
+
+    if (!isChanceHolder && gamePhase === "answering" && promptSubmitted && !hasNavigated) {
+      setHasNavigated(true);
+      navigation.navigate("AnswerPromptScreen");
+    }
+  }, 1000);
+  return () => clearInterval(poll);
+}, [hasNavigated]);
+
+
+
+
+
+  useFocusEffect(          //leave waiing room if back button clicked
+  React.useCallback(() => {
+    const onBackPress = () => {
+      Alert.alert(
+        "Leave Waiting Room?",
+        "Do you want to leave the waiting room?",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Leave",
+            style: "destructive",
+            onPress: async () => {
+              try {
+                await api.post("/api/v1/users/neverhaveiever/leave");
+              } catch (err) {
+                console.error("Failed to leave waiting room:", err);
+              }
+              navigation.navigate("HomeTabs");
+            },
+          },
+        ]
+      );
+      return true; // Block default behavior
+    };
+
+    BackHandler.addEventListener('hardwareBackPress', onBackPress);
+    return () =>
+      BackHandler.removeEventListener('hardwareBackPress', onBackPress);
+  }, [])
+
+  
+);
+
+
+
+useEffect(() => {
+  const poll = setInterval(async () => {
+    try {
+      const res = await api.get('/api/v1/users/neverhaveiever/prompt-status');
+      if (res.data.promptReady && !hasNavigated) {
+        setHasNavigated(true);
+        navigation.navigate("AnswerPromptScreen");
+      }
+    } catch (err) {
+      console.error("Polling prompt error:", err);
+    }
+  }, 3000);
+  return () => clearInterval(poll);
+}, []);
+
+
 
    useEffect(() => {
     const pollMatchStatus = async () => {
@@ -27,27 +103,30 @@ const WaitingForPromptScreen: React.FC<Props> = ({ navigation }) => {
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeElapsed(prev => prev + 1);
-    }, 1000);
+//   useEffect(() => {
+//     const timer = setInterval(() => {
+//       setTimeElapsed(prev => prev + 1);
+//     }, 1000);
 
-    const pollPromptStatus = setInterval(async () => {
-      try {
-        const res = await api.get('/api/v1/users/neverhaveiever/prompt-status');
-        if (res.data.promptReady) {
-          navigation.navigate("AnswerPromptScreen");
-        }
-      } catch (err) {
-        console.error("Polling failed:", err);
-      }
-    }, 3000);
+//     const pollPromptStatus = setInterval(async () => {
+//       try {
+//         const res = await api.get('/api/v1/users/neverhaveiever/prompt-status');
+//         if (res.data.promptReady && !hasNavigated) {
+//   setHasNavigated(true);
+//   navigation.navigate("AnswerPromptScreen");
+// }
 
-    return () => {
-      clearInterval(timer);
-      clearInterval(pollPromptStatus);
-    };
-  }, []);
+
+//       } catch (err) {
+//         console.error("Polling failed:", err);
+//       }
+//     }, 3000);
+
+//     return () => {
+//       clearInterval(timer);
+//       clearInterval(pollPromptStatus);
+//     };
+//   }, []);
 
   return (
     <View style={styles.container}>

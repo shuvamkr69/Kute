@@ -90,9 +90,17 @@ export const submitPrompt = async (req, res) => {
       text: prompt,
       answers: [],
       createdAt: new Date(),
+      promptSubmitted: true,
     };
+    match.currentPrompt.gamePhase = "answering";
 
     await match.save();
+    const totalExpected = match.groupSize - 1;
+    const answersGiven = match.currentPrompt.answers.length;
+    if (answersGiven >= totalExpected) {
+      match.currentPrompt.gamePhase = "reviewing";
+    }
+
     res.json({ success: true });
   } catch (err) {
     console.error("Error submitting prompt:", err);
@@ -106,24 +114,34 @@ export const getCurrentTurn = async (req, res) => {
   try {
     const match = await NeverHaveIEverMatch.findOne({
       participants: userId,
-      status: 'in_progress'
+      status: "in_progress",
     });
 
     if (!match) {
-      return res.status(404).json({ error: 'No active match found' });
+      return res.status(404).json({ error: "No active match found" });
     }
 
     const currentChanceHolder = match.participants[match.chanceIndex];
 
     res.json({
       userId,
-      chanceHolderId: currentChanceHolder
+      chanceHolderId: currentChanceHolder,
+      promptSubmitted: match.currentPrompt?.promptSubmitted || false,
+      gamePhase: match.currentPrompt?.gamePhase || "typing",
+      turnInProgress: match.turnInProgress || false, // ✅ Add this
     });
+    if (!match || match.status !== "in_progress") {
+  return res.status(404).json({ error: "No active match found" });
+}
+
   } catch (err) {
     console.error("Failed to get current turn:", err);
     res.status(500).json({ error: "Server error" });
   }
 };
+
+
+
 
 
 // 4. Get prompt status (for non-holders to know if prompt is ready)
@@ -142,7 +160,10 @@ export const getPromptStatus = async (req, res) => {
 
     const promptReady = !!match.currentPrompt?.text;
 
-    res.json({ promptReady });
+    res.json({
+      promptReady,
+      prompt: match.currentPrompt?.text || "",
+    });
   } catch (err) {
     console.error("Error fetching prompt status:", err);
     res.status(500).json({ error: "Server error" });
@@ -160,7 +181,7 @@ export const submitAnswer = async (req, res) => {
     });
 
     if (!match || !match.currentPrompt) {
-      return res.status(404).json({ error: "No active prompt found" });
+      return res.json({ allAnswered: false, prompt: "", answers: [] });
     }
 
     const alreadyAnswered = match.currentPrompt.answers.find(
@@ -173,10 +194,47 @@ export const submitAnswer = async (req, res) => {
         .json({ error: "You already submitted your answer" });
     }
 
+    // Add answer
     match.currentPrompt.answers.push({ userId, response });
-    await match.save();
 
+    // Check if all non-chance users have answered
+    const totalExpected = match.groupSize - 1;
+    const answersGiven = match.currentPrompt.answers.length;
+
+    if (answersGiven === totalExpected) {
+    match.currentPrompt.gamePhase = "reviewing"; // Ensure phase update
+    match.turnInProgress = true;
+    await match.save();
+  }
+
+    await match.save();
     res.json({ success: true });
+
+    // Skip logic...
+    if (response === "Skipped") {
+      match.skipCounts = match.skipCounts || new Map();
+      const currentSkips = match.skipCounts.get(userId.toString()) || 0;
+      const updatedSkips = currentSkips + 1;
+
+      match.skipCounts.set(userId.toString(), updatedSkips);
+
+      if (updatedSkips >= 3) {
+        match.participants = match.participants.filter(
+          (id) => id.toString() !== userId.toString()
+        );
+
+        if (match.participants.length === 0) {
+          match.status = "waiting";
+          match.currentPrompt = undefined;
+        } else if (
+          match.participants[match.chanceIndex]?.toString() ===
+          userId.toString()
+        ) {
+          match.chanceIndex =
+            (match.chanceIndex + 1) % match.participants.length;
+        }
+      }
+    }
   } catch (err) {
     console.error("Submit answer error:", err);
     res.status(500).json({ error: "Server error" });
@@ -193,18 +251,31 @@ export const getAnswers = async (req, res) => {
     }).populate("currentPrompt.answers.userId", "fullName avatar1");
 
     if (!match || !match.currentPrompt) {
-      return res.status(404).json({ error: "No current prompt found" });
+      return res.json({
+        userId, // ✅ required by frontend
+        allAnswered: false, // 🛠️ this should be false, not true
+        prompt: "",
+        answers: [],
+        viewerIsChanceHolder: false,
+      });
     }
 
-    const totalExpected = match.groupSize - 1; // excluding chance holder
+    const totalExpected = match.groupSize - 1;
     const answersGiven = match.currentPrompt.answers.length;
 
-    if (answersGiven < totalExpected) {
-      return res.json({ allAnswered: false });
+    const isChanceHolder =
+      match.participants[match.chanceIndex].toString() === userId.toString();
+
+    if (answersGiven >= totalExpected) {
+      match.currentPrompt.gamePhase = "reviewing";
+      await match.save(); // ✅ save this updated phase
     }
 
+    console.log("📊 answers:", answersGiven, "expected:", totalExpected);
+
     res.json({
-      allAnswered: true,
+      userId, // ✅ return always
+      allAnswered: answersGiven >= totalExpected,
       prompt: match.currentPrompt.text,
       answers: match.currentPrompt.answers.map((ans) => ({
         userId: ans.userId._id,
@@ -212,6 +283,7 @@ export const getAnswers = async (req, res) => {
         avatar: ans.userId.avatar1,
         response: ans.response,
       })),
+      viewerIsChanceHolder: isChanceHolder,
     });
   } catch (err) {
     console.error("Get answers error:", err);
@@ -221,27 +293,33 @@ export const getAnswers = async (req, res) => {
 
 export const nextTurn = async (req, res) => {
   const userId = req.user._id;
+  const match = await NeverHaveIEverMatch.findOne({
+    participants: userId,
+    status: "in_progress",
+  });
 
-  try {
-    const match = await NeverHaveIEverMatch.findOne({
-      participants: userId,
-      status: "in_progress",
-    });
+  if (!match) return res.status(404).json({ error: "Match not found" });
 
-    if (!match) {
-      return res.status(404).json({ error: "Match not found" });
-    }
-
-    const totalPlayers = match.participants.length;
-    match.chanceIndex = (match.chanceIndex + 1) % totalPlayers;
-    match.currentPrompt = undefined;
-
-    await match.save();
-    res.json({ success: true });
-  } catch (err) {
-    console.error("Next turn error:", err);
-    res.status(500).json({ error: "Server error" });
+  // ✅ Only chance holder can proceed
+  if (match.participants[match.chanceIndex].toString() !== userId.toString()) {
+    return res
+      .status(403)
+      .json({ error: "Only chance holder can move to next turn" });
   }
+
+  // Instead of erasing currentPrompt, immediately set up a new empty prompt object for the next round
+  match.chanceIndex = (match.chanceIndex + 1) % match.participants.length;
+  match.currentPrompt = {
+    text: "",
+    answers: [],
+    createdAt: new Date(),
+    promptSubmitted: false,
+    gamePhase: "typing",
+  };
+  match.turnInProgress = false;
+  await match.save();
+
+  res.json({ success: true });
 };
 
 export const getWaitingCounts = async (req, res) => {
@@ -275,23 +353,25 @@ export const leaveWaitingRoom = async (req, res) => {
       status: { $in: ["waiting", "in_progress"] },
     });
 
+    // If user is not in a match, silently succeed
     if (!match) {
-      return res.status(404).json({ error: "No active match found" });
+      return res.json({ success: true, message: "User not in any match" });
     }
 
-    // Remove player
+    // Remove player from match
     match.participants = match.participants.filter(
       (id) => id.toString() !== userId.toString()
     );
 
-    // ⬇️ If players drop below required groupSize, move back to waiting
     if (match.participants.length < match.groupSize) {
-      match.status = "waiting";
-      match.currentPrompt = undefined;
-      match.chanceIndex = 0; // or preserve it
-    }
-
-    await match.save();
+  // End the match for everyone, so all clients are kicked out to waiting
+  match.status = "waiting";
+  match.currentPrompt = undefined;
+  match.chanceIndex = 0;
+  // Optionally clear participants if you want a hard reset:
+  // match.participants = [];
+}
+await match.save();
 
     res.json({ success: true });
   } catch (err) {

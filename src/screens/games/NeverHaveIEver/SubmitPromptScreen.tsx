@@ -13,6 +13,24 @@ const SubmitPromptScreen: React.FC<Props> = ({ navigation }) => {
   const [prompt, setPrompt] = useState('');
   const [timeLeft, setTimeLeft] = useState(120); // 2 minutes
 
+  useEffect(() => {
+  const fetchTurn = async () => {
+    const res = await api.get("/api/v1/users/neverhaveiever/current-turn");
+console.log("📥 /current-turn result:", res.data);
+
+    const { userId, chanceHolderId, gamePhase } = res.data;
+    const isChanceHolder = userId === chanceHolderId;
+
+    console.log("📌 [TurnInfo] userId:", userId);
+    console.log("📌 [TurnInfo] chanceHolderId:", chanceHolderId);
+    console.log("📌 [TurnInfo] isChanceHolder:", isChanceHolder);
+    console.log("📌 [TurnInfo] gamePhase:", gamePhase);
+  };
+
+  fetchTurn();
+}, []);
+
+
   
 
   useFocusEffect(          //leave waiing room if back button clicked
@@ -55,7 +73,9 @@ const SubmitPromptScreen: React.FC<Props> = ({ navigation }) => {
           navigation.navigate("WaitingRoomScreen");
         }
       } catch (err) {
-        console.error("Polling failed:", err.response?.data || err.message);
+        if (err.response && err.response.status === 404) {
+    navigation.navigate("WaitingRoomScreen");
+  }
       }
     };
 
@@ -76,16 +96,19 @@ const SubmitPromptScreen: React.FC<Props> = ({ navigation }) => {
     return () => clearInterval(timer);
   }, []);
 
-  const handleSubmit = async () => {
-    try {
-      await api.post('/api/v1/users/neverhaveiever/submit-prompt', {
-        prompt,
-      });
-      navigation.navigate("WaitingForPromptScreen");
-    } catch (err) {
-      console.error("Prompt submission failed:", err);
-    }
-  };
+
+  // SubmitPromptScreen.tsx (simplified core navigation logic)
+
+const handleSubmit = async () => {
+  try {
+    await api.post('/api/v1/users/neverhaveiever/submit-prompt', { prompt });
+    navigation.navigate("NHIEWaitingForAnswersScreen"); // Only chance holder
+  } catch (err) {
+    console.error("Prompt submission failed:", err);
+  }
+};
+
+
 
   return (
     <View style={styles.container}>

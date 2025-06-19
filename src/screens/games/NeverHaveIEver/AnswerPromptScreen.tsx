@@ -1,26 +1,98 @@
 // AnswerPromptScreen.tsx
-import React, { useEffect, useState } from 'react';
-import { View, Text, Button, StyleSheet } from 'react-native';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import api from '../../../utils/api';
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  Button,
+  StyleSheet,
+  Alert,
+  BackHandler,
+} from "react-native";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import api from "../../../utils/api";
+import { useFocusEffect } from "@react-navigation/native";
 
 type Props = NativeStackScreenProps<any, "AnswerPromptScreen">;
 
 const AnswerPromptScreen: React.FC<Props> = ({ navigation }) => {
   const [timeLeft, setTimeLeft] = useState(30);
   const [submitted, setSubmitted] = useState(false);
+  const [skipped, setSkipped] = useState(false);
   const [promptText, setPromptText] = useState("");
+  const hasNavigatedRef = React.useRef(false);
 
-   useEffect(() => {
+  useEffect(() => {
+    console.log("🧭 [NAVIGATION] Current screen: AnswerPromptScreen");
+  }, []);
+
+  // AnswerPromptScreen.tsx
+useEffect(() => {
+  const interval = setInterval(async () => {
+    if (hasNavigatedRef.current) return; // Add navigation guard
+    
+    const res = await api.get("/api/v1/users/neverhaveiever/current-turn");
+    const { gamePhase, userId, chanceHolderId } = res.data;
+    const isChanceHolder = userId === chanceHolderId;
+
+    if (gamePhase === "reviewing") {
+      clearInterval(interval);
+      navigation.navigate("ReviewAnswersScreen");
+    } 
+    else if (gamePhase === "typing") {
+      clearInterval(interval);
+      navigation.navigate(isChanceHolder ? "SubmitPromptScreen" : "WaitingForPromptScreen");
+    }
+  }, 1000);
+  
+  return () => clearInterval(interval);
+}, []);
+
+
+
+  useFocusEffect(
+    React.useCallback(() => {
+      const onBackPress = () => {
+        Alert.alert(
+          "Leave Waiting Room?",
+          "Do you want to leave the waiting room?",
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Leave",
+              style: "destructive",
+              onPress: async () => {
+                try {
+                  await api.post("/api/v1/users/neverhaveiever/leave");
+                } catch (err) {
+                  console.error("Failed to leave waiting room:", err);
+                }
+                navigation.navigate("HomeTabs");
+              },
+            },
+          ]
+        );
+        return true;
+      };
+
+      BackHandler.addEventListener("hardwareBackPress", onBackPress);
+      return () =>
+        BackHandler.removeEventListener("hardwareBackPress", onBackPress);
+    }, [])
+  );
+
+  useEffect(() => {
     const pollMatchStatus = async () => {
       try {
-        const res = await api.get("/api/v1/users/neverhaveiever/waiting-room-status");
-
+        const res = await api.get(
+          "/api/v1/users/neverhaveiever/waiting-room-status"
+        );
         if (!res.data.readyToStart) {
           navigation.navigate("WaitingRoomScreen");
         }
       } catch (err) {
-        console.error("Polling failed:", err.response?.data || err.message);
+        if (err.response && err.response.status === 404) {
+    navigation.navigate("WaitingRoomScreen");
+  }
       }
     };
 
@@ -29,13 +101,14 @@ const AnswerPromptScreen: React.FC<Props> = ({ navigation }) => {
   }, []);
 
   useEffect(() => {
-    // Get current prompt
     const fetchPrompt = async () => {
       try {
-        const res = await api.get('/api/v1/users/neverhaveiever/prompt-status');
+        const res = await api.get("/api/v1/users/neverhaveiever/prompt-status");
         setPromptText(res.data.prompt || "Waiting for prompt...");
       } catch (err) {
-        console.error("Failed to fetch prompt:", err);
+        if (err.response && err.response.status === 404) {
+    navigation.navigate("WaitingRoomScreen");
+  }
       }
     };
 
@@ -45,7 +118,10 @@ const AnswerPromptScreen: React.FC<Props> = ({ navigation }) => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
-          if (!submitted) handleSubmit("I Have Not"); // default if no action
+          if (!submitted) {
+            handleSubmit("Skipped");
+            setSkipped(true);
+          }
         }
         return prev - 1;
       });
@@ -54,15 +130,23 @@ const AnswerPromptScreen: React.FC<Props> = ({ navigation }) => {
     return () => clearInterval(timer);
   }, []);
 
-  const handleSubmit = async (response: "I Have" | "I Have Not") => {
+
+  const handleSubmit = async (
+    response: "I Have" | "I Have Not" | "Skipped"
+  ) => {
     if (submitted) return;
 
     try {
-      await api.post('/api/v1/neverhaveiever/submit-answer', { response });
+      await api.post("/api/v1/users/neverhaveiever/submit-answer", {
+        response,
+      });
       setSubmitted(true);
-      navigation.navigate("ReviewAnswersScreen");
+
+      // Don't navigate early if skipped — wait on screen
     } catch (err) {
-      console.error("Failed to submit answer:", err);
+      if (err.response && err.response.status === 404) {
+    navigation.navigate("WaitingRoomScreen");
+  }
     }
   };
 
@@ -75,25 +159,48 @@ const AnswerPromptScreen: React.FC<Props> = ({ navigation }) => {
         <Button
           title="🍷 I Have"
           onPress={() => handleSubmit("I Have")}
-          disabled={submitted}
+          disabled={submitted || skipped}
           color="#8e44ad"
         />
         <Button
           title="🚫 I Have Not"
           onPress={() => handleSubmit("I Have Not")}
-          disabled={submitted}
+          disabled={submitted || skipped}
           color="#c0392b"
         />
       </View>
+
+      {skipped && (
+        <Text style={styles.skippedNote}>
+          ⚠️ You missed your chance to answer.
+        </Text>
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  prompt: { fontSize: 20, textAlign: 'center', marginBottom: 20, fontWeight: '600' },
-  timer: { fontSize: 18, marginBottom: 30, color: '#555' },
-  buttonGroup: { gap: 16, width: '100%' }
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  prompt: {
+    fontSize: 20,
+    textAlign: "center",
+    marginBottom: 20,
+    fontWeight: "600",
+  },
+  timer: { fontSize: 18, marginBottom: 30, color: "#555" },
+  buttonGroup: { gap: 16, width: "100%" },
+  skippedNote: {
+    marginTop: 24,
+    fontSize: 16,
+    color: "#c0392b",
+    fontWeight: "500",
+    textAlign: "center",
+  },
 });
 
 export default AnswerPromptScreen;

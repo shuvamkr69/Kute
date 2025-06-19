@@ -37,6 +37,8 @@ import SubmitPromptScreen from "../screens/games/NeverHaveIEver/SubmitPromptScre
 import WaitingForPromptScreen from "../screens/games/NeverHaveIEver/WaitingForPromptScreen";
 import WaitingRoomScreen from "../screens/games/NeverHaveIEver/WaitingRoomScreen";
 import AnswerPromptScreen from "../screens/games/NeverHaveIEver/AnswerPromptScreen";
+import ReviewAnswersScreen from "../screens/games/NeverHaveIEver/ReviewAnswersScreen";
+import NHIEWaitingForAnswersScreen from "../screens/games/NeverHaveIEver/NHIEWaitingForAnswersScreen";
 
 const Stack = createNativeStackNavigator(); // Standard Stack Navigator
 
@@ -93,6 +95,10 @@ export default function AppNavigation() {
             <Stack.Screen name="WaitingForPromptScreen" component={WaitingForPromptScreen} />
             <Stack.Screen name="WaitingRoomScreen" component={WaitingRoomScreen} />
             <Stack.Screen name="AnswerPromptScreen" component={AnswerPromptScreen} />
+            <Stack.Screen name="ReviewAnswersScreen" component={ReviewAnswersScreen} />
+            <Stack.Screen name="NHIEWaitingForAnswersScreen" component={NHIEWaitingForAnswersScreen} />
+
+
 
 
 
