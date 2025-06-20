@@ -47,6 +47,25 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState<boolean>(false); // ✅ Refreshing state
   const [userId, setUserId] = useState<string | null>(null);
 
+
+  useEffect(() => {
+  const startPolling = () => {
+    const interval = setInterval(() => {
+      fetchChats(); // Call your existing fetchChats function
+    }, 10000); // Every 10 seconds
+
+    return () => clearInterval(interval); // Cleanup
+  };
+
+  const pollingCleanup = startPolling();
+
+  return () => {
+    pollingCleanup(); // Cleanup on unmount
+  };
+}, []);
+
+
+
   // ✅ Fetch userId and chats
   const fetchChats = async () => {
     try {
@@ -194,30 +213,29 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <Text style={styles.headingText}>Your Chats</Text>
-  
-      <FlatList
-  data={chats}
-  keyExtractor={(item) => item._id}
-  renderItem={renderChatItem}
-  refreshControl={
-    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-  }
-  contentContainerStyle={[
-    chats.length === 0 && { flex: 1, justifyContent: 'center' },
-  ]}
-  ListEmptyComponent={
-    <View style={styles.emptyStateContainer}>
-      <Image
-        source={require("../assets/icons/koala.png")}
-        style={{ width: 150, height: 150, marginBottom: 20 }}
-      />
-      <Text style={styles.noChatsText}>
-        No DMs? Clearly, they fear the power of the perfect reply
-      </Text>
-    </View>
-  }
-/>
 
+      <FlatList
+        data={chats}
+        keyExtractor={(item) => item._id}
+        renderItem={renderChatItem}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+        contentContainerStyle={[
+          chats.length === 0 && { flex: 1, justifyContent: "center" },
+        ]}
+        ListEmptyComponent={
+          <View style={styles.emptyStateContainer}>
+            <Image
+              source={require("../assets/icons/koala.png")}
+              style={{ width: 150, height: 150, marginBottom: 20 }}
+            />
+            <Text style={styles.noChatsText}>
+              No DMs? Clearly, they fear the power of the perfect reply
+            </Text>
+          </View>
+        }
+      />
     </View>
   );
 };
@@ -241,10 +259,10 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   emptyStateContainer: {
-  justifyContent: 'center',
-  alignItems: 'center',
-  padding: 20,
-},
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
 
   loaderContainer: {
     flex: 1,

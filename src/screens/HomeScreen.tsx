@@ -214,7 +214,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         ActivePremiumPlan: profile.ActivePremiumPlan,
       }));
       console.log("distance", formattedProfiles[4].distance);
-      console.log(formattedProfiles);
+      // console.log(formattedProfiles);
 
       setProfiles(formattedProfiles);
     } catch (error) {
@@ -263,7 +263,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     if (index >= profiles.length) return;
 
     const likedUserId = profiles[index]._id;
-    console.log("Liked user ID before sending:", likedUserId);
+    // console.log("Liked user ID before sending:", likedUserId);
 
     try {
       const response = await api.post(
@@ -294,7 +294,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         });
       }
 
-      console.log("User liked response:", response.data);
+      // console.log("User liked response:", response.data);
 
       // Changed from filter to splice to maintain array references
       setProfiles((prevProfiles) => {
@@ -317,7 +317,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     if (index >= profiles.length) return;
 
     const superLikedUserId = profiles[index]._id;
-    console.log("Super Liked user ID:", superLikedUserId);
+    // console.log("Super Liked user ID:", superLikedUserId);
 
     try {
       const response = await api.post(
@@ -326,7 +326,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         { headers: { "Content-Type": "application/json" } }
       );
 
-      console.log("Super Like response:", response.data);
+      // console.log("Super Like response:", response.data);
 
       // Show Super Like feedback
       setSwipeFeedback({
@@ -380,7 +380,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const userPassed = (index: number) => {
-    console.log("User passed:", profiles[index]?._id);
+    // console.log("User passed:", profiles[index]?._id);
   };
 
   const haversineDistance = (
@@ -389,7 +389,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     lat2: number,
     lon2: number
   ) => {
-    console.log("Calculating distance between:", lat1, lon1, lat2, lon2);
+    // console.log("Calculating distance between:", lat1, lon1, lat2, lon2);
     const toRad = (value: number) => (value * Math.PI) / 180;
 
     const R = 6371; // Earth's radius in KM
@@ -404,7 +404,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         Math.sin(dLon / 2);
 
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    console.log("Haversine calculation:", R * c);
+    // console.log("Haversine calculation:", R * c);
     return R * c; // Distance in kilometers
     setDistance(R * c); // Distance in kilometers
   };

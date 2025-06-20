@@ -39,63 +39,67 @@ const PhotoVerificationScreen: React.FC<Props> = ({ navigation }) => {
     getProfilePhoto();
   }, []);
 
-  
+  const getProfilePhoto = async () => {
+    try {
+      const response = await api.get(`/api/v1/users/me`);
+      if (response.status === 200) {
+        const profilePhotoUrl = response.data.avatar1;
+        if (profilePhotoUrl) {
+          setProcessingImage(true);
 
-const getProfilePhoto = async () => {
-  try {
-    const response = await api.get(`/api/v1/users/me`);
-    if (response.status === 200) {
-      const profilePhotoUrl = response.data.avatar1;
-      if (profilePhotoUrl) {
-        setProcessingImage(true);
+          try {
+            // Fetch the image from the URL
+            const photoResponse = await fetch(profilePhotoUrl);
+            const blob = await photoResponse.blob();
 
-        try {
-          // Fetch the image from the URL
-          const photoResponse = await fetch(profilePhotoUrl);
-          const blob = await photoResponse.blob();
+            // Convert blob to local URI
+            const reader = new FileReader();
+            reader.onloadend = async () => {
+              const base64 = (reader.result as string).split(",")[1];
 
-          // Convert blob to local URI
-          const reader = new FileReader();
-          reader.onloadend = async () => {
-            const base64 = (reader.result as string).split(',')[1];
+              // Resize and compress image to ensure it's < 2MB
+              const manipResult = await ImageManipulator.manipulateAsync(
+                profilePhotoUrl,
+                [{ resize: { width: 800 } }], // Resize to smaller width (adjust as needed)
+                {
+                  compress: 0.7,
+                  format: ImageManipulator.SaveFormat.JPEG,
+                  base64: true,
+                }
+              );
 
-            // Resize and compress image to ensure it's < 2MB
-            const manipResult = await ImageManipulator.manipulateAsync(
-              profilePhotoUrl,
-              [{ resize: { width: 800 } }], // Resize to smaller width (adjust as needed)
-              { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG, base64: true }
-            );
+              const estimatedSize =
+                (manipResult.base64.length * 3) / 4 / 1024 / 1024; // MB
+              if (estimatedSize > 2) {
+                Alert.alert(
+                  "Error",
+                  "Image is still too large even after compression."
+                );
+              } else {
+                setImage1({
+                  uri: manipResult.uri,
+                  base64: manipResult.base64,
+                });
+              }
+            };
 
-            const estimatedSize = (manipResult.base64.length * 3) / 4 / 1024 / 1024; // MB
-            if (estimatedSize > 2) {
-              Alert.alert("Error", "Image is still too large even after compression.");
-            } else {
-              setImage1({
-                uri: manipResult.uri,
-                base64: manipResult.base64,
-              });
-            }
-          };
-
-          reader.readAsDataURL(blob);
-
-        } catch (error) {
-          console.error("Image processing error:", error);
-          Alert.alert("Error", "Failed to process profile photo");
-        } finally {
-          setProcessingImage(false);
+            reader.readAsDataURL(blob);
+          } catch (error) {
+            console.error("Image processing error:", error);
+            Alert.alert("Error", "Failed to process profile photo");
+          } finally {
+            setProcessingImage(false);
+          }
+        } else {
+          Alert.alert("Error", "No profile photo found.");
         }
-      } else {
-        Alert.alert("Error", "No profile photo found.");
       }
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Error", "Failed to fetch profile photo.");
+      setProcessingImage(false);
     }
-  } catch (error) {
-    console.error(error);
-    Alert.alert("Error", "Failed to fetch profile photo.");
-    setProcessingImage(false);
-  }
-};
-
+  };
 
   const takeSelfieWithCamera = async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
@@ -133,8 +137,7 @@ const getProfilePhoto = async () => {
           uri: manipulated.uri,
           base64: base64Clean,
         });
-        
-        
+
         setVerified(null);
       } catch (error) {
         console.error("Image processing error:", error);
@@ -229,10 +232,13 @@ const getProfilePhoto = async () => {
       }
 
       // Check if the gesture is a victory sign
-      if (data.hands[0].gesture && data.hands[0].gesture.victory>75) {
+      if (data.hands[0].gesture && data.hands[0].gesture.victory > 75) {
         return true;
       } else {
-        Alert.alert("Gesture Verification Failed", "Please show a victory sign.");
+        Alert.alert(
+          "Gesture Verification Failed",
+          "Please show a victory sign."
+        );
         return false;
       }
     } catch (error) {
@@ -419,8 +425,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 6,
-    bottom:0,
-
+    bottom: 0,
   },
   gradient: {
     paddingVertical: 15,
@@ -482,11 +487,11 @@ const styles = StyleSheet.create({
   },
   gestureContainer: {
     marginVertical: 20,
-    alignItems: 'center',
+    alignItems: "center",
   },
   gesturePrompt: {
-    color: '#fff',
-    textAlign: 'center',
+    color: "#fff",
+    textAlign: "center",
     marginBottom: 20,
     fontSize: 16,
     lineHeight: 24,
