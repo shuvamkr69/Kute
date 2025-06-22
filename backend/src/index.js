@@ -4,10 +4,9 @@ import { createServer } from "http";
 import connectDB from "./db/index.js";
 import { app } from "./app.js";
 import { initializeSocket, getIO } from "./utils/socket.js";
-import { Score } from "./models/TruthOrDare/truthDare.model.js";
 
 dotenv.config({
-  path: './.env'
+  path: '../.env'
 });
 
 // Create HTTP Server

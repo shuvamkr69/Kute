@@ -39,6 +39,13 @@ import WaitingRoomScreen from "../screens/games/NeverHaveIEver/WaitingRoomScreen
 import AnswerPromptScreen from "../screens/games/NeverHaveIEver/AnswerPromptScreen";
 import ReviewAnswersScreen from "../screens/games/NeverHaveIEver/ReviewAnswersScreen";
 import NHIEWaitingForAnswersScreen from "../screens/games/NeverHaveIEver/NHIEWaitingForAnswersScreen";
+import PromptInputScreen from "../screens/games/WouldYouRather/PromptInputScreen";
+import AnswerScreen from "../screens/games/WouldYouRather/AnswerScreen";
+import FeedbackScreen from "../screens/games/WouldYouRather/FeedbackScreen";
+import GameOverScreen from "../screens/games/WouldYouRather/GameOverScreen";
+import RoundReviewScreen from "../screens/games/WouldYouRather/RoundReviewScreen";
+import WaitingForFeedbackScreen from "../screens/games/WouldYouRather/WaitForFeedbackScreen";
+import WYRLobbyScreen from "../screens/games/WouldYouRather/WYRLobbyScreen";
 
 const Stack = createNativeStackNavigator(); // Standard Stack Navigator
 
@@ -98,7 +105,16 @@ export default function AppNavigation() {
             <Stack.Screen name="ReviewAnswersScreen" component={ReviewAnswersScreen} />
             <Stack.Screen name="NHIEWaitingForAnswersScreen" component={NHIEWaitingForAnswersScreen} />
 
-
+            {/* Would You Rather */}
+            <Stack.Screen name="PromptInputScreen" component={PromptInputScreen} />
+            <Stack.Screen name="AnswerScreen" component={AnswerScreen} />
+            <Stack.Screen name="FeedbackScreen" component={FeedbackScreen} />
+            <Stack.Screen name="GameOverScreen" component={GameOverScreen} />
+            <Stack.Screen name="RoundReviewScreen" component={RoundReviewScreen} />
+            <Stack.Screen name="WaitingForFeedbackScreen" component={WaitingForFeedbackScreen} />
+            <Stack.Screen name="WYRWaitingForAnswerScreen" component={WaitingForAnswerScreen} />
+            <Stack.Screen name="WYRWaitingForPromptScreen" component={WaitingForPromptScreen} />
+            <Stack.Screen name="WYRLobbyScreen" component={WYRLobbyScreen} />
 
 
 

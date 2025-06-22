@@ -67,7 +67,6 @@ const formattedConversations = conversations.map((conversation) => {
     updatedAt: conversation.updatedAt,
   };
 });
-console.log("formattedConversations", formattedConversations);
 res.status(200).json(formattedConversations);
 
   } catch (error) {
