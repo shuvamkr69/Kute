@@ -4,6 +4,7 @@ import { User } from "../models/user.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { Filter } from "../models/filter.model.js";
+import { Like } from "../models/liked.model.js";
 
 
 
@@ -288,10 +289,17 @@ const homescreenProfiles = async (req, res) => {
     if (!currentUser) {
       return res.status(404).json({ message: "User not found" });
     }
-
-    console.log("Current User ID:", currentUserId);
-
     const { gender, genderOrientation } = currentUser;
+
+
+const likes = await Like.find({ userId: currentUserId });
+const excludedIds = likes.map((like) => like.likedUserId.toString());
+
+
+
+
+
+
 
     // Default filter (gender-based)
     let filter = { _id: { $ne: currentUserId } };
@@ -383,6 +391,9 @@ const homescreenProfiles = async (req, res) => {
 
       console.log("Final Filter with Advanced Options:", filter);
     }
+
+    // ✅ Exclude already liked/matched users + self
+filter._id = { $nin: [...excludedIds, currentUserId.toString()] };
 
     // Fetch filtered users
     const users = await User.find(filter);

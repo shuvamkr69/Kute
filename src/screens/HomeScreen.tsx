@@ -213,7 +213,6 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         verifiedUser: profile.isVerified,
         ActivePremiumPlan: profile.ActivePremiumPlan,
       }));
-      console.log("distance", formattedProfiles[4].distance);
       // console.log(formattedProfiles);
 
       setProfiles(formattedProfiles);
