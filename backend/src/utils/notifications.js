@@ -18,7 +18,7 @@ const sendPushNotification = async (pushToken, title, message) => {
     const response = await axios.post("https://exp.host/--/api/v2/push/send", notificationData, {
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.EXPO_ACCESS_KEY}`,
+        'Authorization': `Bearer ${process.env.EXPO_ACCESS_TOKEN}`,
       },
     }
     );

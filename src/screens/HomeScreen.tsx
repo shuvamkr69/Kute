@@ -486,9 +486,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
             }}
             onSwiped={(index) => {
               // Update current card index when swiped
-              setCurrentCardIndex((prev) =>
-                Math.min(prev + 1, profiles.length - 1)
-              );
+              
               Animated.spring(feedbackAnim, {
                 toValue: 0,
                 useNativeDriver: true,
@@ -576,7 +574,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
             onSwipedTop={(index) => handleSuperLike(index)}
             onSwipedRight={(index) => userLiked(index)}
             onSwipedLeft={(index) => userPassed(index)}
-            cardIndex={currentCardIndex}
+            // cardIndex={currentCardIndex}
             backgroundColor="transparent"
             stackSize={3}
             stackAnimationTension={80}

@@ -10,6 +10,9 @@ import * as Notifications from "expo-notifications";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../utils/api";
 import { getUserId } from "../utils/constants";
+import { useFocusEffect } from "@react-navigation/native";
+import { useCallback } from "react";
+
 
 interface NotificationItem {
   message: string;
@@ -19,6 +22,20 @@ interface NotificationItem {
 
 const NotificationsScreen: React.FC = () => {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+
+
+  useFocusEffect(               //polling for fetching notifications
+  useCallback(() => {
+    // Start polling every 10 seconds when screen is focused
+    const interval = setInterval(() => {
+      loadNotifications();
+    }, 3000); // 10 seconds
+
+    // Clear interval when screen is unfocused
+    return () => clearInterval(interval);
+  }, [])
+);
+
 
   const storeNotification = async (notification: NotificationItem[]) => {
     try {
@@ -93,6 +110,7 @@ const NotificationsScreen: React.FC = () => {
         });
       }
     );
+
 
     return () => {
       receivedSubscription.remove();
