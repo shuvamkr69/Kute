@@ -271,8 +271,8 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         { headers: { "Content-Type": "application/json" } }
       );
 
-      if (response.data?.data?.length > 0 && response.data.data[0]?.matched) {
-        const matchedUser = profiles[index];
+      if (response.data?.data?.matched === true) {
+        const matchedUser = response.data.data.matchedUser;
 
         const userString = await AsyncStorage.getItem("user");
         const user = userString ? JSON.parse(userString) : {};
@@ -281,14 +281,12 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           fullName: user.fullName,
           image: avatar,
         };
+
         navigation.navigate("MatchScreen", {
           user: currentUser,
           matchedUser: {
             fullName: matchedUser.fullName,
-            image:
-              matchedUser.images.length > 0
-                ? matchedUser.images[0]
-                : "https://via.placeholder.com/400x600/AAAAAA/FFFFFF?text=No+Image",
+            image: matchedUser.image,
           },
         });
       }
@@ -354,8 +352,9 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
       });
 
       // Handle matching (if applicable)
-      if (response.data?.matched) {
-        const matchedUser = profiles[index];
+      if (response.data?.data?.matched === true) {
+        const matchedUser = response.data.data.matchedUser;
+
         const userString = await AsyncStorage.getItem("user");
         const user = userString ? JSON.parse(userString) : {};
         const avatar = await AsyncStorage.getItem("avatar");
@@ -363,13 +362,12 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           fullName: user.fullName,
           image: avatar,
         };
+
         navigation.navigate("MatchScreen", {
           user: currentUser,
           matchedUser: {
             fullName: matchedUser.fullName,
-            image:
-              matchedUser.images[0] ||
-              "https://via.placeholder.com/400x600/AAAAAA/FFFFFF?text=No+Image",
+            image: matchedUser.image,
           },
         });
       }

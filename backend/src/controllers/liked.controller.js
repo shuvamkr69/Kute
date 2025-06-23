@@ -7,68 +7,74 @@ import { User } from "../models/user.model.js";
 
 const UserLiked = asyncHandler(async (req, res) => {
   const { likedUserId } = req.body;
-  const userId = req.user._id; // Assuming authentication middleware
+  const userId = req.user._id;
 
-  // Debug log to check the request body
-  console.log("Request Body:", req.body);
+  if (!likedUserId) throw new ApiError(400, "Liked user ID is required");
 
-  if (!likedUserId) {
-    throw new ApiError(400, "Liked user ID is required");
-  }
-
-  // Check if the user has already liked this person
   const existingLike = await Like.findOne({ userId, likedUserId });
-  if (existingLike) {
-    throw new ApiError(400, "You have already liked this user");
-  }
+  if (existingLike) throw new ApiError(400, "You have already liked this user");
 
-  // Check if the liked user has already liked back
+  // ✅ Check if the liked user has already liked OR superliked this user
   const likedBack = await Like.findOne({
     userId: likedUserId,
     likedUserId: userId,
+    $or: [{ superLiked: true }, {}], // match if liked OR superliked
   });
 
-  // Create the like
   const newLike = await Like.create({
     userId,
     likedUserId,
-    matched: likedBack ? true : false, // Match is formed if liked back
+    matched: !!likedBack,
   });
 
-
-  
   if (likedBack) {
-    // Update the existing like to mark as a match
-    await Like.updateOne(
-      { userId: likedUserId, likedUserId: userId },
-      { matched: true }
-    );
-  }
-
-   const user = await User.findById(userId);
-  const matchedUser = await User.findById(likedUserId);
-
-  if (likedBack) {
-    // Send push notifications for the match
-    await sendPushNotification(
-      matchedUser.pushToken,
-      "🎉 It's a Match!",
-      `You matched with ${user.fullName}!`
-    );
-
-    await sendPushNotification(
-      user.pushToken,
-      "🎉 It's a Match!",
-      `You matched with ${matchedUser.fullName}!`
-    );
-  }
-
-  const matches = await Like.find({ userId, likedUserId, matched: true }).populate(
-    "likedUserId"
+  // Update the reverse like to matched
+  await Like.updateOne(
+    { userId: likedUserId, likedUserId: userId },
+    { matched: true }
   );
 
-  res.status(201).json(new ApiResponse(201, matches, "User liked successfully"));
+  const user = await User.findById(userId);
+  const matchedUser = await User.findById(likedUserId);
+
+  // Send push notifications
+  await sendPushNotification(
+    matchedUser.pushToken,
+    "🎉 It's a Match!",
+    `You matched with ${user.fullName}!`
+  );
+
+  await sendPushNotification(
+    user.pushToken,
+    "🎉 It's a Match!",
+    `You matched with ${matchedUser.fullName}!`
+  );
+
+  // ✅ Return match data directly for frontend MatchScreen
+  return res.status(201).json(
+    new ApiResponse(201, {
+      matched: true,
+      user: {
+        image: user.avatar1,
+        fullName: user.fullName,
+      },
+      matchedUser: {
+        image: matchedUser.avatar1,
+        fullName: matchedUser.fullName,
+      },
+    }, "It's a Match!")
+  );
+}
+
+// 👇 fallback if no match
+res.status(201).json(
+  new ApiResponse(201, {
+    matched: false,
+  }, "User liked successfully")
+);
+
 });
+
 
 
 
@@ -101,29 +107,53 @@ export const getLikedUsers = async (req, res) => {
 
 export const UserSuperLiked = asyncHandler(async (req, res) => {
   const { likedUserId } = req.body;
-  const userId = req.user._id; // Assuming authentication middleware
+  const userId = req.user._id;
 
-  // Debug log to check the request body
-  console.log("Request Body:", req.body);
+  if (!likedUserId) throw new ApiError(400, "Liked user ID is required");
 
-  if (!likedUserId) {
-    throw new ApiError(400, "Liked user ID is required");
-  }
-
-  // Check if the user has already super liked this person
   const existingLike = await Like.findOne({ userId, likedUserId });
-  if (existingLike) {
-    throw new ApiError(400, "You have already super liked this user");
-  }
+  if (existingLike) throw new ApiError(400, "You have already liked this user");
 
-  // Create the super like
+  // ✅ Check if the liked user already liked OR superliked this user
+  const likedBack = await Like.findOne({
+    userId: likedUserId,
+    likedUserId: userId,
+    $or: [{ superLiked: true }, {}], // either like or superlike qualifies
+  });
+
   const newSuperLike = await Like.create({
     userId,
     likedUserId,
     superLiked: true,
+    matched: !!likedBack,
   });
 
-  res.status(201).json(new ApiResponse(201, newSuperLike, "User super liked successfully"));
+  if (likedBack) {
+    await Like.updateOne(
+      { userId: likedUserId, likedUserId: userId },
+      { matched: true }
+    );
+
+    const user = await User.findById(userId);
+    const matchedUser = await User.findById(likedUserId);
+
+    await sendPushNotification(
+      matchedUser.pushToken,
+      "🎉 It's a Match!",
+      `You matched with ${user.fullName}!`
+    );
+
+    await sendPushNotification(
+      user.pushToken,
+      "🎉 It's a Match!",
+      `You matched with ${matchedUser.fullName}!`
+    );
+  }
+
+  res
+    .status(201)
+    .json(new ApiResponse(201, newSuperLike, "User super liked successfully"));
 });
+
 
 export { UserLiked };
