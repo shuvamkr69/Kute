@@ -8,8 +8,8 @@ import { registerForPushNotifications } from "./src/utils/notifications";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { decode as atob, encode as btoa } from 'base-64';
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { ClerkProvider } from '@clerk/clerk-react';
-import  * as SecureStore  from "expo-secure-store";
+// import { ClerkProvider } from '@clerk/clerk-react';
+// import  * as SecureStore  from "expo-secure-store";
 
 const tokenCache = {
   async getToken(key) {
@@ -88,16 +88,16 @@ const MainApp = () => {
 export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ClerkProvider 
+      {/* <ClerkProvider 
         publishableKey="pk_test_bWF0dXJlLW9jdG9wdXMtNTkuY2xlcmsuYWNjb3VudHMuZGV2JA"
         tokenCache={tokenCache}
-      >
+      > */}
         <RegistrationProvider>
           <AuthProvider>
             <MainApp />
           </AuthProvider>
         </RegistrationProvider>
-      </ClerkProvider>
+      {/* </ClerkProvider> */}
     </GestureHandlerRootView>
   );
 }

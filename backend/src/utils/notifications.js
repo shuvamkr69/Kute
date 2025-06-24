@@ -1,32 +1,29 @@
 import axios from "axios";
 import 'dotenv/config';
 
-const sendPushNotification = async (pushToken, title, message) => {
-  if (!pushToken) {
-    console.warn("Push token is missing, skipping notification.");
-    return;
-  }
+import fetch from "node-fetch";
 
-  const notificationData = {
-    to: pushToken,
+export const sendPushNotification = async (expoPushToken, title, body) => {
+  if (!expoPushToken) return;
+
+  const message = {
+    to: expoPushToken,
     sound: "default",
-    title,
-    body: message,
+    title: title,
+    body: body,
+    data: { withSome: "data" },
   };
 
-  try {
-    const response = await axios.post("https://exp.host/--/api/v2/push/send", notificationData, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.EXPO_ACCESS_TOKEN}`,
-      },
-    }
-    );
-    console.log("Notification sent successfully:", response.data);
-    return response.data;
-  } catch (error) {
-    console.error("Error sending push notification:", error.response?.data || error.message);
-  }
+  await fetch("https://exp.host/--/api/v2/push/send", {
+    method: "POST",
+    headers: {
+      Accept: "application/json",
+      "Accept-encoding": "gzip, deflate",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(message),
+  });
 };
+
 
 export default sendPushNotification;

@@ -2,7 +2,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { Like } from "../models/liked.model.js";
-import sendPushNotification  from "../utils/notifications.js";
+import sendPushNotification from "../utils/notifications.js";
 import { User } from "../models/user.model.js";
 
 const UserLiked = asyncHandler(async (req, res) => {
@@ -28,62 +28,69 @@ const UserLiked = asyncHandler(async (req, res) => {
   });
 
   if (likedBack) {
-  // Update the reverse like to matched
-  await Like.updateOne(
-    { userId: likedUserId, likedUserId: userId },
-    { matched: true }
-  );
+    // Update the reverse like to matched
+    await Like.updateOne(
+      { userId: likedUserId, likedUserId: userId },
+      { matched: true }
+    );
 
-  const user = await User.findById(userId);
-  const matchedUser = await User.findById(likedUserId);
+    const user = await User.findById(userId);
+    const matchedUser = await User.findById(likedUserId);
 
-  // Send push notifications
-  await sendPushNotification(
-    matchedUser.pushToken,
-    "🎉 It's a Match!",
-    `You matched with ${user.fullName}!`
-  );
+    // Send push notifications
+    await sendPushNotification(
+      matchedUser.pushToken, // 🟢 user who matched back
+      "🎉 It's a Match!",
+      `You matched with ${user.fullName}`
+    );
 
-  await sendPushNotification(
-    user.pushToken,
-    "🎉 It's a Match!",
-    `You matched with ${matchedUser.fullName}!`
-  );
+    await sendPushNotification(
+      user.pushToken, // 🟢 current user
+      "🎉 It's a Match!",
+      `You matched with ${matchedUser.fullName}`
+    );
 
-  // ✅ Return match data directly for frontend MatchScreen
-  return res.status(201).json(
-    new ApiResponse(201, {
-      matched: true,
-      user: {
-        image: user.avatar1,
-        fullName: user.fullName,
+    // ✅ Return match data directly for frontend MatchScreen
+    return res.status(201).json(
+      new ApiResponse(
+        201,
+        {
+          matched: true,
+          user: {
+            image: user.avatar1,
+            fullName: user.fullName,
+          },
+          matchedUser: {
+            image: matchedUser.avatar1,
+            fullName: matchedUser.fullName,
+          },
+        },
+        "It's a Match!"
+      )
+    );
+  }
+
+  // 👇 fallback if no match
+  res.status(201).json(
+    new ApiResponse(
+      201,
+      {
+        matched: false,
       },
-      matchedUser: {
-        image: matchedUser.avatar1,
-        fullName: matchedUser.fullName,
-      },
-    }, "It's a Match!")
+      "User liked successfully"
+    )
   );
-}
-
-// 👇 fallback if no match
-res.status(201).json(
-  new ApiResponse(201, {
-    matched: false,
-  }, "User liked successfully")
-);
-
 });
-
-
-
 
 export const getLikedUsers = async (req, res) => {
   try {
     const userId = req.user.id; // Extract logged-in user ID from auth middleware
 
     // Find all users who liked the logged-in user
-    const likedUsers = await Like.find({ likedUserId: userId }).populate("userId", "fullName avatar1");
+    const likedUsers = await Like.find({ likedUserId: userId }).populate(
+      "userId",
+      "fullName avatar1"
+    );
 
     if (!likedUsers.length) {
       return res.status(200).json([]);
@@ -103,7 +110,6 @@ export const getLikedUsers = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
-
 
 export const UserSuperLiked = asyncHandler(async (req, res) => {
   const { likedUserId } = req.body;
@@ -148,12 +154,36 @@ export const UserSuperLiked = asyncHandler(async (req, res) => {
       "🎉 It's a Match!",
       `You matched with ${matchedUser.fullName}!`
     );
+
+    // ✅ RETURN match data properly
+    return res.status(201).json(
+      new ApiResponse(
+        201,
+        {
+          matched: true,
+          user: {
+            image: user.avatar1,
+            fullName: user.fullName,
+          },
+          matchedUser: {
+            image: matchedUser.avatar1,
+            fullName: matchedUser.fullName,
+          },
+        },
+        "It's a Match!"
+      )
+    );
   }
 
-  res
-    .status(201)
-    .json(new ApiResponse(201, newSuperLike, "User super liked successfully"));
+  return res.status(201).json(
+    new ApiResponse(
+      201,
+      {
+        matched: false,
+      },
+      "User super liked successfully"
+    )
+  );
 });
-
 
 export { UserLiked };

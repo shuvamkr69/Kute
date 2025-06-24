@@ -43,25 +43,6 @@ const AiChatbot: React.FC<Props> = ({ messages, loggedInUserId }) => {
   const translateY = useRef(new Animated.Value(screenHeight)).current;
   const opacity = useRef(new Animated.Value(0)).current;
 
-  // Swipe down handler
-  const modalPanResponder = PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onPanResponderMove: (_, gestureState) => {
-      if (gestureState.dy > 0) {
-        translateY.setValue(gestureState.dy);
-      }
-    },
-    onPanResponderRelease: (_, gestureState) => {
-      if (gestureState.dy > 100) {
-        closeModal();
-      } else {
-        Animated.spring(translateY, {
-          toValue: 0,
-          useNativeDriver: true,
-        }).start();
-      }
-    },
-  });
 
   const limitedMessages = messages.slice(-10);
   const safeMessages = limitedMessages.map((msg) => ({
@@ -156,7 +137,6 @@ const AiChatbot: React.FC<Props> = ({ messages, loggedInUserId }) => {
                 opacity,
               },
             ]}
-            {...modalPanResponder.panHandlers}
           >
             <View>
               <Text style={styles.title}>Ask Cupid</Text>

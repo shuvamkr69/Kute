@@ -157,7 +157,10 @@ export const getMessages = async (req, res) => {
   const { conversationId } = req.params;
 
   try {
-    const messages = await Message.find({ conversationId })
+    const messages = await Message.find({
+  conversationId,
+  deletedBy: { $ne: req.user._id }, // ✅ exclude messages deleted by current user
+})
       .sort({ createdAt: 1 })
       .populate({
         path: "replyTo",
@@ -185,13 +188,32 @@ export const getMessages = async (req, res) => {
 };
 
 
-export const deleteAllMessage = async (req, res) => {
+// export const deleteAllMessage = async (req, res) => {
+//   try {
+//     const { conversationId } = req.params;
+//     await Message.deleteMany({ conversationId });
+//     res.status(200).json({ message: 'All messages deleted' });
+//   } catch (err) {
+//     console.error('Failed to delete messages:', err);
+//     res.status(500).json({ error: 'Internal server error' });
+//   }
+// }
+
+
+export const deleteMessagesForUser = async (req, res) => {
+  const { conversationId } = req.params;
+  const userId = req.user._id;
+
   try {
-    const { conversationId } = req.params;
-    await Message.deleteMany({ conversationId });
-    res.status(200).json({ message: 'All messages deleted' });
+    await Message.updateMany(
+      { conversationId, deletedBy: { $ne: userId } },
+      { $push: { deletedBy: userId } }
+    );
+
+    res.status(200).json({ message: "Messages hidden for current user." });
   } catch (err) {
-    console.error('Failed to delete messages:', err);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Failed to hide messages:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
-}
+};
+

@@ -26,7 +26,8 @@ const messageSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "Message",
       default: null,
-    }
+    },
+    deletedBy: [{ type: Schema.Types.ObjectId, ref: "User" }], // ✅ NEW FIELD
     
   },
   { timestamps: true }

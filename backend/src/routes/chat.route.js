@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
-import { startChat, getUserChats, sendMessage, getMessages, deleteAllMessage } from "../controllers/chat.controller.js";
+import { startChat, getUserChats, sendMessage, getMessages, deleteMessagesForUser } from "../controllers/chat.controller.js";
 
 const ChatRouter = Router();
 
@@ -28,11 +28,12 @@ ChatRouter.get(`/messages/:conversationId`,
 ); // Get chat messages
 
 
-// DELETE /api/v1/users/messages/:conversationId
-ChatRouter.delete('/deleteAllMessages/:conversationId', async (req, res) => {
-    verifyJWT,
-    deleteAllMessage
-  });
+ChatRouter.delete(
+  "/messages/:conversationId",
+  verifyJWT,
+  deleteMessagesForUser
+);
+
   
 
 

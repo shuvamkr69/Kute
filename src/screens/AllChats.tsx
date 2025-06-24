@@ -212,7 +212,7 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.headingText}>Your Chats</Text>
+      <Text style={styles.headingText}>Chats</Text>
 
       <FlatList
         data={chats}

@@ -375,7 +375,7 @@
         case "delete":
           Alert.alert(
             "Delete All Chats",
-            "Are you sure you want to delete all chats?",
+            "All chats will only be deleated for you. The other user will still be able to view your conversations.",
             [
               { text: "Cancel", style: "cancel" },
               {
@@ -385,9 +385,8 @@
                   if (!conversationId) return;
 
                   try {
-                    await api.delete(
-                      `/api/v1/users/deleteAllMessages/${conversationId}`
-                    );
+                    await api.delete(`/api/v1/users/messages/${conversationId}`);
+
                     setMessages([]);
                     Alert.alert("Deleted", "All chats have been deleted.");
                   } catch (err) {
