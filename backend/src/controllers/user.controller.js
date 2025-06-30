@@ -6,8 +6,6 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { Filter } from "../models/filter.model.js";
 import { Like } from "../models/liked.model.js";
 
-
-
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
     const user = await User.findById(userId);
@@ -281,9 +279,16 @@ const deleteAccount = async (req, res) => {
 };
 
 const homescreenProfiles = async (req, res) => {
-  try {
-    const currentUserId = req.user._id;
 
+  const currentUserId = req.user._id;
+  // Get blocked users
+  const blockedUsers = await User.findById(currentUserId).select(
+    "blockedUsers"
+  );
+  const blockedIds =
+    blockedUsers?.blockedUsers?.map((id) => id.toString()) || [];
+
+  try {
     // Fetch the current user
     const currentUser = await User.findById(currentUserId);
     if (!currentUser) {
@@ -291,15 +296,8 @@ const homescreenProfiles = async (req, res) => {
     }
     const { gender, genderOrientation } = currentUser;
 
-
-const likes = await Like.find({ userId: currentUserId });
-const excludedIds = likes.map((like) => like.likedUserId.toString());
-
-
-
-
-
-
+    const likes = await Like.find({ userId: currentUserId });
+    const excludedIds = likes.map((like) => like.likedUserId.toString());
 
     // Default filter (gender-based)
     let filter = { _id: { $ne: currentUserId } };
@@ -334,13 +332,11 @@ const excludedIds = likes.map((like) => like.likedUserId.toString());
       };
     }
 
-    console.log("Default Gender Filter:", filter);
 
     // Fetch user's saved filters
     const userFilter = await Filter.findOne({ userId: currentUserId });
 
     if (userFilter) {
-      console.log("Applying Advanced Filters:", userFilter);
 
       if (
         userFilter.relationshipType &&
@@ -389,11 +385,11 @@ const excludedIds = likes.map((like) => like.likedUserId.toString());
         filter.location = userFilter.location;
       }
 
-      console.log("Final Filter with Advanced Options:", filter);
     }
 
     // ✅ Exclude already liked/matched users + self
-filter._id = { $nin: [...excludedIds, currentUserId.toString()] };
+    filter._id = { $nin: [...excludedIds, ...blockedIds, currentUserId.toString()] };
+
 
     // Fetch filtered users
     const users = await User.find(filter);
@@ -490,7 +486,45 @@ const otherProfile = async (req, res) => {
   res.status(200).json(formattedUser);
 };
 
-const userProfile = async (req, res) => { //getting our own profile
+const blockUser = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  const { blockedUserId } = req.body;
+
+  if (!blockedUserId) throw new ApiError(400, "Blocked user ID is required");
+
+  await User.findByIdAndUpdate(userId, {
+    $addToSet: { blockedUsers: blockedUserId },
+  });
+
+  res.status(200).json(new ApiResponse(200, {}, "User blocked successfully"));
+});
+const unblockUser = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  const { userId: unblockId } = req.body;
+
+  if (!unblockId) throw new ApiError(400, "User ID to unblock is required");
+
+  await User.findByIdAndUpdate(userId, {
+    $pull: { blockedUsers: unblockId },
+  });
+
+  res.status(200).json({ message: "User unblocked" });
+});
+const blockedUsers = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+
+  const user = await User.findById(userId).populate("blockedUsers", "fullName avatar1");
+
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+
+  res.status(200).json(user.blockedUsers);
+});
+
+
+const userProfile = async (req, res) => {
+  //getting our own profile
   try {
     const currentUserId = req.user._id; // Get logged-in user's ID
 
@@ -531,10 +565,9 @@ const editUserProfile = async (req, res) => {
       smoking,
       workout,
       religion,
-      isVerified
+      isVerified,
     } = req.body;
 
-    
     const fieldNames = [
       "avatar1",
       "avatar2",
@@ -659,17 +692,24 @@ const googleLoginUser = asyncHandler(async (req, res) => {
       avatar1: avatar,
       loginMethod: "google",
       genderOrientation: "Prefer not to say", // required field fallback
-      religion: "Prefer not to say" // required field fallback
+      religion: "Prefer not to say", // required field fallback
     });
   }
 
-  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id);
-
-  return res.status(200).json(
-    new ApiResponse(200, { user, accessToken, refreshToken }, "Google login successful")
+  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
+    user._id
   );
-});
 
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        { user, accessToken, refreshToken },
+        "Google login successful"
+      )
+    );
+});
 
 export {
   generateAccessAndRefreshTokens,
@@ -686,4 +726,7 @@ export {
   powerUps,
   distanceFetcher,
   googleLoginUser,
+  blockUser,
+  unblockUser,
+  blockedUsers
 };

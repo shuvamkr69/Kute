@@ -203,7 +203,7 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
             ]}
             numberOfLines={1}
           >
-            {lastMessageText}
+            {/* {lastMessageText}                        last message text (disabled for now since it doesnt have all its functionalities*/}
           </Text>
         </View>
       </TouchableOpacity>

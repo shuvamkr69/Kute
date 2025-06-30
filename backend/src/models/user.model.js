@@ -206,6 +206,13 @@ const userSchema = new Schema(
       type: Number,
       default: 0,
     },
+    blockedUsers: [
+  {
+    type: Schema.Types.ObjectId,
+    ref: "User",
+    default: [],
+  },
+],
   },
   { timestamps: true }
 );

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { deleteAccount, distanceFetcher, editUserProfile, googleLoginUser, homescreenProfiles, powerUps, premiumActive, registerUser, updatePushToken, userProfile } from "../controllers/user.controller.js";
+import { blockedUsers, blockUser, deleteAccount, distanceFetcher, editUserProfile, googleLoginUser, homescreenProfiles, powerUps, premiumActive, registerUser, unblockUser, updatePushToken, userProfile } from "../controllers/user.controller.js";
 import {loginUser} from "../controllers/user.controller.js";
 import { logoutUser } from "../controllers/user.controller.js";
 import {upload} from "../middlewares/multer.middleware.js";
@@ -79,6 +79,20 @@ UserRouter.route("/distance/:userId").get(                               //get u
   verifyJWT,
   distanceFetcher,
 )
+
+UserRouter.route("/block").post(                               //get user distance
+  verifyJWT,
+  blockUser,
+)
+UserRouter.route("/unblock").post(                               //get user distance
+  verifyJWT,
+  unblockUser,
+)
+UserRouter.route("/blockedusers").get(                               //get user distance
+  verifyJWT,
+  blockedUsers,
+)
+
 
 
 export default UserRouter

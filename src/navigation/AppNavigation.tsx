@@ -46,6 +46,7 @@ import GameOverScreen from "../screens/games/WouldYouRather/GameOverScreen";
 import RoundReviewScreen from "../screens/games/WouldYouRather/RoundReviewScreen";
 import WaitingForFeedbackScreen from "../screens/games/WouldYouRather/WaitForFeedbackScreen";
 import WYRLobbyScreen from "../screens/games/WouldYouRather/WYRLobbyScreen";
+import BlockedUsersScreen from "../screens/BlockedUsersScreen";
 
 const Stack = createNativeStackNavigator(); // Standard Stack Navigator
 
@@ -79,6 +80,7 @@ export default function AppNavigation() {
             <Stack.Screen name="EditProfile" component={EditProfileScreen} />
             <Stack.Screen name="Premium" component={PremiumScreen} />
             <Stack.Screen name="Notifications" component={NotificationsScreen} />
+            <Stack.Screen name="BlockedUsersScreen" component={BlockedUsersScreen} />
             <Stack.Screen name="MatchScreen" component={MatchScreen} />
             <Stack.Screen name="Chat" component={ChatScreen} />
             <Stack.Screen name="AllChatScreen" component={ChatsScreen} />
@@ -87,6 +89,7 @@ export default function AppNavigation() {
             <Stack.Screen name="OtherProfile" component={OtherProfileScreen} />
             <Stack.Screen name="PhotoVerification" component={PhotoVerificationScreen} />
             <Stack.Screen name="SinglePlayerGame" component={SinglePlayerGame} />
+            
             
             {/* truth and dare */}
             <Stack.Screen name="TruthOrDareModeSelection" component={ModeSelection} />

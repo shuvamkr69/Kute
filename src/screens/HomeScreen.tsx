@@ -15,6 +15,7 @@ import {
   Platform,
   Dimensions,
   Button,
+  Alert,
 } from "react-native";
 import Swiper from "react-native-deck-swiper";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -85,14 +86,6 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const [isModalAnimated, setIsModalAnimated] = useState(false);
   const modalAnimatedValue = new Animated.Value(0);
 
-  const modalSlideIn = () => {
-    Animated.timing(modalAnimatedValue, {
-      toValue: 1,
-      duration: 500,
-      useNativeDriver: true,
-    }).start(() => setIsModalAnimated(true));
-  };
-
   const modalSlideOut = () => {
     Animated.timing(modalAnimatedValue, {
       toValue: 0,
@@ -104,12 +97,6 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const borderColor = swipeX.interpolate({
     inputRange: [-SWIPE_THRESHOLD, 0, SWIPE_THRESHOLD],
     outputRange: ["#FF0000", "#121212", "#00FF00"],
-    extrapolate: "clamp",
-  });
-
-  const borderColorY = swipeY.interpolate({
-    inputRange: [-SWIPE_VERTICAL_THRESHOLD, 0],
-    outputRange: ["#00B4FF", "#121212"],
     extrapolate: "clamp",
   });
 
@@ -256,6 +243,20 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
       }).start();
       return prevIndexUpdated;
     });
+  };
+
+  const handleBlockUser = async (blockedUserId: string) => {
+    try {
+      await api.post("/api/v1/users/block", { blockedUserId });
+      setProfiles((prev) => prev.filter((p) => p._id !== blockedUserId));
+      Alert.alert(
+        "User Blocked",
+        "This user has been blocked and removed from suggestions."
+      );
+    } catch (error) {
+      console.error("Error blocking user:", error);
+      Alert.alert("Error", "Failed to block user.");
+    }
   };
 
   const userLiked = async (index: number) => {
@@ -486,7 +487,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
             }}
             onSwiped={(index) => {
               // Update current card index when swiped
-              
+
               Animated.spring(feedbackAnim, {
                 toValue: 0,
                 useNativeDriver: true,
@@ -770,6 +771,32 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
                   <View style={styles.divider} />
                 </View>
 
+                <TouchableOpacity
+                  style={{
+                    backgroundColor: "#FF3B30",
+                    padding: 10,
+                    borderRadius: 10,
+                    marginTop: 20,
+                    marginHorizontal: 20,
+                  }}
+                  onPress={() => {
+                    if (selectedProfile) {
+                      handleBlockUser(selectedProfile._id);
+                      setSelectedProfile(null);
+                    }
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: "white",
+                      textAlign: "center",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    Block User
+                  </Text>
+                </TouchableOpacity>
+
                 {/* Close Button */}
                 <TouchableOpacity
                   onPress={() => setSelectedProfile(null)}
@@ -923,6 +950,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   modalScrollContainer: {
+    marginTop: 30, //adding distance between the top of the screen and profile images on the profile modal
     paddingBottom: 20,
   },
   modalImage: {
