@@ -1,3 +1,5 @@
+//this screen displays the profile of the user when you click on their image on the chatscreen
+
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -11,6 +13,7 @@ import {
 import { RouteProp, useRoute } from "@react-navigation/native";
 import axios from "axios";
 import api from "../utils/api";
+import BackButton from "../components/BackButton";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -89,6 +92,8 @@ const OtherProfileScreen = () => {
   }
 
   return (
+        <View style={styles.backButtonContainer}>
+          <BackButton title="" />
     <ScrollView style={styles.container}>
       <ScrollView
         horizontal
@@ -132,10 +137,14 @@ const OtherProfileScreen = () => {
         </View>
       </View>
     </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  backButtonContainer: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     backgroundColor: "#000",

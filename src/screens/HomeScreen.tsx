@@ -416,7 +416,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
       style={styles.container}
       contentContainerStyle={styles.scrollContainer}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#de822c"]}/>
       }
     >
       {loading ? (

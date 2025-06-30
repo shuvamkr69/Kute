@@ -356,7 +356,7 @@ const MultiplayerGame: React.FC<Props> = ({ navigation, route }) => {
       <ScrollView
         contentContainerStyle={{ flexGrow: 1 }}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} colors={["#de822c"]}/>
         }
       >
         {!selectedGender ? (

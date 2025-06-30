@@ -76,6 +76,14 @@ const BlockedUsersScreen: React.FC<Props> = ({ navigation }) => {
       <View style={styles.container}>
         {loading ? (
           <ActivityIndicator size="large" color="#de822c" />
+        ) : blockedUsers.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Image
+              source={require("../assets/icons/sarcastic-face.png")} // 🔁 Replace with your own image path
+              style={styles.emptyImage}
+            />
+            <Text style={styles.emptyText}>Go on, block someone right now</Text>
+          </View>
         ) : (
           <FlatList
             data={blockedUsers}
@@ -125,6 +133,24 @@ const styles = StyleSheet.create({
   unblockText: {
     color: "white",
     fontWeight: "bold",
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 30,
+    bottom: 30,
+  },
+  emptyImage: {
+    width: 150,
+    height: 150,
+    marginBottom: 20,
+    resizeMode: "contain",
+  },
+  emptyText: {
+    fontSize: 18,
+    color: "#B0B0B0",
+    textAlign: "center",
   },
 });
 

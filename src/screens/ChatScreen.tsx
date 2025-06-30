@@ -116,7 +116,7 @@ const MessageItem = memo(
           >
             <Ionicons
               name="return-up-back-outline"
-              size={18}
+              size={20}
               color="#de822c"
               style={{
                 transform: isMyMessage ? [] : [{ scaleX: -1 }], // ✅ Flip horizontally
@@ -637,6 +637,7 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
                   userId: likedUserId,
                 })
               }
+              activeOpacity={1}
             >
               {profileImage ? (
                 <Image
@@ -651,7 +652,16 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
                 </View>
               )}
             </TouchableOpacity>
+             <TouchableOpacity
+              onPress={() =>
+                navigation.navigate("OtherProfile", {
+                  userId: likedUserId,
+                })
+              }
+              activeOpacity={1}
+            >
             <Text style={styles.chatBackButton}>{userName.split(" ")[0]}</Text>
+            </TouchableOpacity>
           </View>
         </View>
 

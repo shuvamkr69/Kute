@@ -99,7 +99,7 @@ const Likes: React.FC<Props> = ({ navigation }) => {
           likedUsers.length === 0 && { flex: 1, justifyContent: "center" },
         ]}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#de822c"]}/>
         }
         ListEmptyComponent={
           <View style={styles.emptyStateContainer}>

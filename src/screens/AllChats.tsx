@@ -219,7 +219,7 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
         keyExtractor={(item) => item._id}
         renderItem={renderChatItem}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#de822c"]}/>
         }
         contentContainerStyle={[
           chats.length === 0 && { flex: 1, justifyContent: "center" },

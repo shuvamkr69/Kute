@@ -21,11 +21,6 @@ interface PickerComponentProps {
   icon?: React.ReactNode;
 }
 
-
-
-
-
-
 const PickerComponent: React.FC<PickerComponentProps> = ({
   label,
   selectedValue,
@@ -36,12 +31,13 @@ const PickerComponent: React.FC<PickerComponentProps> = ({
   const [modalVisible, setModalVisible] = React.useState(false);
   const slideAnim = React.useRef(new Animated.Value(height)).current;
   const OPTION_HEIGHT = 60;
-  const MAX_VISIBLE_OPTIONS = Math.floor(height * 0.5 / OPTION_HEIGHT);
-  const targetHeight = Math.min(options.length, MAX_VISIBLE_OPTIONS) * OPTION_HEIGHT + 100;
+  const MAX_VISIBLE_OPTIONS = Math.floor((height * 0.5) / OPTION_HEIGHT);
+  const targetHeight =
+    Math.min(options.length, MAX_VISIBLE_OPTIONS) * OPTION_HEIGHT + 100;
 
   const openModal = () => {
     setModalVisible(true);
-    
+
     Animated.timing(slideAnim, {
       toValue: height - targetHeight,
       duration: 300,
@@ -66,39 +62,45 @@ const PickerComponent: React.FC<PickerComponentProps> = ({
 
   return (
     <View>
-      <TouchableOpacity style={styles.pickerRow} onPress={openModal}>
-  <View style={styles.labelContainer}>
-    {icon && <View style={styles.iconContainer}>{icon}</View>}
-    <Text style={styles.label}>{label}</Text>
-  </View>
-  <View style={styles.selectedValueBox}>
-    <Text style={styles.selectedValueText}>{selectedValue || "Not Set"}</Text>
-    {!modalVisible && <Text style={styles.arrow}>▼</Text>}
-  </View>
-</TouchableOpacity>
-
+      <TouchableOpacity style={styles.pickerRow} onPress={openModal} activeOpacity={1}>
+        <View style={styles.labelContainer}>
+          {icon && <View style={styles.iconContainer}>{icon}</View>}
+          <Text style={styles.label}>{label}</Text>
+        </View>
+        <View style={styles.selectedValueBox}>
+          <Text style={styles.selectedValueText}>
+            {selectedValue || "Not Set"}
+          </Text>
+          {!modalVisible && <Text style={styles.arrow}>▼</Text>}
+        </View>
+      </TouchableOpacity>
 
       <Modal visible={modalVisible} transparent animationType="none">
-  <View style={styles.modalOverlay}>
-    <TouchableOpacity style={styles.backgroundDismissArea} activeOpacity={1} onPress={closeModal} />
-    <Animated.View style={[styles.bottomSheet, { top: slideAnim }]}>
-      <View style={styles.handleBar} />
-      <FlatList
-          style={{ maxHeight: MAX_VISIBLE_OPTIONS * OPTION_HEIGHT }}
-          showsVerticalScrollIndicator={false}
-          data={options}
-          keyExtractor={(item) => item}
-          renderItem={({ item }) => (
-            <TouchableOpacity style={styles.optionBox} onPress={() => handleSelect(item)}>
-              <Text style={styles.optionText}>{item}</Text>
-            </TouchableOpacity>
-          )}
-        />
-
-    </Animated.View>
-  </View>
-</Modal>
-
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={styles.backgroundDismissArea}
+            activeOpacity={1}
+            onPress={closeModal}
+          />
+          <Animated.View style={[styles.bottomSheet, { top: slideAnim }]}>
+            <View style={styles.handleBar} />
+            <FlatList
+              style={{ maxHeight: MAX_VISIBLE_OPTIONS * OPTION_HEIGHT }}
+              showsVerticalScrollIndicator={false}
+              data={options}
+              keyExtractor={(item) => item}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.optionBox}
+                  onPress={() => handleSelect(item)}
+                >
+                  <Text style={styles.optionText}>{item}</Text>
+                </TouchableOpacity>
+              )}
+            />
+          </Animated.View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -135,11 +137,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
-  
+
   iconContainer: {
     marginRight: 8,
   },
-  
+
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.8)",
@@ -158,8 +160,7 @@ const styles = StyleSheet.create({
   backgroundDismissArea: {
     flex: 1,
   },
-  
-  
+
   handleBar: {
     width: 50,
     height: 6,
@@ -180,7 +181,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     fontWeight: "600",
   },
-  
 });
 
 export default PickerComponent;
