@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
-import { startChat, getUserChats, sendMessage, getMessages, deleteMessagesForUser } from "../controllers/chat.controller.js";
+import { startChat, getUserChats, sendMessage, getMessages, deleteMessagesForUser, deleteMessagesForMe, deleteMessagesForEveryone } from "../controllers/chat.controller.js";
 
 const ChatRouter = Router();
 
@@ -33,6 +33,19 @@ ChatRouter.delete(
   verifyJWT,
   deleteMessagesForUser
 );
+
+ChatRouter.post(
+  "/messages/delete-for-me",
+  verifyJWT,
+  deleteMessagesForMe
+);
+
+ChatRouter.post(
+  "/messages/delete-for-everyone",
+  verifyJWT,
+  deleteMessagesForEveryone
+);
+
 
   
 

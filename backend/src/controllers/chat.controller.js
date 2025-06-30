@@ -3,6 +3,7 @@ import { Conversation } from "../models/conversation.model.js";
 import { Message } from "../models/message.model.js";
 import { getIO } from "../utils/socket.js";
 
+
 /**
  * Start a chat between two matched users
  */
@@ -10,7 +11,9 @@ export const startChat = async (req, res) => {
   const { userId, receiverId } = req.body;
 
   if (!userId || !receiverId) {
-    return res.status(400).json({ error: "UserId and ReceiverId are required." });
+    return res
+      .status(400)
+      .json({ error: "UserId and ReceiverId are required." });
   }
 
   try {
@@ -34,41 +37,40 @@ export const startChat = async (req, res) => {
 };
 
 /**
- * Get all conversations of a 
+ * Get all conversations of a
  */
 export const getUserChats = async (req, res) => {
   const { userId } = req.params;
 
   try {
     const conversations = await Conversation.find({ participants: userId })
-  .populate("participants", "fullName avatar1")
-  .sort({ updatedAt: -1 })
-  .lean(); // Convert to plain JS objects for easier manipulation
+      .populate("participants", "fullName avatar1")
+      .sort({ updatedAt: -1 })
+      .lean(); // Convert to plain JS objects for easier manipulation
 
-const formattedConversations = conversations.map((conversation) => {
-  const otherParticipant = conversation.participants.find(
-    (participant) => participant._id.toString() !== userId
-  );
+    const formattedConversations = conversations.map((conversation) => {
+      const otherParticipant = conversation.participants.find(
+        (participant) => participant._id.toString() !== userId
+      );
 
-  return {
-    _id: conversation._id,
-    otherParticipant: {
-      _id: otherParticipant?._id,
-      fullName: otherParticipant?.fullName,
-      avatar1: otherParticipant?.avatar1,
-    },
-    lastMessage: conversation.lastMessage
-      ? {
-          senderId: conversation.lastMessage.senderId,
-          message: conversation.lastMessage.message,
-          createdAt: conversation.lastMessage.createdAt,
-        }
-      : null,
-    updatedAt: conversation.updatedAt,
-  };
-});
-res.status(200).json(formattedConversations);
-
+      return {
+        _id: conversation._id,
+        otherParticipant: {
+          _id: otherParticipant?._id,
+          fullName: otherParticipant?.fullName,
+          avatar1: otherParticipant?.avatar1,
+        },
+        lastMessage: conversation.lastMessage
+          ? {
+              senderId: conversation.lastMessage.senderId,
+              message: conversation.lastMessage.message,
+              createdAt: conversation.lastMessage.createdAt,
+            }
+          : null,
+        updatedAt: conversation.updatedAt,
+      };
+    });
+    res.status(200).json(formattedConversations);
   } catch (error) {
     console.error("Error retrieving chats:", error);
     res.status(500).json({ error: "Failed to retrieve conversations." });
@@ -83,7 +85,9 @@ export const sendMessage = async (req, res) => {
   const io = getIO();
 
   if (!conversationId || !senderId || !text) {
-    return res.status(400).json({ error: "ConversationId, senderId, and message are required." });
+    return res
+      .status(400)
+      .json({ error: "ConversationId, senderId, and message are required." });
   }
 
   try {
@@ -94,12 +98,11 @@ export const sendMessage = async (req, res) => {
       replyTo: replyTo || null,
     });
     await newMessage.save();
-    
+
     // ✅ Fetch the saved message with populated replyTo
     const populatedMsg = await Message.findById(newMessage._id)
       .populate({ path: "replyTo", select: "message senderId" })
       .lean();
-    
 
     // ✅ Update lastMessage in Conversation
     await Conversation.findByIdAndUpdate(conversationId, {
@@ -126,7 +129,6 @@ export const sendMessage = async (req, res) => {
           }
         : undefined,
     });
-    
 
     res.status(201).json({
       _id: populatedMsg._id,
@@ -142,8 +144,6 @@ export const sendMessage = async (req, res) => {
           }
         : undefined,
     });
-    
-    
   } catch (error) {
     console.error("Error sending message:", error);
     res.status(500).json({ error: "Failed to send message." });
@@ -158,9 +158,9 @@ export const getMessages = async (req, res) => {
 
   try {
     const messages = await Message.find({
-  conversationId,
-  deletedBy: { $ne: req.user._id }, // ✅ exclude messages deleted by current user
-})
+      conversationId,
+      deletedBy: { $ne: req.user._id }, // ✅ exclude messages deleted by current user
+    })
       .sort({ createdAt: 1 })
       .populate({
         path: "replyTo",
@@ -168,17 +168,19 @@ export const getMessages = async (req, res) => {
       })
       .lean();
 
-      const formattedMessages = messages.map((msg) => ({
-        _id: msg._id,
-        text: msg.message,  // This is correct since your model uses 'message'
-        senderId: msg.senderId,
-        createdAt: msg.createdAt,
-        replyTo: msg.replyTo ? {
-          _id: msg.replyTo._id,
-          text: msg.replyTo.message,  // Note the field name
-          senderId: msg.replyTo.senderId
-        } : undefined
-      }));
+    const formattedMessages = messages.map((msg) => ({
+      _id: msg._id,
+      text: msg.message, // This is correct since your model uses 'message'
+      senderId: msg.senderId,
+      createdAt: msg.createdAt,
+      replyTo: msg.replyTo
+        ? {
+            _id: msg.replyTo._id,
+            text: msg.replyTo.message, // Note the field name
+            senderId: msg.replyTo.senderId,
+          }
+        : undefined,
+    }));
 
     res.status(200).json(formattedMessages);
   } catch (error) {
@@ -187,20 +189,8 @@ export const getMessages = async (req, res) => {
   }
 };
 
-
-// export const deleteAllMessage = async (req, res) => {
-//   try {
-//     const { conversationId } = req.params;
-//     await Message.deleteMany({ conversationId });
-//     res.status(200).json({ message: 'All messages deleted' });
-//   } catch (err) {
-//     console.error('Failed to delete messages:', err);
-//     res.status(500).json({ error: 'Internal server error' });
-//   }
-// }
-
-
 export const deleteMessagesForUser = async (req, res) => {
+  //delete all messages only for the user who clicked the option
   const { conversationId } = req.params;
   const userId = req.user._id;
 
@@ -217,3 +207,62 @@ export const deleteMessagesForUser = async (req, res) => {
   }
 };
 
+export const deleteMessagesForMe = async (req, res) => {
+  //delete secific message or group of messages only for the user who clicked the option
+  const { messageIds } = req.body;
+  const userId = req.user._id;
+
+  if (!messageIds || !Array.isArray(messageIds)) {
+    return res.status(400).json({ error: "messageIds are required." });
+  }
+
+  try {
+    await Message.updateMany(
+      { _id: { $in: messageIds }, deletedBy: { $ne: userId } },
+      { $push: { deletedBy: userId } }
+    );
+
+    res.status(200).json({ message: "Messages deleted for you." });
+  } catch (error) {
+    console.error("Error deleting messages for me:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const deleteMessagesForEveryone = async (req, res) => {
+  const { messageIds, conversationId } = req.body;
+  const userId = req.user._id;
+
+  if (!messageIds || !Array.isArray(messageIds)) {
+    return res.status(400).json({ error: "messageIds are required." });
+  }
+
+  if (!conversationId) {
+    return res.status(400).json({ error: "conversationId is required." });
+  }
+
+  try {
+    const messages = await Message.find({ _id: { $in: messageIds } });
+
+    const notOwned = messages.filter(
+      (msg) => msg.senderId.toString() !== userId.toString()
+    );
+
+    if (notOwned.length > 0) {
+      return res.status(403).json({
+        error: "You can only delete your own messages for everyone.",
+      });
+    }
+
+    await Message.deleteMany({ _id: { $in: messageIds } });
+
+    // ✅ Emit to the conversation room
+    const io = getIO();
+    io.to(conversationId).emit("messageDeleted", { messageIds });
+
+    res.status(200).json({ message: "Messages deleted for everyone." });
+  } catch (error) {
+    console.error("Error deleting messages for everyone:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
