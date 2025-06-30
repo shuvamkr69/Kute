@@ -57,7 +57,7 @@ const PremiumScreen: React.FC<Props> = ({ navigation }) => {
   if (plans.length === 0) {
     return (
       <View style={styles.container}>
-        <BackButton title="Become a Kute-T" />
+        <BackButton title="Become a Member" />
         <Text style={{ color: "white", textAlign: "center", marginTop: 50 }}>
           Loading plans...
         </Text>
@@ -137,7 +137,7 @@ const PremiumScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <BackButton title="Become a Kute-T" />
+      <BackButton title="Become a Member" />
 
       <View style={styles.upperSection}>
         <View style={styles.planDetailsBox}>

@@ -591,21 +591,31 @@ const editUserProfile = async (req, res) => {
         existingUser[field] = null;
       } else if (req.files && req.files[field] && req.files[field][0]) {
         // ✅ Upload new image to Cloudinary
-        const uploadedAvatar = await uploadOnCloudinary(
-          req.files[field][0].path
-        );
-        existingUser[field] = uploadedAvatar.url;
+        const uploadedAvatar = await uploadOnCloudinary(req.files[field][0].path);
+if (uploadedAvatar && uploadedAvatar.url) {
+  existingUser[field] = uploadedAvatar.url;
+} else {
+  console.error(`Cloudinary upload failed for field: ${field}`);
+  return res.status(500).json({ message: `Failed to upload image for ${field}` });
+}
+
       }
       // ✅ If no image uploaded and no 'null' value, keep the existing image
     }
 
     // Update other fields if provided
-    if (req.body.interests) {
-      interests = JSON.parse(req.body.interests);
-    }
+    let parsedInterests = interests;
+
+if (req.body.interests) {
+  try {
+    parsedInterests = JSON.parse(req.body.interests);
+  } catch (e) {
+    return res.status(400).json({ message: "Invalid interests format" });
+  }
+}
     const updatedFields = {
       relationshipType,
-      interests,
+      interests: parsedInterests,
       bio,
       height,
       occupation,
