@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { deleteAccount, distanceFetcher, editUserProfile, homescreenProfiles, powerUps, premiumActive, registerUser, updatePushToken, userProfile } from "../controllers/user.controller.js";
+import { deleteAccount, distanceFetcher, editUserProfile, googleLoginUser, homescreenProfiles, powerUps, premiumActive, registerUser, updatePushToken, userProfile } from "../controllers/user.controller.js";
 import {loginUser} from "../controllers/user.controller.js";
 import { logoutUser } from "../controllers/user.controller.js";
 import {upload} from "../middlewares/multer.middleware.js";
@@ -13,6 +13,9 @@ import { otherProfile } from "../controllers/user.controller.js";
 
 const UserRouter = Router()
 
+
+
+UserRouter.post("/googleLogin", googleLoginUser);         //google login
 
 
 UserRouter.post("/register", upload, registerUser);       //register

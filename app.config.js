@@ -50,7 +50,9 @@ export default {
         projectId: "cdf1fe10-b5fb-47b9-9847-db1763012342"
       },
       FACE_API_KEY: process.env.FACE_API_KEY,
-      FACE_API_SECRET: process.env.FACE_API_SECRET
+      FACE_API_SECRET: process.env.FACE_API_SECRET,
+      googleAndroidClientId: process.env.GOOGLE_ANDROID_CLIENT_ID,
+      googleExpoClientId: process.env.GOOGLE_EXPO_CLIENT_ID,
     }
   }
 };

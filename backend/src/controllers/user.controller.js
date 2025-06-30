@@ -642,6 +642,35 @@ const powerUps = async (req, res) => {
   res.status(200).json(user);
 };
 
+const googleLoginUser = asyncHandler(async (req, res) => {
+  const { email, name, avatar, token } = req.body;
+
+  if (!email || !name) {
+    throw new ApiError(400, "Email and Name are required");
+  }
+
+  let user = await User.findOne({ email });
+
+  // If user doesn't exist, create a basic user profile
+  if (!user) {
+    user = await User.create({
+      fullName: name,
+      email,
+      avatar1: avatar,
+      loginMethod: "google",
+      genderOrientation: "Prefer not to say", // required field fallback
+      religion: "Prefer not to say" // required field fallback
+    });
+  }
+
+  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(user._id);
+
+  return res.status(200).json(
+    new ApiResponse(200, { user, accessToken, refreshToken }, "Google login successful")
+  );
+});
+
+
 export {
   generateAccessAndRefreshTokens,
   registerUser,
@@ -656,4 +685,5 @@ export {
   updatePushToken,
   powerUps,
   distanceFetcher,
+  googleLoginUser,
 };

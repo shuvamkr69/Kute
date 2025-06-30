@@ -287,13 +287,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   chatName: {
-    color: "#de822c",
+    color: "white",
     fontSize: 18,
     fontWeight: "bold",
   },
   lastMessage: {
     color: "#B0B0B0",
-    fontSize: 14,
+    fontSize: 12,
   },
   unreadMessage: {
     color: "#de822c",

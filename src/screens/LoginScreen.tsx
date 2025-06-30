@@ -1,44 +1,48 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Button } from 'react-native';
-import Icon from 'react-native-vector-icons/FontAwesome';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import CustomButton from '../components/Button';
-import api from '../utils/api';
-import { useAuth } from '../navigation/AuthContext';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { registerForPushNotifications } from '../utils/notifications';
-import * as GoogleSignIn from 'expo-google-app-auth';
-import { GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
+import React, { useState } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  Button,
+} from "react-native";
+import Icon from "react-native-vector-icons/FontAwesome";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import CustomButton from "../components/Button";
+import api from "../utils/api";
+import { useAuth } from "../navigation/AuthContext";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { registerForPushNotifications } from "../utils/notifications";
+import * as GoogleSignIn from "expo-google-app-auth";
+import { GoogleAuthProvider, signInWithCredential } from "firebase/auth";
+import GoogleLoginButton from "../components/GoogleLoginButton";
 
-
-type Props = NativeStackScreenProps<any, 'Login'>;
+type Props = NativeStackScreenProps<any, "Login">;
 
 const LoginScreen: React.FC<Props> = ({ navigation }) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const { signIn } = useAuth();
-
-
-  
-  
 
   const loginHandler = async () => {
     if (!email || !password) {
       Alert.alert("Error", "Please fill in all fields");
       return;
     }
-  
+
     try {
       const loginResponse = await api.post("/api/v1/users/login", {
         email,
         password,
       });
-  
+
       console.log("Login Response:", loginResponse.data); // Debug log
-  
+
       if (loginResponse.status === 200) {
-        const { accessToken, refreshToken, user} = loginResponse.data.data;
-  
+        const { accessToken, refreshToken, user } = loginResponse.data.data;
+
         if (!accessToken || !refreshToken) {
           Alert.alert("Error", "Authentication failed: Missing tokens");
           return;
@@ -48,31 +52,31 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
         await AsyncStorage.setItem("refreshToken", refreshToken);
         await AsyncStorage.setItem("avatar", user.avatar1);
         await AsyncStorage.setItem("location", JSON.stringify(user.location));
-        const location = await AsyncStorage.getItem("location")
-        console.log("User data stored successfully:",location);
+        const location = await AsyncStorage.getItem("location");
+        console.log("User data stored successfully:", location);
 
         const token = await registerForPushNotifications();
-      if (token) {
-        const storedToken = await AsyncStorage.getItem("pushToken");
-        
+        if (token) {
+          const storedToken = await AsyncStorage.getItem("pushToken");
 
-        if (storedToken !== token) {
-          try {
-            await api.post(
-              "/api/v1/users/updatePushToken",
-              { pushToken: token }
-            );
-            await AsyncStorage.setItem("pushToken", token);
-            console.log("Push token updated successfully.");
-          } catch (error) {
-            console.error("Error updating push token:", error.response?.data || error.message);
+          if (storedToken !== token) {
+            try {
+              await api.post("/api/v1/users/updatePushToken", {
+                pushToken: token,
+              });
+              await AsyncStorage.setItem("pushToken", token);
+              console.log("Push token updated successfully.");
+            } catch (error) {
+              console.error(
+                "Error updating push token:",
+                error.response?.data || error.message
+              );
+            }
           }
         }
-      }
         // NEW: Update auth state so that user remains logged in
         await signIn();
-        
-  
+
         // Navigate to HomeTabs
         navigation.reset({
           index: 0,
@@ -101,15 +105,15 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
       console.error("Login Error:", error);
     }
   };
-  
+
   const handleForgotPassword = () => {
-    navigation.navigate('ForgotPassword');
-  }
+    navigation.navigate("ForgotPassword");
+  };
 
   return (
     <View style={styles.container}>
       <Text style={styles.logo}>Kute</Text>
-      <Text style={styles.tagline}>Find Your University Date</Text>
+      <Text style={styles.tagline}>Find Your Kutie</Text>
 
       <View style={styles.inputContainer}>
         <Icon name="envelope" size={20} color="#de822c" style={styles.icon} />
@@ -136,14 +140,74 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
       </View>
 
       <TouchableOpacity>
-        <Text style={styles.forgotPassword} onPress={handleForgotPassword}>Forgot your Password?</Text>
+        <Text style={styles.forgotPassword} onPress={handleForgotPassword}>
+          Forgot your Password?
+        </Text>
       </TouchableOpacity>
 
-      <CustomButton title="Login" onPress={loginHandler} style={styles.loginButton} />
+      <CustomButton
+        title="Login"
+        onPress={loginHandler}
+        style={styles.loginButton}
+      />
+
+      <Text style={{ color: "#B0B0B0", marginVertical: 10 }}>or</Text>
+
+      <GoogleLoginButton
+  onLogin={async (token) => {
+    try {
+      const userInfoRes = await fetch(
+        "https://www.googleapis.com/userinfo/v2/me",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      const user = await userInfoRes.json();
+
+      const response = await api.post("/api/v1/users/googleLogin", {
+        email: user.email,
+        name: user.name,
+        avatar: user.picture,
+        token,
+      });
+
+      const {
+        accessToken,
+        refreshToken,
+        user: userData,
+      } = response.data.data;
+
+      await AsyncStorage.setItem("user", JSON.stringify(userData));
+      await AsyncStorage.setItem("accessToken", accessToken);
+      await AsyncStorage.setItem("refreshToken", refreshToken);
+      await AsyncStorage.setItem("avatar", userData.avatar1);
+      await AsyncStorage.setItem("location", JSON.stringify(userData.location));
+
+      const pushToken = await registerForPushNotifications();
+      if (pushToken) {
+        const storedToken = await AsyncStorage.getItem("pushToken");
+        if (storedToken !== pushToken) {
+          await api.post("/api/v1/users/updatePushToken", { pushToken });
+          await AsyncStorage.setItem("pushToken", pushToken);
+        }
+      }
+
+      await signIn();
+      navigation.reset({ index: 0, routes: [{ name: "HomeTabs" }] });
+    } catch (error: any) {
+      console.error("Google login error:", error);
+      Alert.alert("Login Failed", "Could not complete Google login.");
+    }
+  }}
+/>
+
 
       <Text style={styles.registerText}>
-        Don't have an account?{' '}
-        <Text style={styles.registerLink} onPress={() => navigation.navigate('Register')}>
+        Don't have an account?{" "}
+        <Text
+          style={styles.registerLink}
+          onPress={() => navigation.navigate("Register")}
+        >
           Register
         </Text>
       </Text>
@@ -154,62 +218,62 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'black',
-    justifyContent: 'center',
+    backgroundColor: "black",
+    justifyContent: "center",
     paddingHorizontal: 20,
-    alignItems: 'center',
+    alignItems: "center",
   },
   logo: {
     fontSize: 40,
-    color: '#de822c',
-    fontWeight: 'bold',
+    color: "#de822c",
+    fontWeight: "bold",
     marginBottom: 10,
   },
   tagline: {
-    color: '#B0B0B0',
+    color: "#B0B0B0",
     marginBottom: 40,
     fontSize: 16,
   },
   inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1E1E1E',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#1E1E1E",
     borderRadius: 10,
     marginBottom: 20,
     paddingHorizontal: 15,
     borderWidth: 1,
-    borderColor: '#de822c',
-    width: '100%',
+    borderColor: "#de822c",
+    width: "100%",
   },
   input: {
     flex: 1,
     height: 50,
-    color: 'white',
+    color: "white",
     paddingLeft: 10,
   },
   icon: {
     marginRight: 10,
   },
   forgotPassword: {
-    color: '#de822c',
+    color: "#de822c",
     marginBottom: 20,
-    textAlign: 'center',
+    textAlign: "center",
   },
   loginButton: {
-    backgroundColor: '#de822c',
+    backgroundColor: "#de822c",
     paddingVertical: 15,
     borderRadius: 10,
-    width: '100%',
-    textAlign: 'center',
+    width: "100%",
+    textAlign: "center",
     marginBottom: 20,
   },
   registerText: {
-    color: '#B0B0B0',
+    color: "#B0B0B0",
     marginTop: 10,
   },
   registerLink: {
-    color: '#de822c',
-    fontWeight: 'bold',
+    color: "#de822c",
+    fontWeight: "bold",
   },
 });
 
