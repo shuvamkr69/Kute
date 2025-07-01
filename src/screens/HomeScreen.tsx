@@ -315,7 +315,6 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     if (index >= profiles.length) return;
 
     const superLikedUserId = profiles[index]._id;
-    // console.log("Super Liked user ID:", superLikedUserId);
 
     try {
       const response = await api.post(
@@ -373,7 +372,15 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         });
       }
     } catch (error) {
-      console.error("Super Like error:", error.response?.data || error.message);
+      const message = error.response?.data?.message || error.message;
+      if (message === "No Super Likes remaining") {
+        Alert.alert(
+          "You're out of Super Likes",
+          "Come back later or get more!"
+        );
+      } else {
+        console.error("Super Like error:", message);
+      }
     }
   };
 
@@ -416,7 +423,11 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
       style={styles.container}
       contentContainerStyle={styles.scrollContainer}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#de822c"]}/>
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={["#de822c"]}
+        />
       }
     >
       {loading ? (

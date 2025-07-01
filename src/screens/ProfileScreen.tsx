@@ -60,6 +60,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
     const fetchCounters = async () => {
       try {
         const response = await api.get("/api/v1/users/powerUps");
+        console.log(response.data.superLike)
         setSuperLikes(response.data.superLike);
         setBoosts(response.data.boost);
       } catch (error) {
@@ -103,6 +104,8 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
             : interest
         ) || []
       );
+      setSuperLikes(response.data.superLike);
+      setBoosts(response.data.boost);
       ToastAndroid.show("Profile Refreshed!", ToastAndroid.SHORT);
     } catch (error) {
       console.log("Refresh Error:", error);

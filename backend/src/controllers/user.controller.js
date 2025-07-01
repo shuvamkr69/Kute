@@ -279,7 +279,6 @@ const deleteAccount = async (req, res) => {
 };
 
 const homescreenProfiles = async (req, res) => {
-
   const currentUserId = req.user._id;
   // Get blocked users
   const blockedUsers = await User.findById(currentUserId).select(
@@ -332,12 +331,10 @@ const homescreenProfiles = async (req, res) => {
       };
     }
 
-
     // Fetch user's saved filters
     const userFilter = await Filter.findOne({ userId: currentUserId });
 
     if (userFilter) {
-
       if (
         userFilter.relationshipType &&
         userFilter.relationshipType !== "Any"
@@ -384,12 +381,12 @@ const homescreenProfiles = async (req, res) => {
       if (userFilter.location && userFilter.location !== "Any") {
         filter.location = userFilter.location;
       }
-
     }
 
     // ✅ Exclude already liked/matched users + self
-    filter._id = { $nin: [...excludedIds, ...blockedIds, currentUserId.toString()] };
-
+    filter._id = {
+      $nin: [...excludedIds, ...blockedIds, currentUserId.toString()],
+    };
 
     // Fetch filtered users
     const users = await User.find(filter);
@@ -513,7 +510,10 @@ const unblockUser = asyncHandler(async (req, res) => {
 const blockedUsers = asyncHandler(async (req, res) => {
   const userId = req.user._id;
 
-  const user = await User.findById(userId).populate("blockedUsers", "fullName avatar1");
+  const user = await User.findById(userId).populate(
+    "blockedUsers",
+    "fullName avatar1"
+  );
 
   if (!user) {
     return res.status(404).json({ message: "User not found" });
@@ -522,19 +522,26 @@ const blockedUsers = asyncHandler(async (req, res) => {
   res.status(200).json(user.blockedUsers);
 });
 
-
 const userProfile = async (req, res) => {
   //getting our own profile
   try {
     const currentUserId = req.user._id; // Get logged-in user's ID
 
     const user = await User.findById(currentUserId).select(
-      "-password -refreshToken -__v -createdAt -updatedAt"
-    );
+  "-password -refreshToken -__v -createdAt -updatedAt"
+);
 
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
+if (!user) {
+  return res.status(404).json({ message: "User not found" });
+}
+
+// Ensure interests is always an array
+const userObj = user.toObject();
+userObj.interests = Array.isArray(userObj.interests)
+  ? userObj.interests
+  : typeof userObj.interests === "string"
+  ? userObj.interests.split(",").map((i) => i.trim())
+  : [];
 
     res.status(200).json(user);
   } catch (error) {
@@ -591,14 +598,17 @@ const editUserProfile = async (req, res) => {
         existingUser[field] = null;
       } else if (req.files && req.files[field] && req.files[field][0]) {
         // ✅ Upload new image to Cloudinary
-        const uploadedAvatar = await uploadOnCloudinary(req.files[field][0].path);
-if (uploadedAvatar && uploadedAvatar.url) {
-  existingUser[field] = uploadedAvatar.url;
-} else {
-  console.error(`Cloudinary upload failed for field: ${field}`);
-  return res.status(500).json({ message: `Failed to upload image for ${field}` });
-}
-
+        const uploadedAvatar = await uploadOnCloudinary(
+          req.files[field][0].path
+        );
+        if (uploadedAvatar && uploadedAvatar.url) {
+          existingUser[field] = uploadedAvatar.url;
+        } else {
+          console.error(`Cloudinary upload failed for field: ${field}`);
+          return res
+            .status(500)
+            .json({ message: `Failed to upload image for ${field}` });
+        }
       }
       // ✅ If no image uploaded and no 'null' value, keep the existing image
     }
@@ -606,13 +616,13 @@ if (uploadedAvatar && uploadedAvatar.url) {
     // Update other fields if provided
     let parsedInterests = interests;
 
-if (req.body.interests) {
-  try {
-    parsedInterests = JSON.parse(req.body.interests);
-  } catch (e) {
-    return res.status(400).json({ message: "Invalid interests format" });
-  }
-}
+    if (req.body.interests) {
+      try {
+        parsedInterests = JSON.parse(req.body.interests);
+      } catch (e) {
+        return res.status(400).json({ message: "Invalid interests format" });
+      }
+    }
     const updatedFields = {
       relationshipType,
       interests: parsedInterests,
@@ -685,6 +695,7 @@ const powerUps = async (req, res) => {
   res.status(200).json(user);
 };
 
+
 const googleLoginUser = asyncHandler(async (req, res) => {
   const { email, name, avatar, token } = req.body;
 
@@ -738,5 +749,5 @@ export {
   googleLoginUser,
   blockUser,
   unblockUser,
-  blockedUsers
+  blockedUsers,
 };

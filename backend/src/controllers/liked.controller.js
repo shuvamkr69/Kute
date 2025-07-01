@@ -102,7 +102,7 @@ export const getLikedUsers = async (req, res) => {
       fullName: userId.fullName,
       profileImage: userId.avatar1 || "https://via.placeholder.com/150",
     }));
-    console.log("Formatted Users:", formattedUsers);
+    // console.log("Formatted Users:", formattedUsers);
 
     res.status(200).json(formattedUsers);
   } catch (error) {
@@ -117,15 +117,27 @@ export const UserSuperLiked = asyncHandler(async (req, res) => {
 
   if (!likedUserId) throw new ApiError(400, "Liked user ID is required");
 
+  // ✅ Fetch current user to access superLike count
+  const currentUser = await User.findById(userId);
+  if (!currentUser) throw new ApiError(404, "User not found");
+
+  if (currentUser.superLike <= 0) {
+    throw new ApiError(403, "No Super Likes remaining");
+  }
+
   const existingLike = await Like.findOne({ userId, likedUserId });
   if (existingLike) throw new ApiError(400, "You have already liked this user");
 
-  // ✅ Check if the liked user already liked OR superliked this user
+  // ✅ Check if the liked user already liked or superliked this user
   const likedBack = await Like.findOne({
     userId: likedUserId,
     likedUserId: userId,
-    $or: [{ superLiked: true }, {}], // either like or superlike qualifies
+    $or: [{ superLiked: true }, {}], // match even normal likes
   });
+
+  // ✅ Decrease superLike count and save
+  currentUser.superLike -= 1;
+  await currentUser.save();
 
   const newSuperLike = await Like.create({
     userId,
@@ -140,30 +152,28 @@ export const UserSuperLiked = asyncHandler(async (req, res) => {
       { matched: true }
     );
 
-    const user = await User.findById(userId);
     const matchedUser = await User.findById(likedUserId);
 
     await sendPushNotification(
       matchedUser.pushToken,
       "🎉 It's a Match!",
-      `You matched with ${user.fullName}!`
+      `You matched with ${currentUser.fullName}!`
     );
 
     await sendPushNotification(
-      user.pushToken,
+      currentUser.pushToken,
       "🎉 It's a Match!",
       `You matched with ${matchedUser.fullName}!`
     );
 
-    // ✅ RETURN match data properly
     return res.status(201).json(
       new ApiResponse(
         201,
         {
           matched: true,
           user: {
-            image: user.avatar1,
-            fullName: user.fullName,
+            image: currentUser.avatar1,
+            fullName: currentUser.fullName,
           },
           matchedUser: {
             image: matchedUser.avatar1,
@@ -185,5 +195,6 @@ export const UserSuperLiked = asyncHandler(async (req, res) => {
     )
   );
 });
+
 
 export { UserLiked };

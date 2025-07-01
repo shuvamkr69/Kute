@@ -25,14 +25,14 @@ import * as ImagePicker from "expo-image-picker";
 import { Dimensions } from "react-native";
 import { profile } from "../../assets/images";
 import LoadingScreen from "./LoadingScreen";
-import { PanGestureHandler } from 'react-native-gesture-handler';
-import Animated, { 
-  useAnimatedGestureHandler, 
-  useSharedValue, 
-  useAnimatedStyle, 
+import { PanGestureHandler } from "react-native-gesture-handler";
+import Animated, {
+  useAnimatedGestureHandler,
+  useSharedValue,
+  useAnimatedStyle,
   withSpring,
-  runOnJS
-} from 'react-native-reanimated';
+  runOnJS,
+} from "react-native-reanimated";
 
 const screenWidth = Dimensions.get("window").width;
 const itemSize = (screenWidth - 60) / 3; // 20 padding on both sides + 10 gap between items
@@ -103,20 +103,17 @@ const religionOptions = [
   "Other",
 ];
 
-
 // Add this RIGHT BEFORE your EditProfileScreen component definition
 // (after all the imports but before const EditProfileScreen: React.FC<Props> = ...)
 
-const DraggablePhoto = ({ 
-  
-  photoUri, 
-  index, 
-  onRemove, 
+const DraggablePhoto = ({
+  photoUri,
+  index,
+  onRemove,
   onDragEnd,
   isDragging,
   setDraggingIndex,
   onAddPhoto,
-  
 }: {
   photoUri: string | null;
   index: number;
@@ -190,9 +187,7 @@ const DraggablePhoto = ({
   );
 };
 
-
 type Props = NativeStackScreenProps<any, "EditProfile">;
-
 
 const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
   const [bio, setBio] = useState("");
@@ -238,9 +233,7 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
       setProfilePhotos(avatars);
       setRelationshipType(profileData.relationshipType);
       setSelectedInterests(
-        profileData.interests.length > 0
-          ? profileData.interests[0].split(",").map((item) => item.trim())
-          : []
+        Array.isArray(profileData.interests) ? profileData.interests : []
       );
       setBio(profileData.bio || "");
       setOccupation(profileData.occupation || "");
@@ -267,18 +260,32 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const res = await api.get("/api/v1/users/me");
+      console.log("Fetched interests:", res.data.interests);
+      setSelectedInterests(
+        Array.isArray(res.data.interests)
+          ? res.data.interests
+          : res.data.interests.split(",").map((item) => item.trim())
+      );
+    };
+
+    fetchProfile();
+  }, []);
+
   // Add this function RIGHT AFTER your profileFetcher function
-// (inside the EditProfileScreen component)
-const handleDragEnd = (fromIndex: number, toIndex: number) => {
-  if (fromIndex === toIndex) return;
-  
-  const newPhotos = [...profilePhotos];
-  const temp = newPhotos[fromIndex];
-  newPhotos[fromIndex] = newPhotos[toIndex];
-  newPhotos[toIndex] = temp;
-  
-  setProfilePhotos(newPhotos);
-};
+  // (inside the EditProfileScreen component)
+  const handleDragEnd = (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) return;
+
+    const newPhotos = [...profilePhotos];
+    const temp = newPhotos[fromIndex];
+    newPhotos[fromIndex] = newPhotos[toIndex];
+    newPhotos[toIndex] = temp;
+
+    setProfilePhotos(newPhotos);
+  };
 
   const handleAddPhoto = async () => {
     const validPhotos = profilePhotos.filter(
@@ -435,20 +442,20 @@ const handleDragEnd = (fromIndex: number, toIndex: number) => {
         renderItem={() => (
           <>
             <View style={styles.profileContainer}>
-            <View style={styles.gridContainer}>
-  {Array.from({ length: 6 }).map((_, index) => (
-    <DraggablePhoto
-      key={index}
-      photoUri={profilePhotos[index]}
-      index={index}
-      onRemove={removePhoto}
-      onDragEnd={handleDragEnd}
-      isDragging={draggingIndex === index}
-      setDraggingIndex={setDraggingIndex}
-      onAddPhoto={handleAddPhoto}
-    />
-  ))}
-</View>
+              <View style={styles.gridContainer}>
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <DraggablePhoto
+                    key={index}
+                    photoUri={profilePhotos[index]}
+                    index={index}
+                    onRemove={removePhoto}
+                    onDragEnd={handleDragEnd}
+                    isDragging={draggingIndex === index}
+                    setDraggingIndex={setDraggingIndex}
+                    onAddPhoto={handleAddPhoto}
+                  />
+                ))}
+              </View>
             </View>
 
             <View style={styles.section}>
