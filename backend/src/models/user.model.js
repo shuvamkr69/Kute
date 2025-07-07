@@ -28,7 +28,8 @@ const userSchema = new Schema(
     //   type: String,
     //   required: [true, "Password is Requried"],
     // },
-    password: {                   //new logic for google o auth login
+    password: {
+      //new logic for google o auth login
       type: String,
       required: function () {
         return this.loginMethod !== "google";
@@ -63,6 +64,15 @@ const userSchema = new Schema(
       type: String,
       default: null,
     },
+    passwordResetToken: {
+      type: String,
+    },
+    passwordResetExpires: {
+      type: Date,
+    },
+    passwordResetOTP: String,
+    passwordResetOTPExpires: Date,
+    
     age: {
       type: Number,
       default: null,
@@ -207,12 +217,12 @@ const userSchema = new Schema(
       default: 0,
     },
     blockedUsers: [
-  {
-    type: Schema.Types.ObjectId,
-    ref: "User",
-    default: [],
-  },
-],
+      {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+        default: [],
+      },
+    ],
   },
   { timestamps: true }
 );

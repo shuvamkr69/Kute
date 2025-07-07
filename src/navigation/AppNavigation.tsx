@@ -47,6 +47,7 @@ import RoundReviewScreen from "../screens/games/WouldYouRather/RoundReviewScreen
 import WaitingForFeedbackScreen from "../screens/games/WouldYouRather/WaitForFeedbackScreen";
 import WYRLobbyScreen from "../screens/games/WouldYouRather/WYRLobbyScreen";
 import BlockedUsersScreen from "../screens/BlockedUsersScreen";
+import ResetPasswordScreen from "../screens/ResetPasswordScreen";
 
 const Stack = createNativeStackNavigator(); // Standard Stack Navigator
 
@@ -129,6 +130,7 @@ export default function AppNavigation() {
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Register" component={RegisterScreen} />
             <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+            <Stack.Screen name="ResetPassword" component={ResetPasswordScreen} />
             <Stack.Screen name="BasicDetails" component={BasicDetails} />
             <Stack.Screen name="Location" component={LocationPage} />
             <Stack.Screen name="AddProfilePictures" component={AddProfilePictures} />

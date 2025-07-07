@@ -19,8 +19,8 @@ const CARD_HEIGHT = height * 0.85;
 
 const games = [
   { name: 'Truth or Dare 🔥', img: require('../../assets/gameScreenImages/truth-or-dare_orig.png'), route: 'TruthOrDareModeSelection' },
-  { name: 'Would You Rather ❓', img: require('../../assets/gameScreenImages/would-you-rather-questions.jpg'), route: 'WYRLobbyScreen' },
-  { name: 'Couple Quiz 💕', img: require('../../assets/gameScreenImages/would-you-rather-questions.jpg'), route: 'Couple Quiz' },
+  { name: 'Would You Rather ❓', img: require('../../assets/gameScreenImages/would-you-rather-questions.png'), route: 'WYRLobbyScreen' },
+  { name: 'Couple Quiz 💕', img: require('../../assets/gameScreenImages/would-you-rather-questions.png'), route: 'Couple Quiz' },
   { name: 'Flirty Questions 💌', img: require('../../assets/gameScreenImages/flirty-questions.jpeg'), route: 'Flirty Questions' },
   { name: 'Never Have I Ever 🍸', img: require('../../assets/gameScreenImages/never-have-i-ever.jpeg'), route: 'GroupSizeSelectorScreen' },
 ];
@@ -54,7 +54,6 @@ const GamesScreen: React.FC<Props> = ({ navigation }) => {
     <View style={styles.container}>
       <View style={styles.topBar}>
         <Text style={styles.header}>Games</Text>
-        <Text style={styles.subheading}>Break the ice!</Text>
       </View>
 
       <FlatList
@@ -106,21 +105,16 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    fontSize: 24,
+    fontSize: 18,
+    paddingTop:10,
     fontWeight: 'bold',
     color: 'white',
-  },
-
-  subheading: {
-    fontSize: 16,
-    color: '#B0B0B0',
-    marginTop: 4,
   },
 
   card: {
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
-    paddingTop: 80,
+    paddingTop: 70,
     paddingHorizontal: 20,
   },
 

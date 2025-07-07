@@ -94,6 +94,9 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
           case 401:
             Alert.alert("Error", "Invalid email or password");
             break;
+          case 500:
+            Alert.alert("Error", "Invalid email or password");
+            break;
           default:
             Alert.alert("Error", "Something went wrong");
         }
@@ -154,53 +157,55 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
       <Text style={{ color: "#B0B0B0", marginVertical: 10 }}>or</Text>
 
       <GoogleLoginButton
-  onLogin={async (token) => {
-    try {
-      const userInfoRes = await fetch(
-        "https://www.googleapis.com/userinfo/v2/me",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      const user = await userInfoRes.json();
+        onLogin={async (token) => {
+          try {
+            const userInfoRes = await fetch(
+              "https://www.googleapis.com/userinfo/v2/me",
+              {
+                headers: { Authorization: `Bearer ${token}` },
+              }
+            );
+            const user = await userInfoRes.json();
 
-      const response = await api.post("/api/v1/users/googleLogin", {
-        email: user.email,
-        name: user.name,
-        avatar: user.picture,
-        token,
-      });
+            const response = await api.post("/api/v1/users/googleLogin", {
+              email: user.email,
+              name: user.name,
+              avatar: user.picture,
+              token,
+            });
 
-      const {
-        accessToken,
-        refreshToken,
-        user: userData,
-      } = response.data.data;
+            const {
+              accessToken,
+              refreshToken,
+              user: userData,
+            } = response.data.data;
 
-      await AsyncStorage.setItem("user", JSON.stringify(userData));
-      await AsyncStorage.setItem("accessToken", accessToken);
-      await AsyncStorage.setItem("refreshToken", refreshToken);
-      await AsyncStorage.setItem("avatar", userData.avatar1);
-      await AsyncStorage.setItem("location", JSON.stringify(userData.location));
+            await AsyncStorage.setItem("user", JSON.stringify(userData));
+            await AsyncStorage.setItem("accessToken", accessToken);
+            await AsyncStorage.setItem("refreshToken", refreshToken);
+            await AsyncStorage.setItem("avatar", userData.avatar1);
+            await AsyncStorage.setItem(
+              "location",
+              JSON.stringify(userData.location)
+            );
 
-      const pushToken = await registerForPushNotifications();
-      if (pushToken) {
-        const storedToken = await AsyncStorage.getItem("pushToken");
-        if (storedToken !== pushToken) {
-          await api.post("/api/v1/users/updatePushToken", { pushToken });
-          await AsyncStorage.setItem("pushToken", pushToken);
-        }
-      }
+            const pushToken = await registerForPushNotifications();
+            if (pushToken) {
+              const storedToken = await AsyncStorage.getItem("pushToken");
+              if (storedToken !== pushToken) {
+                await api.post("/api/v1/users/updatePushToken", { pushToken });
+                await AsyncStorage.setItem("pushToken", pushToken);
+              }
+            }
 
-      await signIn();
-      navigation.reset({ index: 0, routes: [{ name: "HomeTabs" }] });
-    } catch (error: any) {
-      console.error("Google login error:", error);
-      Alert.alert("Login Failed", "Could not complete Google login.");
-    }
-  }}
-/>
-
+            await signIn();
+            navigation.reset({ index: 0, routes: [{ name: "HomeTabs" }] });
+          } catch (error: any) {
+            console.error("Google login error:", error);
+            Alert.alert("Login Failed", "Could not complete Google login.");
+          }
+        }}
+      />
 
       <Text style={styles.registerText}>
         Don't have an account?{" "}

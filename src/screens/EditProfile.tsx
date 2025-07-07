@@ -588,7 +588,7 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
                 onChangeText={setLanguages}
               />
 
-              <Text style={styles.label}>My Love Language</Text>
+              <Text style={styles.label}>Love Language</Text>
               <TextInput
                 style={styles.input}
                 placeholder="How do you feel loved?"
@@ -596,6 +596,7 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
                 value={loveLanguage}
                 onChangeText={setloveLanguage}
               />
+              <View style={{marginBottom : 30}}></View>
 
               <PickerComponent
                 label="Relationship Type"

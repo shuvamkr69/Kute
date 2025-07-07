@@ -5,6 +5,8 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { Filter } from "../models/filter.model.js";
 import { Like } from "../models/liked.model.js";
+import crypto from "crypto";
+import nodemailer from "nodemailer";
 
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
@@ -197,9 +199,6 @@ const loginUser = asyncHandler(async (req, res) => {
     throw new ApiError(404, "User not found");
   }
 
-  console.log("Entered Password:", password);
-  console.log("Hashed Password in DB:", user.password);
-
   const isPasswordValid = await user.isPasswordCorrect(password);
   console.log("Password Valid:", isPasswordValid);
 
@@ -277,6 +276,68 @@ const deleteAccount = async (req, res) => {
     .status(200)
     .json(new ApiResponse(200, {}, "User deleted successfully"));
 };
+
+const sendResetOTP = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  if (!email) throw new ApiError(400, "Email is required");
+
+  const user = await User.findOne({ email });
+  if (!user) throw new ApiError(404, "User not found");
+
+  // 1) generate 6‑digit numeric OTP
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const hashed = crypto.createHash("sha256").update(otp).digest("hex");
+
+  user.passwordResetOTP = hashed;
+  user.passwordResetOTPExpires = Date.now() + 10 * 60 * 1000; // 10 min
+  await user.save({ validateBeforeSave: false });
+
+  // 2) e‑mail the OTP
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: { user: process.env.SMTP_EMAIL, pass: process.env.SMTP_PASS },
+  });
+
+  await transporter.sendMail({
+    from: `"Kute" <no-reply@kute.com>`,
+    to: user.email,
+    subject: "Your Kute password‑reset code",
+    text: `Hi ${user.fullName},
+
+Your one‑time code is:  ${otp}
+
+It is valid for 10 minutes. If you didn’t request this, just ignore the e‑mail.
+
+— The Kute Team`,
+  });
+
+  // expose nothing sensitive
+  return res.status(200).json(new ApiResponse(200, {}, "OTP sent to e‑mail"));
+});
+
+const resetPasswordWithOTP = asyncHandler(async (req, res) => {
+  const { email, otp, password } = req.body;
+  if (!email || !otp || !password)
+    throw new ApiError(400, "Email, OTP and password are required");
+
+  const hashedOTP = crypto.createHash("sha256").update(otp).digest("hex");
+  const user = await User.findOne({
+    email,
+    passwordResetOTP: hashedOTP,
+    passwordResetOTPExpires: { $gt: Date.now() },
+  });
+
+  if (!user) throw new ApiError(400, "OTP invalid or expired");
+
+  user.password = password; // hashes via pre‑save
+  user.passwordResetOTP = undefined;
+  user.passwordResetOTPExpires = undefined;
+  await user.save();
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Password updated – log in"));
+});
 
 const homescreenProfiles = async (req, res) => {
   const currentUserId = req.user._id;
@@ -528,20 +589,20 @@ const userProfile = async (req, res) => {
     const currentUserId = req.user._id; // Get logged-in user's ID
 
     const user = await User.findById(currentUserId).select(
-  "-password -refreshToken -__v -createdAt -updatedAt"
-);
+      "-password -refreshToken -__v -createdAt -updatedAt"
+    );
 
-if (!user) {
-  return res.status(404).json({ message: "User not found" });
-}
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
-// Ensure interests is always an array
-const userObj = user.toObject();
-userObj.interests = Array.isArray(userObj.interests)
-  ? userObj.interests
-  : typeof userObj.interests === "string"
-  ? userObj.interests.split(",").map((i) => i.trim())
-  : [];
+    // Ensure interests is always an array
+    const userObj = user.toObject();
+    userObj.interests = Array.isArray(userObj.interests)
+      ? userObj.interests
+      : typeof userObj.interests === "string"
+      ? userObj.interests.split(",").map((i) => i.trim())
+      : [];
 
     res.status(200).json(user);
   } catch (error) {
@@ -695,7 +756,6 @@ const powerUps = async (req, res) => {
   res.status(200).json(user);
 };
 
-
 const googleLoginUser = asyncHandler(async (req, res) => {
   const { email, name, avatar, token } = req.body;
 
@@ -740,6 +800,8 @@ export {
   otherProfile,
   premiumActive,
   deleteAccount,
+  sendResetOTP,
+  resetPasswordWithOTP,
   homescreenProfiles,
   userProfile,
   editUserProfile,

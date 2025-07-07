@@ -48,21 +48,21 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
   const [userId, setUserId] = useState<string | null>(null);
 
 
-  useEffect(() => {
-  const startPolling = () => {
-    const interval = setInterval(() => {
-      fetchChats(); // Call your existing fetchChats function
-    }, 10000); // Every 10 seconds
+//   useEffect(() => {
+//   const startPolling = () => {
+//     const interval = setInterval(() => {
+//       fetchChats(); // Call your existing fetchChats function
+//     }, 10000); // Every 10 seconds
 
-    return () => clearInterval(interval); // Cleanup
-  };
+//     return () => clearInterval(interval); // Cleanup
+//   };
 
-  const pollingCleanup = startPolling();
+//   const pollingCleanup = startPolling();
 
-  return () => {
-    pollingCleanup(); // Cleanup on unmount
-  };
-}, []);
+//   return () => {
+//     pollingCleanup(); // Cleanup on unmount
+//   };
+// }, []);
 
 
 
@@ -249,7 +249,7 @@ const styles = StyleSheet.create({
   headingText: {
     marginLeft: 2,
     color: "white",
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "bold",
     marginBottom: 20,
   },
