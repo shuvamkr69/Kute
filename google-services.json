@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "573297699882",
+    "project_id": "matchwithkute",
+    "storage_bucket": "matchwithkute.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:573297699882:android:23e6015e4a1e050a98e753",
+        "android_client_info": {
+          "package_name": "com.dating.kute"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCpnOWBlZcTW58VY_4c3HtrNKdR1C_yItQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
