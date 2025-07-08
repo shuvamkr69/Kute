@@ -94,6 +94,23 @@ export const initializeSocket = (server) => {
       }
     });
 
+
+    // Add inside io.on("connection", (socket) => { ... });
+
+socket.on("call-user", ({ convId, offer, from }) => {
+  socket.to(convId).emit("call-made", { offer, from });
+});
+
+socket.on("answer-call", ({ convId, answer, from }) => {
+  socket.to(convId).emit("answer-made", { answer, from });
+});
+
+socket.on("ice-candidate", ({ convId, candidate, from }) => {
+  socket.to(convId).emit("ice-candidate", { candidate, from });
+});
+
+
+
     socket.on("disconnect", () => {
       console.log("🔴 Client disconnected:", socket.id);
     });

@@ -693,17 +693,23 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
           ) : (
             <>
               <TouchableOpacity
-                onPress={() =>
-                  Alert.alert("Phone Call", "Call feature not implemented yet.")
-                }
-              >
-                <Ionicons
-                  name="call-outline"
-                  size={24}
-                  color="white"
-                  style={styles.icon}
-                />
-              </TouchableOpacity>
+  onPress={() => {
+    navigation.navigate("CallScreen", {
+      conversationId,
+      loggedInUserId,
+      likedUserId,
+      userName,
+    });
+  }}
+>
+  <Ionicons
+    name="call-outline"
+    size={24}
+    color="white"
+    style={styles.icon}
+/>
+</TouchableOpacity>
+
               <TouchableOpacity onPress={() => setMenuVisible(true)}>
                 <Entypo
                   name="dots-three-vertical"

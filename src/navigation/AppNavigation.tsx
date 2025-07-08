@@ -48,6 +48,7 @@ import WaitingForFeedbackScreen from "../screens/games/WouldYouRather/WaitForFee
 import WYRLobbyScreen from "../screens/games/WouldYouRather/WYRLobbyScreen";
 import BlockedUsersScreen from "../screens/BlockedUsersScreen";
 import ResetPasswordScreen from "../screens/ResetPasswordScreen";
+// import CallScreen from "../screens/CallScreen";
 
 const Stack = createNativeStackNavigator(); // Standard Stack Navigator
 
@@ -85,6 +86,7 @@ export default function AppNavigation() {
             <Stack.Screen name="MatchScreen" component={MatchScreen} />
             <Stack.Screen name="Chat" component={ChatScreen} />
             <Stack.Screen name="AllChatScreen" component={ChatsScreen} />
+            {/* <Stack.Screen name="Call" component={CallScreen} /> */}
             <Stack.Screen name="BoostsAndLikes" component={BoostsAndLikesScreen} />
             <Stack.Screen name="AdvancedFiltering" component={AdvancedFilteringScreen} />
             <Stack.Screen name="OtherProfile" component={OtherProfileScreen} />

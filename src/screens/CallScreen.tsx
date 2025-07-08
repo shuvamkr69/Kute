@@ -1,134 +1,203 @@
-import React, { useEffect, useRef, useState } from "react";
-import { View, StyleSheet, Text, TouchableOpacity, Platform } from "react-native";
-import {
-  createAgoraRtcEngine,
-  IRtcEngine,
-  ChannelProfileType,
-  ClientRoleType,
-  RtcSurfaceView,
-  RenderModeType,
-} from "react-native-agora";
-import { NativeStackScreenProps } from "@react-navigation/native-stack";
+// import React, { useEffect, useRef, useState } from "react";
+// import { View, Button, Alert, StyleSheet } from "react-native";
+// import {
+//   mediaDevices,
+//   RTCPeerConnection,
+//   RTCIceCandidate,
+//   RTCSessionDescription,
+//   RTCView,
+//   MediaStream,
+// } from "react-native-webrtc";
+// import { NativeStackScreenProps } from "@react-navigation/native-stack";
+// import { io } from "socket.io-client";
 
-const APP_ID = "4d7b55e46ef24a85825bd1ea354610f0"; // 🔑 Replace with your Agora App ID
+// type RootStackParamList = {
+//   Call: {
+//     conversationId: string;
+//     loggedInUserId: string;
+//   };
+// };
 
-export type RootStackParamList = {
-  CallScreen: {
-    channelId: string;
-    isCaller: boolean;
-  };
-};
+// type Props = NativeStackScreenProps<RootStackParamList, "Call">;
 
-type CallScreenProps = NativeStackScreenProps<RootStackParamList, "CallScreen">;
+// const socket = io("http://192.168.18.150:3000");
 
-const CallScreen: React.FC<CallScreenProps> = ({ route, navigation }) => {
-  const { channelId, isCaller } = route.params;
-  const engineRef = useRef<IRtcEngine | null>(null);
-  const [remoteUid, setRemoteUid] = useState<number | null>(null);
+// export default function CallScreen({ route, navigation }: Props) {
+//   const { conversationId, loggedInUserId } = route.params;
 
-  useEffect(() => {
-    const initAgora = async () => {
-      const engine = createAgoraRtcEngine();
-      engineRef.current = engine;
+//   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
+//   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
 
-      engine.initialize({
-        appId: APP_ID,
-        channelProfile: ChannelProfileType.ChannelProfileCommunication,
-      });
+//   const pc = useRef<RTCPeerConnection | null>(null);
 
-      engine.enableAudio();
-      engine.registerEventHandler({
-        onUserJoined: (_connection, uid) => setRemoteUid(uid),
-        onUserOffline: () => setRemoteUid(null),
-      });
+//   useEffect(() => {
+//     socket.emit("joinConversation", conversationId);
 
-      await engine.joinChannel(null, channelId, 0, {
-        clientRoleType: ClientRoleType.ClientRoleBroadcaster,
-      });
-    };
+//     const initCall = async () => {
+//       const stream = await mediaDevices.getUserMedia({
+//         audio: true,
+//         video: true,
+//       });
+//       setLocalStream(stream);
 
-    initAgora();
+//       const peer = new RTCPeerConnection({
+//         iceServers: [{ urls: ["stun:stun.l.google.com:19302"] }],
+//       });
+//       pc.current = peer;
 
-    return () => {
-      const engine = engineRef.current;
-      if (engine) {
-        engine.leaveChannel();
-        engine.release();
-      }
-    };
-  }, [channelId]);
+//       const remote = new MediaStream([]);
+//       setRemoteStream(remote);
 
-  return (
-    <View style={styles.container}>
-      {remoteUid ? (
-        <RtcSurfaceView
-          style={styles.full}
-          canvas={{ uid: remoteUid, renderMode: RenderModeType.RenderModeHidden }}
-          connection={{ channelId }}
-        />
-      ) : (
-        <View style={styles.waitingWrapper}>
-          <Text style={styles.waitingText}>Waiting for user to join…</Text>
-        </View>
-      )}
+//       stream.getTracks().forEach((track) => {
+//         (peer as any).addTrack(track, stream);
+//       });
 
-      {/* Optional: Show local preview here if needed
-      <RtcSurfaceView
-        style={styles.localPreview}
-        canvas={{ uid: 0, renderMode: RenderModeType.RenderModeHidden }}
-      />
-      */}
+//       peer.onaddstream = (event: any) => {
+//         setRemoteStream(event.stream);
+//       };
 
-      <TouchableOpacity
-        style={styles.hangup}
-        onPress={() => navigation.goBack()}
-      >
-        <Text style={styles.hangupText}>Hang Up</Text>
-      </TouchableOpacity>
-    </View>
-  );
-};
+//       peer.onicecandidate = (event) => {
+//         if (event.candidate) {
+//           socket.emit("ice-candidate", {
+//             convId: conversationId,
+//             candidate: event.candidate,
+//             from: loggedInUserId,
+//           });
+//         }
+//       };
 
-export default CallScreen;
+//       const offer = await peer.createOffer();
+//       await peer.setLocalDescription(offer);
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "black",
-  },
-  full: {
-    flex: 1,
-  },
-  waitingWrapper: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  waitingText: {
-    color: "white",
-    fontSize: 18,
-  },
-  hangup: {
-    position: "absolute",
-    bottom: 40,
-    alignSelf: "center",
-    backgroundColor: "red",
-    paddingVertical: 16,
-    paddingHorizontal: 40,
-    borderRadius: 999,
-  },
-  hangupText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  localPreview: {
-    width: 120,
-    height: 160,
-    position: "absolute",
-    top: Platform.OS === "ios" ? 50 : 30,
-    right: 20,
-    borderRadius: 8,
-    overflow: "hidden",
-  },
-});
+//       socket.emit("call-user", {
+//         convId: conversationId,
+//         offer,
+//         from: loggedInUserId,
+//       });
+//     };
+
+//     initCall();
+
+//     socket.on("call-made", async ({ offer, from }: any) => {
+//       if (from === loggedInUserId) return;
+
+//       const stream = await mediaDevices.getUserMedia({
+//         audio: true,
+//         video: true,
+//       });
+//       setLocalStream(stream);
+
+//       const peer = new RTCPeerConnection({
+//         iceServers: [{ urls: ["stun:stun.l.google.com:19302"] }],
+//       });
+//       pc.current = peer;
+
+//       const remote = new MediaStream([]);
+//       setRemoteStream(remote);
+
+//       // For react-native-webrtc, use addStream instead of addTrack
+//       peer.addStream(stream);
+
+//       peer.onaddstream = (event: any) => {
+//         setRemoteStream(event.stream);
+//       };
+
+//       peer.onicecandidate = (event) => {
+//         if (event.candidate) {
+//           socket.emit("ice-candidate", {
+//             convId: conversationId,
+//             candidate: event.candidate,
+//             from: loggedInUserId,
+//           });
+//         }
+//       };
+
+//       await peer.setRemoteDescription(new RTCSessionDescription(offer));
+//       const answer = await peer.createAnswer();
+//       await peer.setLocalDescription(answer);
+
+//       socket.emit("answer-call", {
+//         convId: conversationId,
+//         answer,
+//         from: loggedInUserId,
+//       });
+//     });
+
+//     socket.on("answer-made", async ({ answer }: any) => {
+//       await pc.current?.setRemoteDescription(new RTCSessionDescription(answer));
+//     });
+
+//     socket.on("ice-candidate", async ({ candidate }: any) => {
+//       if (candidate) {
+//         await pc.current?.addIceCandidate(new RTCIceCandidate(candidate));
+//       }
+//     });
+
+//     return () => {
+//       socket.off("call-made");
+//       socket.off("answer-made");
+//       socket.off("ice-candidate");
+
+//       pc.current?.close();
+//       localStream?.getTracks().forEach((t) => t.stop());
+//       remoteStream?.getTracks().forEach((t) => t.stop());
+//       setLocalStream(null);
+//       setRemoteStream(null);
+//     };
+//   }, []);
+
+//   const endCall = () => {
+//     pc.current?.close();
+//     localStream?.getTracks().forEach((t) => t.stop());
+//     remoteStream?.getTracks().forEach((t) => t.stop());
+//     setLocalStream(null);
+//     setRemoteStream(null);
+//     navigation.goBack();
+//   };
+
+//   return (
+//     <View style={styles.container}>
+//       {remoteStream ? (
+//         <RTCView
+//           streamURL={remoteStream.toURL()}
+//           style={styles.remote}
+//           objectFit="cover"
+//           mirror={false}
+//         />
+//       ) : (
+//         <View style={styles.remotePlaceholder} />
+//       )}
+
+//       {localStream ? (
+//         <RTCView
+//           streamURL={localStream.toURL()}
+//           style={styles.local}
+//           objectFit="cover"
+//           mirror
+//         />
+//       ) : null}
+
+//       <Button title="End Call" onPress={endCall} />
+//     </View>
+//   );
+// }
+
+// const styles = StyleSheet.create({
+//   container: { flex: 1, backgroundColor: "black" },
+//   remote: {
+//     flex: 1,
+//     backgroundColor: "black",
+//   },
+//   remotePlaceholder: {
+//     flex: 1,
+//     backgroundColor: "gray",
+//   },
+//   local: {
+//     width: 120,
+//     height: 160,
+//     position: "absolute",
+//     top: 30,
+//     right: 10,
+//     backgroundColor: "black",
+//   },
+// });
