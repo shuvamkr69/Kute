@@ -18,6 +18,7 @@ import api from "../utils/api";
 import { Dimensions, Animated } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { RefreshControl } from "react-native";
+import LoadingScreen from "./LoadingScreen";
 const VerificationImage = require("../assets/icons/verified-logo.png");
 const PremiumImage = require("../assets/icons/premium.png");
 
@@ -56,6 +57,8 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   const [personality, setPersonality] = useState<string>("Any");
   const [interests, setInterests] = useState<string[]>([]);
 
+
+
   useEffect(() => {
     const fetchCounters = async () => {
       try {
@@ -63,9 +66,12 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
         console.log(response.data.superLike)
         setSuperLikes(response.data.superLike);
         setBoosts(response.data.boost);
+        
       } catch (error) {
         console.error("Error fetching counters:", error);
       }
+        
+      
     };
     fetchCounters();
   }, []);
@@ -227,13 +233,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
     navigation.navigate("Premium");
   };
 
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <Text style={{ color: "#FFF" }}>Loading...</Text>
-      </View>
-    );
-  }
+
 
   const InfoSection = ({
     title,
@@ -256,6 +256,12 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
       )}
     </View>
   );
+
+  if (loading) {
+  // use your custom container *or* the dedicated LoadingScreen
+  return <LoadingScreen description="Fetching your Profile" />;
+  // (If you prefer the plain container, keep the same JSX you deleted.)
+}
 
   return (
     <ScrollView

@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
   },
   card: {
     width: "48%", // Takes up slightly less than half to allow spacing
-    backgroundColor: "#1E1E1E",
+    backgroundColor: "#0f0f0f",
     borderRadius: 10,
     padding: 15,
     alignItems: "center", // Center items vertically
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
     width: "100%", // Ensure text takes full width for proper centering
   },
   chatButton: {
-    backgroundColor: "#242424",
+    backgroundColor: "transparent",
     padding: 8,
     borderRadius: 20,
     width: 40,

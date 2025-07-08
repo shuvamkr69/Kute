@@ -20,9 +20,8 @@ const CARD_HEIGHT = height * 0.85;
 const games = [
   { name: 'Truth or Dare 🔥', img: require('../../assets/gameScreenImages/truth-or-dare_orig.png'), route: 'TruthOrDareModeSelection' },
   { name: 'Would You Rather ❓', img: require('../../assets/gameScreenImages/would-you-rather-questions.png'), route: 'WYRLobbyScreen' },
-  { name: 'Couple Quiz 💕', img: require('../../assets/gameScreenImages/would-you-rather-questions.png'), route: 'Couple Quiz' },
-  { name: 'Flirty Questions 💌', img: require('../../assets/gameScreenImages/flirty-questions.jpeg'), route: 'Flirty Questions' },
-  { name: 'Never Have I Ever 🍸', img: require('../../assets/gameScreenImages/never-have-i-ever.jpeg'), route: 'GroupSizeSelectorScreen' },
+  { name: 'Couple Quiz 💕', img: require('../../assets/gameScreenImages/couples-quiz.png'), route: 'Couple Quiz' },
+  { name: 'Never Have I Ever 🍸', img: require('../../assets/gameScreenImages/never-have-i-ever.png'), route: 'GroupSizeSelectorScreen' },
 ];
 
 const GameCard = ({

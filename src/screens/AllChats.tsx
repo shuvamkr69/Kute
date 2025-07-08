@@ -16,7 +16,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../utils/api";
 import { getUserId } from "../utils/constants";
 import { io } from "socket.io-client";
-import Icon from "react-native-vector-icons/FontAwesome";
 import LoadingScreen from "./LoadingScreen";
 
 const socket = io("http://192.168.18.150:3000");
@@ -48,7 +47,7 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
   const [userId, setUserId] = useState<string | null>(null);
 
 
-//   useEffect(() => {
+//   useEffect(() => {                                    constant polling of chats -- causing error rn
 //   const startPolling = () => {
 //     const interval = setInterval(() => {
 //       fetchChats(); // Call your existing fetchChats function
@@ -272,7 +271,7 @@ const styles = StyleSheet.create({
   chatItem: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#1E1E1E",
+    backgroundColor: "#0f0f0f",
     padding: 15,
     borderRadius: 10,
     marginBottom: 10,
