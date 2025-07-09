@@ -132,9 +132,15 @@ const registerUser = asyncHandler(async (req, res) => {
   }
 
   for (let i = 0; i < uploadedFiles.length; i++) {
-    const uploadedAvatar = await uploadOnCloudinary(uploadedFiles[i].path);
-    avatarPaths.push(uploadedAvatar.url);
+  const uploadedAvatar = await uploadOnCloudinary(uploadedFiles[i].path);
+  
+  if (!uploadedAvatar || !uploadedAvatar.url) {
+    throw new ApiError(500, `Failed to upload image ${i + 1}`);
   }
+
+  avatarPaths.push(uploadedAvatar.url);
+}
+
 
   const user = await User.create({
     fullName,

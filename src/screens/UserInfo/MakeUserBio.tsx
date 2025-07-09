@@ -162,7 +162,7 @@ const MakeBio: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#121212",
+    backgroundColor: "black",
     alignItems: "center",
     padding: 20,
   },

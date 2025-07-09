@@ -65,33 +65,32 @@ const Likes: React.FC<Props> = ({ navigation }) => {
   }, [fetchLikedUsers]);
 
   const renderItem = ({ item }: { item: LikedUser }) => (
-  <TouchableOpacity
-  activeOpacity={0.9}
-    onPress={async () => {
-      const userId = await getUserId();
-      navigation.navigate("Chat", {
-        loggedInUserId: userId,
-        likedUserId: item._id,
-        userName: item.fullName,
-        likedUserAvatar: item.profileImage,
-      });
-    }}
-    onLongPress={() => {
-      setSelectedUser(item);
-      setShowOptions(true);
-    }}
-    style={styles.card}
-  >
-    <Image source={{ uri: item.profileImage }} style={styles.profileImage} />
-    <Text style={styles.name} numberOfLines={1} ellipsizeMode="tail">
-      {item.fullName}
-    </Text>
-    <TouchableOpacity style={styles.chatButton}>
-      <Icon name="comments" size={20} color="#de822c" />
+    <TouchableOpacity
+      activeOpacity={0.9}
+      onLongPress={() => {
+        setSelectedUser(item);
+        setShowOptions(true);
+      }}
+      style={styles.card}
+    >
+      <Image source={{ uri: item.profileImage }} style={styles.profileImage} />
+      <Text style={styles.name} numberOfLines={1} ellipsizeMode="tail">
+        {item.fullName}
+      </Text>
+      <TouchableOpacity
+        onPress={async () => {
+          const userId = await getUserId();
+          console.log("User ID:", userId);
+          navigation.navigate("OtherProfile", {
+            userId: selectedUser?._id,
+          });
+        }}
+        style={styles.chatButton}
+      >
+        <Icon name="comments" size={20} color="#de822c" />
+      </TouchableOpacity>
     </TouchableOpacity>
-  </TouchableOpacity>
-);
-
+  );
 
   return (
     <View style={styles.container}>
@@ -142,15 +141,18 @@ const Likes: React.FC<Props> = ({ navigation }) => {
           <View style={styles.optionContainer}>
             <Text style={styles.optionTitle}>{selectedUser?.fullName}</Text>
 
-            <TouchableOpacity
+            {/* <TouchableOpacity
               style={styles.optionButton}
               onPress={() => {
                 // TODO: Navigate to profile if you want
                 setShowOptions(false);
+                navigation.navigate("OtherProfile", {
+                  likedUserId: selectedUser?._id,
+                });
               }}
             >
               <Text style={styles.optionText}>View Profile</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
             <TouchableOpacity
               style={[styles.optionButton, { backgroundColor: "#400" }]}
