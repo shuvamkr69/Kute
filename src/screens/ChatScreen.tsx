@@ -36,6 +36,7 @@ type RootStackParamList = {
     userName: string;
     loggedInUserId: string;
     likedUserAvatar?: string;
+    isBlockedByMe ?: boolean;
   };
 };
 
@@ -156,8 +157,10 @@ const MessageItem = memo(
 );
 
 const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
-  const { likedUserId, userName, loggedInUserId, likedUserAvatar } =
-    route.params;
+  const { likedUserId, userName, loggedInUserId, likedUserAvatar } = route.params;
+const [isBlockedByMe, setIsBlockedByMe] = useState<boolean>(false);
+
+
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
@@ -173,6 +176,8 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
   const [selectionMode, setSelectionMode] = useState<boolean>(false);
 
   const flatListRef = useRef<FlatList<Message>>(null);
+
+
 
   useEffect(() => {
     let isMounted = true;
@@ -222,19 +227,19 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
     };
   }, [likedUserId, loggedInUserId]);
 
-  useEffect(() => {                   //check for realtime deleted for everyone messages
-  socket.on("messageDeleted", ({ messageIds }) => {
-    console.log("Messages deleted:", messageIds);
-    setMessages((prev) =>
-      prev.filter((msg) => !messageIds.includes(msg._id))
-    );
-  });
+  useEffect(() => {
+    //check for realtime deleted for everyone messages
+    socket.on("messageDeleted", ({ messageIds }) => {
+      console.log("Messages deleted:", messageIds);
+      setMessages((prev) =>
+        prev.filter((msg) => !messageIds.includes(msg._id))
+      );
+    });
 
-  return () => {
-    socket.off("messageDeleted");
-  };
-}, []);
-
+    return () => {
+      socket.off("messageDeleted");
+    };
+  }, []);
 
   useEffect(() => {
     const keyboardDidShowListener = Keyboard.addListener(
@@ -416,6 +421,14 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
   const handleOptionPress = async (option: string) => {
     setMenuVisible(false);
 
+    await api.post("/api/v1/users/block", {
+  blockedUserId: likedUserId,
+});
+setIsBlockedByMe(true); // ⬅️ Update state here
+Alert.alert("Blocked", "This user has been blocked.");
+navigation.goBack();
+
+
     switch (option) {
       case "delete":
         Alert.alert(
@@ -453,9 +466,29 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
         break;
 
       case "block":
-        Alert.alert("Block User", "This user has been blocked.", [
-          { text: "OK" },
-        ]);
+        Alert.alert(
+          "Block User",
+          "Are you sure you want to block this user? You will no longer see their messages.",
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Block",
+              style: "destructive",
+              onPress: async () => {
+                try {
+                  await api.post("/api/v1/users/block", {
+                    blockedUserId: likedUserId,
+                  });
+                  Alert.alert("Blocked", "This user has been blocked.");
+                  navigation.goBack(); // Optional: go back to ChatsScreen
+                } catch (error) {
+                  console.error("Error blocking user:", error);
+                  Alert.alert("Error", "Failed to block the user.");
+                }
+              },
+            },
+          ]
+        );
         break;
     }
   };
@@ -543,7 +576,7 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
     try {
       await api.post("/api/v1/users/messages/delete-for-everyone", {
         messageIds: Array.from(selectedMessages),
-        conversationId: conversationId,  // ✅ Add this
+        conversationId: conversationId, // ✅ Add this
       });
       setMessages((prev) =>
         prev.filter((msg) => !selectedMessages.has(msg._id))
@@ -652,7 +685,7 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
                 </View>
               )}
             </TouchableOpacity>
-             <TouchableOpacity
+            <TouchableOpacity
               onPress={() =>
                 navigation.navigate("OtherProfile", {
                   userId: likedUserId,
@@ -660,7 +693,9 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
               }
               activeOpacity={1}
             >
-            <Text style={styles.chatBackButton}>{userName.split(" ")[0]}</Text>
+              <Text style={styles.chatBackButton}>
+                {userName.split(" ")[0]}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -693,22 +728,22 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
           ) : (
             <>
               <TouchableOpacity
-  onPress={() => {
-    navigation.navigate("CallScreen", {
-      conversationId,
-      loggedInUserId,
-      likedUserId,
-      userName,
-    });
-  }}
->
-  <Ionicons
-    name="call-outline"
-    size={24}
-    color="white"
-    style={styles.icon}
-/>
-</TouchableOpacity>
+                onPress={() => {
+                  navigation.navigate("CallScreen", {
+                    conversationId,
+                    loggedInUserId,
+                    likedUserId,
+                    userName,
+                  });
+                }}
+              >
+                <Ionicons
+                  name="call-outline"
+                  size={24}
+                  color="white"
+                  style={styles.icon}
+                />
+              </TouchableOpacity>
 
               <TouchableOpacity onPress={() => setMenuVisible(true)}>
                 <Entypo
@@ -731,7 +766,7 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
             <FlatList
               showsVerticalScrollIndicator={false}
               ref={flatListRef}
-              data={messages}
+              data={isBlockedByMe ? [] : messages}
               renderItem={({ item }) => (
                 <MessageItem
                   text={item.text}
@@ -747,7 +782,7 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
               )}
               keyExtractor={(item) => item._id}
               ListEmptyComponent={<EmptyChatState userName={userName} />}
-              ListFooterComponent={isTyping ? <TypingIndicator /> : null}
+              ListFooterComponent={isBlockedByMe ? null : isTyping ? <TypingIndicator /> : null}
               onContentSizeChange={() =>
                 flatListRef.current?.scrollToEnd({ animated: false })
               }
@@ -760,7 +795,7 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
           </>
         )}
 
-        {replyingTo && (
+        {!isBlockedByMe && replyingTo && (
           <View style={styles.replyPreviewContainer}>
             <View style={styles.replyPreviewContent}>
               <Text style={styles.replyPreviewText}>
@@ -780,33 +815,51 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
           </View>
         )}
 
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            value={message}
-            onChangeText={(text) => {
-              setMessage(text);
-              handleTyping();
-            }}
-            onBlur={() => {
-              if (conversationId) {
-                socket.emit("stopTyping", {
-                  convId: conversationId,
-                  senderId: loggedInUserId,
-                });
-              }
-            }}
-            placeholder="Type a message..."
-            placeholderTextColor="#B0B0B0"
-          />
-          <AiChatbot messages={messages} loggedInUserId={loggedInUserId} />
-          <TouchableOpacity onPress={sendMessage}>
-            <Image
-              source={require("../assets/icons/send-message.png")}
-              style={styles.sendIcon}
-            />
-          </TouchableOpacity>
-        </View>
+        {isBlockedByMe ? (
+  <TouchableOpacity
+    style={[
+      styles.inputContainer,
+      { backgroundColor: "#1c1c1c", opacity: 0.5 },
+    ]}
+    onPress={() =>
+      Alert.alert("Blocked", "Unblock this user to send messages.")
+    }
+    activeOpacity={1}
+  >
+    <Text style={{ color: "#888", marginLeft: 16 }}>
+      You have blocked this user
+    </Text>
+  </TouchableOpacity>
+) : (
+  <View style={styles.inputContainer}>
+    <TextInput
+      style={styles.input}
+      value={message}
+      onChangeText={(text) => {
+        setMessage(text);
+        handleTyping();
+      }}
+      onBlur={() => {
+        if (conversationId) {
+          socket.emit("stopTyping", {
+            convId: conversationId,
+            senderId: loggedInUserId,
+          });
+        }
+      }}
+      placeholder="Type a message..."
+      placeholderTextColor="#B0B0B0"
+    />
+    <AiChatbot messages={messages} loggedInUserId={loggedInUserId} />
+    <TouchableOpacity onPress={sendMessage}>
+      <Image
+        source={require("../assets/icons/send-message.png")}
+        style={styles.sendIcon}
+      />
+    </TouchableOpacity>
+  </View>
+)}
+
       </View>
 
       <Modal transparent visible={menuVisible} animationType="fade">

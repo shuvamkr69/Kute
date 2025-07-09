@@ -17,6 +17,7 @@ import api from "../utils/api";
 import { getUserId } from "../utils/constants";
 import { io } from "socket.io-client";
 import LoadingScreen from "./LoadingScreen";
+import { useFocusEffect } from "@react-navigation/native";
 
 const socket = io("http://192.168.18.150:3000");
 
@@ -45,59 +46,74 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false); // ✅ Refreshing state
   const [userId, setUserId] = useState<string | null>(null);
+  const [isOffline, setIsOffline] = useState(false);
+  const [blockedUsers, setBlockedUsers] = useState<string[]>([]);
 
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchBlockedUsers(); // Always refresh when screen gains focus
+      return () => {}; // Cleanup if needed
+    }, [])
+  );
 
-//   useEffect(() => {                                    constant polling of chats -- causing error rn
-//   const startPolling = () => {
-//     const interval = setInterval(() => {
-//       fetchChats(); // Call your existing fetchChats function
-//     }, 10000); // Every 10 seconds
+  useEffect(() => {
+    const startPolling = () => {
+      const interval = setInterval(() => {
+        fetchChats(true); // mark as silent refresh
+      }, 10000); // every 10 seconds
+      return () => clearInterval(interval);
+    };
 
-//     return () => clearInterval(interval); // Cleanup
-//   };
-
-//   const pollingCleanup = startPolling();
-
-//   return () => {
-//     pollingCleanup(); // Cleanup on unmount
-//   };
-// }, []);
-
-
+    const cleanup = startPolling();
+    return () => cleanup();
+  }, []);
 
   // ✅ Fetch userId and chats
-  const fetchChats = async () => {
+  const fetchChats = async (silent = false) => {
     try {
       const id = await getUserId();
       setUserId(id);
 
       const response = await api.get(`/api/v1/users/chats/${id}`);
       setChats(response.data);
+      setIsOffline(false); // ✅ we're online
 
-      // ✅ Cache data in AsyncStorage
       await AsyncStorage.setItem("chats", JSON.stringify(response.data));
     } catch (error) {
-      console.error("Error fetching chats:", error);
+      console.error("Fetch error:", error);
 
-      // ✅ Fallback to cached data if API fails
-      const storedChats = await AsyncStorage.getItem("chats");
-      if (storedChats) {
-        setChats(JSON.parse(storedChats));
-        Alert.alert("Offline Mode", "Showing cached chats.");
+      const cached = await AsyncStorage.getItem("chats");
+      if (cached) {
+        setChats(JSON.parse(cached));
+        setIsOffline(true); // ✅ offline mode active
       } else {
-        Alert.alert(
-          "Error",
-          "Unable to load chats. Please check your connection."
-        );
+        setChats([]);
+        if (!silent) {
+          Alert.alert(
+            "Error",
+            "Unable to load chats. Please check connection."
+          );
+        }
       }
     } finally {
       setLoading(false);
-      setRefreshing(false); // ✅ Stop refreshing after fetch
+      setRefreshing(false);
+    }
+  };
+
+  const fetchBlockedUsers = async () => {
+    try {
+      const response = await api.get("/api/v1/users/blockedusers");
+      setBlockedUsers(response.data.map((user: { _id: string }) => user._id)); // just extract IDs
+    } catch (err) {
+      console.error("Error fetching blocked users:", err);
+      Alert.alert("Error", "Failed to load blocked users.");
     }
   };
 
   useEffect(() => {
     fetchChats();
+    fetchBlockedUsers(); // Fetch blocked users on mount
     if (userId) {
       socket.emit("join", userId); // Join the chat room based on userId
 
@@ -128,17 +144,39 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
 
   if (loading) {
     return <LoadingScreen description="Fetching your chats" />;
-    // return (
-    //   <View style={styles.loaderContainer}>
-    //     <ActivityIndicator size="large" color="#de822c" />
-    //   </View>
-    // );
   }
 
   // ✅ Pull-to-refresh handler
   const onRefresh = async () => {
     setRefreshing(true);
     await fetchChats();
+  };
+
+  const onChatPress = async (
+    otherUserId: string,
+    otherUserName: string,
+    avatar: string
+  ) => {
+    try {
+      const response = await api.get(`/api/v1/users/is-blocked/${otherUserId}`);
+      const { isBlockedByMe, hasBlockedMe } = response.data;
+
+      if (hasBlockedMe) {
+        Alert.alert("Access Denied", "You cannot view this user's profile.");
+        return;
+      }
+
+      navigation.navigate("Chat", {
+        likedUserId: otherUserId,
+        userName: otherUserName,
+        loggedInUserId: userId,
+        likedUserAvatar: avatar,
+        isBlockedByMe,
+      });
+    } catch (err) {
+      console.error("Error checking block status", err);
+      Alert.alert("Error", "Something went wrong. Please try again.");
+    }
   };
 
   // ✅ Render each chat item
@@ -153,8 +191,12 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
       return null;
     }
 
+    const isBlocked = blockedUsers.includes(otherParticipant._id);
+
     const lastMessage = item?.lastMessage;
-    const lastMessageText = lastMessage?.senderId
+    const lastMessageText = isBlocked
+      ? "You have blocked this user"
+      : lastMessage?.senderId
       ? lastMessage.senderId === userId
         ? `You: ${lastMessage.message}`
         : `${lastMessage.message}`
@@ -166,14 +208,17 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
 
     return (
       <TouchableOpacity
-        style={styles.chatItem}
+        style={[styles.chatItem, isBlocked && { opacity: 0.4 }]} // grey out
         onPress={() =>
-          navigation.navigate("Chat", {
-            likedUserId: otherParticipant._id,
-            userName: otherParticipant.fullName,
-            loggedInUserId: userId,
-            likedUserAvatar: otherParticipant.avatar1,
-          })
+          isBlocked
+            ? Alert.alert("Blocked", "You have blocked this user.")
+            : navigation.navigate("Chat", {
+                likedUserId: otherParticipant._id,
+                userName: otherParticipant.fullName,
+                loggedInUserId: userId,
+                likedUserAvatar: otherParticipant.avatar1,
+                isBlockedByMe: true, // optional if you want to pass this flag to ChatScreen
+              })
         }
       >
         <Image
@@ -191,18 +236,19 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
             }}
           >
             <Text style={styles.chatName}>{otherParticipant?.fullName}</Text>
-            <Text style={styles.chatTime}>{formattedTime}</Text>
+            {!isBlocked && <Text style={styles.chatTime}>{formattedTime}</Text>}
           </View>
           <Text
             style={[
               styles.lastMessage,
+              isBlocked && { color: "#888", fontStyle: "italic" },
               lastMessage?.isRead === false && lastMessage.senderId !== userId
                 ? styles.unreadMessage
                 : {},
             ]}
             numberOfLines={1}
           >
-            {/* {lastMessageText}                        last message text (disabled for now since it doesnt have all its functionalities*/}
+            {lastMessageText}
           </Text>
         </View>
       </TouchableOpacity>
@@ -211,14 +257,21 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.headingText}>Chats</Text>
+      <View style={styles.headingContainer}>
+        <Text style={styles.headingText}>Chats</Text>
+        {isOffline && <Text style={styles.noInternetBadge}>No Internet</Text>}
+      </View>
 
       <FlatList
         data={chats}
         keyExtractor={(item) => item._id}
         renderItem={renderChatItem}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#de822c"]}/>
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#de822c"]}
+          />
         }
         contentContainerStyle={[
           chats.length === 0 && { flex: 1, justifyContent: "center" },
@@ -306,6 +359,24 @@ const styles = StyleSheet.create({
   },
   backButton: {
     color: "#de822c",
+  },
+  headingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 20,
+    justifyContent: "space-between",
+  },
+
+  noInternetBadge: {
+    backgroundColor: "#ff4d4d",
+    color: "white",
+    fontSize: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    marginLeft: 10,
+    overflow: "hidden",
+    fontWeight: "600",
   },
 });
 

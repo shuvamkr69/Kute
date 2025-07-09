@@ -1,18 +1,13 @@
 import React, { useEffect, useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Alert,
-} from "react-native";
+import { View, Text, StyleSheet, ScrollView, Alert } from "react-native";
 import * as Notifications from "expo-notifications";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "../utils/api";
 import { getUserId } from "../utils/constants";
 import { useFocusEffect } from "@react-navigation/native";
 import { useCallback } from "react";
-
+import { Image } from "react-native";
+import BackButton from "../components/BackButton";
 
 interface NotificationItem {
   message: string;
@@ -23,19 +18,18 @@ interface NotificationItem {
 const NotificationsScreen: React.FC = () => {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
 
+  useFocusEffect(
+    //polling for fetching notifications
+    useCallback(() => {
+      // Start polling every 10 seconds when screen is focused
+      const interval = setInterval(() => {
+        loadNotifications();
+      }, 3000); // 10 seconds
 
-  useFocusEffect(               //polling for fetching notifications
-  useCallback(() => {
-    // Start polling every 10 seconds when screen is focused
-    const interval = setInterval(() => {
-      loadNotifications();
-    }, 3000); // 10 seconds
-
-    // Clear interval when screen is unfocused
-    return () => clearInterval(interval);
-  }, [])
-);
-
+      // Clear interval when screen is unfocused
+      return () => clearInterval(interval);
+    }, [])
+  );
 
   const storeNotification = async (notification: NotificationItem[]) => {
     try {
@@ -66,9 +60,15 @@ const NotificationsScreen: React.FC = () => {
       const storedNotifications = await AsyncStorage.getItem("notifications");
       if (storedNotifications) {
         setNotifications(JSON.parse(storedNotifications));
-        Alert.alert("Offline Mode", "Showing notifications from local storage.");
+        Alert.alert(
+          "Offline Mode",
+          "Showing notifications from local storage."
+        );
       } else {
-        Alert.alert("Error", "Failed to load notifications. Please check your connection.");
+        Alert.alert(
+          "Error",
+          "Failed to load notifications. Please check your connection."
+        );
       }
     }
   };
@@ -111,33 +111,44 @@ const NotificationsScreen: React.FC = () => {
       }
     );
 
-
     return () => {
       receivedSubscription.remove();
     };
   }, []);
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.header}>Notifications</Text>
+    <View style={styles.backButtonContainer}>
+      <BackButton title="Notifications" />
       {notifications.length === 0 ? (
-        <Text style={styles.noNotifications}>No notifications yet</Text>
+        <View style={styles.emptyWrapper}>
+          <Image
+            source={require("../assets/icons/penguin.png")}
+            style={{ width: 150, height: 150, marginBottom: 20 }}
+          />
+
+          <Text style={styles.noNotifications}>No notifications</Text>
+        </View>
       ) : (
-        notifications.map((notification, index) => (
-          <View key={index} style={styles.card}>
-            <View style={styles.cardHeader}>
-              <Text style={styles.title}>{notification.title}</Text>
-              <Text style={styles.time}>{notification.time}</Text>
+        <ScrollView style={styles.container}>
+          {notifications.map((notification, index) => (
+            <View key={index} style={styles.card}>
+              <View style={styles.cardHeader}>
+                <Text style={styles.title}>{notification.title}</Text>
+                <Text style={styles.time}>{notification.time}</Text>
+              </View>
+              <Text style={styles.message}>{notification.message}</Text>
             </View>
-            <Text style={styles.message}>{notification.message}</Text>
-          </View>
-        ))
+          ))}
+        </ScrollView>
       )}
-    </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  backButtonContainer: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     backgroundColor: "#000",
@@ -150,12 +161,18 @@ const styles = StyleSheet.create({
     color: "#de822c",
     marginBottom: 20,
   },
+  noNotificationsContainer: {
+    flex: 1,
+    justifyContent: "center", // centers vertically
+    alignItems: "center", // centers horizontally
+    paddingHorizontal: 20, // optional: adds spacing for smaller screens
+  },
   noNotifications: {
     fontSize: 16,
     color: "#B0B0B0",
     textAlign: "center",
-    marginTop: 50,
   },
+
   card: {
     backgroundColor: "#1E1E1E",
     padding: 20,
@@ -192,7 +209,20 @@ const styles = StyleSheet.create({
     color: "#888",
     marginLeft: 10,
   },
-});
 
+  emptyWrapper: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#000",
+    paddingHorizontal: 20,
+    paddingBottom: 50,
+  },
+  emptyImage: {
+    width: 150,
+    height: 150,
+    marginBottom: 20,
+  },
+});
 
 export default NotificationsScreen;
