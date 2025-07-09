@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  activateBoost,
   blockedUsers,
   blockUser,
   deleteAccount,
@@ -13,6 +14,7 @@ import {
   resetPasswordWithOTP,
   sendResetOTP,
   unblockUser,
+  unmatchUser,
   updatePushToken,
   userProfile,
 } from "../controllers/user.controller.js";
@@ -70,6 +72,12 @@ UserRouter.route("/powerUps").get(
   powerUps
 );
 
+UserRouter.route("/activateBoost").post(
+  //activate boost
+  verifyJWT,
+  activateBoost
+);
+
 UserRouter.route("/premiumActivated").post(
   //activate premium
   verifyJWT,
@@ -117,6 +125,11 @@ UserRouter.route("/blockedusers").get(
   //get user distance
   verifyJWT,
   blockedUsers
+);
+UserRouter.route('/unmatch/:userId').delete(
+  //get user distance
+  verifyJWT,
+  unmatchUser
 );
 
 

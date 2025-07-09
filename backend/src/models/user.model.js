@@ -72,7 +72,7 @@ const userSchema = new Schema(
     },
     passwordResetOTP: String,
     passwordResetOTPExpires: Date,
-    
+
     age: {
       type: Number,
       default: null,
@@ -126,6 +126,10 @@ const userSchema = new Schema(
     isVerified: {
       type: Boolean,
       default: false,
+    },
+    boostActiveUntil: {
+      type: Date,
+      default: null,
     },
     occupation: {
       type: String,

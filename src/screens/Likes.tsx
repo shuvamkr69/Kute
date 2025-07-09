@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   RefreshControl,
   Alert,
+  Modal,
 } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import Icon from "react-native-vector-icons/FontAwesome";
@@ -27,6 +28,8 @@ const Likes: React.FC<Props> = ({ navigation }) => {
   const [likedUsers, setLikedUsers] = useState<LikedUser[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [selectedUser, setSelectedUser] = useState<LikedUser | null>(null);
+  const [showOptions, setShowOptions] = useState(false);
 
   const fetchLikedUsers = async () => {
     try {
@@ -62,27 +65,33 @@ const Likes: React.FC<Props> = ({ navigation }) => {
   }, [fetchLikedUsers]);
 
   const renderItem = ({ item }: { item: LikedUser }) => (
-    <View style={styles.card}>
-      <Image source={{ uri: item.profileImage }} style={styles.profileImage} />
-      <Text style={styles.name} numberOfLines={1} ellipsizeMode="tail">
-        {item.fullName}
-      </Text>
-      <TouchableOpacity
-        style={styles.chatButton}
-        onPress={async () => {
-          const userId = await getUserId();
-          navigation.navigate("Chat", {
-            loggedInUserId: userId,
-            likedUserId: item._id,
-            userName: item.fullName,
-            likedUserAvatar: item.profileImage,
-          });
-        }}
-      >
-        <Icon name="comments" size={20} color="#de822c" />
-      </TouchableOpacity>
-    </View>
-  );
+  <TouchableOpacity
+  activeOpacity={0.9}
+    onPress={async () => {
+      const userId = await getUserId();
+      navigation.navigate("Chat", {
+        loggedInUserId: userId,
+        likedUserId: item._id,
+        userName: item.fullName,
+        likedUserAvatar: item.profileImage,
+      });
+    }}
+    onLongPress={() => {
+      setSelectedUser(item);
+      setShowOptions(true);
+    }}
+    style={styles.card}
+  >
+    <Image source={{ uri: item.profileImage }} style={styles.profileImage} />
+    <Text style={styles.name} numberOfLines={1} ellipsizeMode="tail">
+      {item.fullName}
+    </Text>
+    <TouchableOpacity style={styles.chatButton}>
+      <Icon name="comments" size={20} color="#de822c" />
+    </TouchableOpacity>
+  </TouchableOpacity>
+);
+
 
   return (
     <View style={styles.container}>
@@ -99,7 +108,11 @@ const Likes: React.FC<Props> = ({ navigation }) => {
           likedUsers.length === 0 && { flex: 1, justifyContent: "center" },
         ]}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={["#de822c"]}/>
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={["#de822c"]}
+          />
         }
         ListEmptyComponent={
           <View style={styles.emptyStateContainer}>
@@ -114,6 +127,77 @@ const Likes: React.FC<Props> = ({ navigation }) => {
         }
         key="two-columns"
       />
+
+      <Modal
+        animationType="fade"
+        transparent
+        visible={showOptions}
+        onRequestClose={() => setShowOptions(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalBackdrop}
+          activeOpacity={1}
+          onPressOut={() => setShowOptions(false)}
+        >
+          <View style={styles.optionContainer}>
+            <Text style={styles.optionTitle}>{selectedUser?.fullName}</Text>
+
+            <TouchableOpacity
+              style={styles.optionButton}
+              onPress={() => {
+                // TODO: Navigate to profile if you want
+                setShowOptions(false);
+              }}
+            >
+              <Text style={styles.optionText}>View Profile</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.optionButton, { backgroundColor: "#400" }]}
+              onPress={() => {
+                Alert.alert(
+                  "Unmatch?",
+                  `Are you sure you want to unmatch with ${selectedUser?.fullName}?`,
+                  [
+                    { text: "Cancel", style: "cancel" },
+                    {
+                      text: "Unmatch",
+                      style: "destructive",
+                      onPress: async () => {
+                        try {
+                          await api.delete(
+                            `/api/v1/users/unmatch/${selectedUser?._id}`
+                          );
+                          setLikedUsers((prev) =>
+                            prev.filter(
+                              (user) => user._id !== selectedUser?._id
+                            )
+                          );
+                        } catch (error) {
+                          Alert.alert("Error", "Failed to unmatch.");
+                        } finally {
+                          setShowOptions(false);
+                        }
+                      },
+                    },
+                  ]
+                );
+              }}
+            >
+              <Text style={[styles.optionText, { color: "#fff" }]}>
+                Unmatch
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.optionButton}
+              onPress={() => setShowOptions(false)}
+            >
+              <Text style={styles.optionText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 };
@@ -199,5 +283,40 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  optionContainer: {
+    width: 250,
+    backgroundColor: "#1c1c1c",
+    borderRadius: 10,
+    padding: 20,
+    alignItems: "center",
+  },
+
+  optionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "white",
+    marginBottom: 15,
+  },
+
+  optionButton: {
+    width: "100%",
+    padding: 10,
+    backgroundColor: "#2c2c2c",
+    borderRadius: 6,
+    marginVertical: 5,
+    alignItems: "center",
+  },
+
+  optionText: {
+    color: "white",
+    fontSize: 16,
   },
 });

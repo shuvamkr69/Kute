@@ -57,21 +57,21 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   const [personality, setPersonality] = useState<string>("Any");
   const [interests, setInterests] = useState<string[]>([]);
 
+  const [boostActiveUntil, setBoostActiveUntil] = useState<Date | null>(null);
+  const [boostTimer, setBoostTimer] = useState<string | null>(null);
 
 
+  //boosts count
   useEffect(() => {
     const fetchCounters = async () => {
       try {
         const response = await api.get("/api/v1/users/powerUps");
-        console.log(response.data.superLike)
+        console.log(response.data.superLike);
         setSuperLikes(response.data.superLike);
         setBoosts(response.data.boost);
-        
       } catch (error) {
         console.error("Error fetching counters:", error);
       }
-        
-      
     };
     fetchCounters();
   }, []);
@@ -121,6 +121,8 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
+
+  //getting profile of user's self profile
   useEffect(() => {
     const fetchUser = async () => {
       setLoading(true);
@@ -151,6 +153,9 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
         setHeightUnit(user.heightUnit || "cm");
         setPersonality(user.personality || "Any");
         setInterests(user.interests || []);
+        setBoostActiveUntil(
+          user.boostActiveUntil ? new Date(user.boostActiveUntil) : null
+        );
 
         // ✅ Save API response for offline access
         await AsyncStorage.setItem("user", JSON.stringify(user));
@@ -178,6 +183,9 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
 
   //progress for the progrss bar
 
+
+
+  //fetching profile progress information
   useEffect(() => {
     let progress = 0;
     if (
@@ -233,7 +241,42 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
     navigation.navigate("Premium");
   };
 
+  useEffect(() => {
+    if (!boostActiveUntil) {
+      setBoostTimer(null);
+      return;
+    }
 
+    const interval = setInterval(() => {
+      const now = new Date();
+      const diff = boostActiveUntil.getTime() - now.getTime();
+
+      if (diff <= 0) {
+        clearInterval(interval);
+        setBoostTimer(null);
+        setBoostActiveUntil(null);
+        return;
+      }
+
+      const minutes = Math.floor(diff / 1000 / 60);
+      const seconds = Math.floor((diff / 1000) % 60);
+      setBoostTimer(`${minutes}m ${seconds}s remaining`);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [boostActiveUntil]);
+
+  const handleActivateBoost = async () => {
+    try {
+      const response = await api.post("/api/v1/users/activateBoost");
+      const boostUntil = new Date(response.data.data.boostActiveUntil);
+      setBoostActiveUntil(boostUntil);
+      ToastAndroid.show("Boost Activated for 30 minutes!", ToastAndroid.SHORT);
+    } catch (error) {
+      Alert.alert("Boost Error", error.response.data.message || "Something went wrong");
+      console.error("Activate Boost Error:", error);
+    }
+  };
 
   const InfoSection = ({
     title,
@@ -258,10 +301,10 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   );
 
   if (loading) {
-  // use your custom container *or* the dedicated LoadingScreen
-  return <LoadingScreen description="Fetching your Profile" />;
-  // (If you prefer the plain container, keep the same JSX you deleted.)
-}
+    // use your custom container *or* the dedicated LoadingScreen
+    return <LoadingScreen description="Fetching your Profile" />;
+    // (If you prefer the plain container, keep the same JSX you deleted.)
+  }
 
   return (
     <ScrollView
@@ -276,36 +319,39 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
     >
       {/* Profile Section */}
       <View style={styles.profileContainer}>
-      <View style={styles.profileImageContainer}>
-  {/* Gradient Border Wrapper */}
-  <LinearGradient
-    colors={["#de822c", "#ff172e"]}
-    start={{ x: 0, y: 0 }}
-    end={{ x: 1, y: 1 }}
-    style={styles.gradientBorder}
-  >
-    {/* Profile Image with inner container to create border effect */}
-    <View style={styles.profileImageInner}>
-      <Image source={{ uri: profilePhoto }} style={styles.profileImage} />
-    </View>
-  </LinearGradient>
+        <View style={styles.profileImageContainer}>
+          {/* Gradient Border Wrapper */}
+          <LinearGradient
+            colors={["#de822c", "#ff172e"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.gradientBorder}
+          >
+            {/* Profile Image with inner container to create border effect */}
+            <View style={styles.profileImageInner}>
+              <Image
+                source={{ uri: profilePhoto }}
+                style={styles.profileImage}
+              />
+            </View>
+          </LinearGradient>
 
-  {/* Edit Icon (keep your existing one) */}
-  {/* Gradient Edit Icon */}
-<LinearGradient
-  colors={["#de822c", "#ff172e"]}
-  start={{ x: 0, y: 0 }}
-  end={{ x: 1, y: 1 }}
-  style={styles.editIconGradient}
->
-  <TouchableOpacity
-    style={styles.editIconButton}
-    onPress={() => navigation.navigate("EditProfile")}
-  >
-    <Icon name="pencil" size={14} color="white" />
-  </TouchableOpacity>
-</LinearGradient>
-</View>
+          {/* Edit Icon (keep your existing one) */}
+          {/* Gradient Edit Icon */}
+          <LinearGradient
+            colors={["#de822c", "#ff172e"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.editIconGradient}
+          >
+            <TouchableOpacity
+              style={styles.editIconButton}
+              onPress={() => navigation.navigate("EditProfile")}
+            >
+              <Icon name="pencil" size={14} color="white" />
+            </TouchableOpacity>
+          </LinearGradient>
+        </View>
 
         <Text style={styles.username}>
           {name} {age}
@@ -449,18 +495,19 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.counterContainer}>
             <Text style={styles.counterText}>x{boosts}</Text>
           </View>
-          <TouchableOpacity style={styles.cardText}>
+          <TouchableOpacity onPress={handleActivateBoost}>
             <LinearGradient
               colors={["#de822c", "#ff172e"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.activateNowButton}
             >
-              <TouchableOpacity>
-                <Text style={styles.activateNowButtonText}>Activate Now</Text>
-              </TouchableOpacity>
+              <Text style={styles.activateNowButtonText}>Activate Now</Text>
             </LinearGradient>
           </TouchableOpacity>
+          {boostTimer && (
+            <Text style={{ color: "#de822c", marginTop: 6 }}>{boostTimer}</Text>
+          )}
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -489,7 +536,6 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
           <Text style={styles.cardText}>Unlock all the premium features</Text>
         </TouchableOpacity>
       </View>
-      
     </ScrollView>
   );
 };
@@ -508,24 +554,24 @@ const styles = StyleSheet.create({
     position: "relative",
     width: 210, // Slightly larger to accommodate border
     height: 210,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   gradientBorder: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
     borderRadius: 105, // Half of width/height to make it circular
     padding: 5, // This creates the border thickness
   },
   profileImageInner: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
     borderRadius: 100,
-    overflow: 'hidden', // Ensures the image stays within the rounded bounds
+    overflow: "hidden", // Ensures the image stays within the rounded bounds
   },
   profileImage: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
   // Keep your existing editIcon style
 
@@ -540,8 +586,8 @@ const styles = StyleSheet.create({
     backgroundColor: "black", // Inner color
     borderRadius: 13, // Slightly smaller than the gradient container
     padding: 7,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
 
   verificationImage: {

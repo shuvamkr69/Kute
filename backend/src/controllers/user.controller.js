@@ -450,7 +450,9 @@ const homescreenProfiles = async (req, res) => {
     };
 
     // Fetch filtered users
-    const users = await User.find(filter);
+    const users = await User.find(filter)
+      .sort({ boostActiveUntil: -1 }) // Boosted users first
+      .limit(50);
 
     if (!users.length) {
       return res.status(404).json({ message: "No profiles found" });
@@ -581,6 +583,23 @@ const blockedUsers = asyncHandler(async (req, res) => {
   }
 
   res.status(200).json(user.blockedUsers);
+});
+
+const unmatchUser = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  const otherUserId = req.params.userId;
+
+  // Remove both sides of the like if mutual
+  await Like.deleteMany({
+    $or: [
+      { userId: userId, likedUserId: otherUserId },
+      { userId: otherUserId, likedUserId: userId },
+    ],
+  });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Unmatched successfully"));
 });
 
 const userProfile = async (req, res) => {
@@ -756,6 +775,45 @@ const powerUps = async (req, res) => {
   res.status(200).json(user);
 };
 
+const activateBoost = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  // 🚫 Check if boost already active
+  if (user.boostActiveUntil && user.boostActiveUntil > new Date()) {
+    const remainingMs = new Date(user.boostActiveUntil).getTime() - Date.now();
+    const minutes = Math.floor(remainingMs / 60000);
+    const seconds = Math.floor((remainingMs % 60000) / 1000);
+    return res.status(400).json({
+      success: false,
+      message: `Boost already active. Ends in ${minutes}m ${seconds}s.`,
+      boostActiveUntil: user.boostActiveUntil,
+    });
+  }
+
+  if (user.boost <= 0) {
+    throw new ApiError(400, "No Boosts remaining");
+  }
+
+  // ✅ Activate Boost
+  user.boost -= 1;
+  user.boostActiveUntil = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
+  await user.save();
+
+  return res.status(200).json(
+    new ApiResponse(200, {
+      boostActiveUntil: user.boostActiveUntil,
+      boostRemaining: user.boost,
+    }, "Boost activated successfully")
+  );
+});
+
+
+
 const googleLoginUser = asyncHandler(async (req, res) => {
   const { email, name, avatar, token } = req.body;
 
@@ -807,9 +865,11 @@ export {
   editUserProfile,
   updatePushToken,
   powerUps,
+  activateBoost,
   distanceFetcher,
   googleLoginUser,
   blockUser,
   unblockUser,
   blockedUsers,
+  unmatchUser,
 };
