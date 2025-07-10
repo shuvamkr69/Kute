@@ -29,7 +29,7 @@ const userSchema = new Schema(
     //   required: [true, "Password is Requried"],
     // },
     password: {
-      //new logic for google o auth login
+      //new logic for both google o auth login and normal login
       type: String,
       required: function () {
         return this.loginMethod !== "google";
@@ -266,5 +266,6 @@ userSchema.methods.generateRefreshToken = function () {
     }
   );
 };
+
 
 export const User = mongoose.model("User", userSchema);

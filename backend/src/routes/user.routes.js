@@ -3,6 +3,7 @@ import {
   activateBoost,
   blockedUsers,
   blockUser,
+  changePassword,
   deleteAccount,
   distanceFetcher,
   editUserProfile,
@@ -97,6 +98,11 @@ UserRouter.route("/forgot-password-otp").post(
 UserRouter.route("/reset-password-otp").post(
   //reset password
   resetPasswordWithOTP
+);
+UserRouter.route('/change-password').post(
+  //change password from settings screen
+  verifyJWT,
+  changePassword
 );
 
 UserRouter.route("/get/:userId").get(

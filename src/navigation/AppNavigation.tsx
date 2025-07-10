@@ -48,6 +48,7 @@ import WaitingForFeedbackScreen from "../screens/games/WouldYouRather/WaitForFee
 import WYRLobbyScreen from "../screens/games/WouldYouRather/WYRLobbyScreen";
 import BlockedUsersScreen from "../screens/BlockedUsersScreen";
 import ResetPasswordScreen from "../screens/ResetPasswordScreen";
+import ChangePasswordScreen from "../screens/ChangePasswordScreen";
 // import CallScreen from "../screens/CallScreen";
 
 const Stack = createNativeStackNavigator(); // Standard Stack Navigator
@@ -92,6 +93,9 @@ export default function AppNavigation() {
             <Stack.Screen name="OtherProfile" component={OtherProfileScreen} />
             <Stack.Screen name="PhotoVerification" component={PhotoVerificationScreen} />
             <Stack.Screen name="SinglePlayerGame" component={SinglePlayerGame} />
+            <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+            
+            {/* User Info Screens */}
             
             
             {/* truth and dare */}

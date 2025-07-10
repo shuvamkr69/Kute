@@ -1,6 +1,5 @@
 //this screen is only made for testing purposes for now, nodemailer is not working as intended rn
 
-
 import React, { useState } from "react";
 import {
   View,
@@ -23,33 +22,30 @@ const rawToken =
 const ForgotPasswordScreen: React.FC<Props> = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
-const [otpStage, setOtpStage] = useState(false); // false = send, true = verify
+  const [otpStage, setOtpStage] = useState(false); // false = send, true = verify
 
+  // ① send / resend
+  const handleSendOtp = async () => {
+    if (!email) return Alert.alert("Error", "Please enter your email");
+    try {
+      await api.post("/api/v1/users/forgot-password-otp", { email });
+      Alert.alert("Success", "OTP sent to your email");
+      setOtpStage(true); // show OTP field
+    } catch (err: any) {
+      Alert.alert("Error", err?.response?.data?.message || "Server error");
+    }
+  };
 
-// ① send / resend
-const handleSendOtp = async () => {
-  if (!email) return Alert.alert("Error", "Please enter your email");
-  try {
-    await api.post("/api/v1/users/forgot-password-otp", { email });
-    Alert.alert("Success", "OTP sent to your email");
-    setOtpStage(true);                 // show OTP field
-  } catch (err: any) {
-    Alert.alert("Error", err?.response?.data?.message || "Server error");
-  }
-};
-
-// ② verify
-const handleVerifyOtp = async () => {
-  if (otp.length !== 6) return Alert.alert("Error", "Enter 6‑digit OTP");
-  try {
-    // verify & change screen
-    navigation.navigate("ResetPassword", { email, otp });
-  } catch (err) {
-    Alert.alert("Error", "Invalid OTP");
-  }
-};
-
-
+  // ② verify
+  const handleVerifyOtp = async () => {
+    if (otp.length !== 6) return Alert.alert("Error", "Enter 6‑digit OTP");
+    try {
+      // verify & change screen
+      navigation.navigate("ResetPassword", { email, otp });
+    } catch (err) {
+      Alert.alert("Error", "Invalid OTP");
+    }
+  };
 
   const handleForgotPassword = async () => {
     if (!email) {
@@ -97,37 +93,37 @@ const handleVerifyOtp = async () => {
       </View>
 
       {otpStage && (
-  <View style={styles.inputContainer}>
-    <Icon name="key" size={20} color="#de822c" style={styles.icon} />
-    <TextInput
-      style={styles.input}
-      placeholder="6‑digit OTP"
-      placeholderTextColor="#B0B0B0"
-      keyboardType="number-pad"
-      value={otp}
-      onChangeText={setOtp}
-      maxLength={6}
-    />
-  </View>
-)}
-
+        <View style={styles.inputContainer}>
+          <Icon name="key" size={20} color="#de822c" style={styles.icon} />
+          <TextInput
+            style={styles.input}
+            placeholder="6‑digit OTP"
+            placeholderTextColor="#B0B0B0"
+            keyboardType="number-pad"
+            value={otp}
+            onChangeText={setOtp}
+            maxLength={6}
+          />
+        </View>
+      )}
 
       {/* Reset Password Button */}
       {!otpStage ? (
-  <TouchableOpacity style={styles.button} onPress={handleSendOtp}>
-    <Text style={styles.buttonText}>Send OTP</Text>
-  </TouchableOpacity>
-) : (
-  <>
-    <TouchableOpacity style={styles.button} onPress={handleVerifyOtp}>
-      <Text style={styles.buttonText}>Verify OTP</Text>
-    </TouchableOpacity>
-    <TouchableOpacity onPress={handleSendOtp} style={{ marginTop: 10 }}>
-      <Text style={{ color: "#de822c", textAlign: "center" }}>Resend OTP</Text>
-    </TouchableOpacity>
-  </>
-)}
-
+        <TouchableOpacity style={styles.button} onPress={handleSendOtp}>
+          <Text style={styles.buttonText}>Send OTP</Text>
+        </TouchableOpacity>
+      ) : (
+        <>
+          <TouchableOpacity style={styles.button} onPress={handleVerifyOtp}>
+            <Text style={styles.buttonText}>Verify OTP</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleSendOtp} style={{ marginTop: 10 }}>
+            <Text style={{ color: "#de822c", textAlign: "center" }}>
+              Resend OTP
+            </Text>
+          </TouchableOpacity>
+        </>
+      )}
 
       {/* Back to Login */}
       <Text style={styles.loginPrompt}>

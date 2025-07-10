@@ -7,6 +7,7 @@ import { Filter } from "../models/filter.model.js";
 import { Like } from "../models/liked.model.js";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
+import bcrypt from "bcryptjs";
 
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
@@ -132,15 +133,14 @@ const registerUser = asyncHandler(async (req, res) => {
   }
 
   for (let i = 0; i < uploadedFiles.length; i++) {
-  const uploadedAvatar = await uploadOnCloudinary(uploadedFiles[i].path);
-  
-  if (!uploadedAvatar || !uploadedAvatar.url) {
-    throw new ApiError(500, `Failed to upload image ${i + 1}`);
+    const uploadedAvatar = await uploadOnCloudinary(uploadedFiles[i].path);
+
+    if (!uploadedAvatar || !uploadedAvatar.url) {
+      throw new ApiError(500, `Failed to upload image ${i + 1}`);
+    }
+
+    avatarPaths.push(uploadedAvatar.url);
   }
-
-  avatarPaths.push(uploadedAvatar.url);
-}
-
 
   const user = await User.create({
     fullName,
@@ -343,6 +343,33 @@ const resetPasswordWithOTP = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(new ApiResponse(200, {}, "Password updated – log in"));
+});
+
+const changePassword = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  const { currentPassword, newPassword } = req.body;
+
+  if (!currentPassword || !newPassword) {
+    throw new ApiError(400, "Both current and new password are required.");
+  }
+
+  const user = await User.findById(userId).select("+password");
+  if (!user) {
+    throw new ApiError(404, "User not found.");
+  }
+
+  const isMatch = await bcrypt.compare(currentPassword, user.password);
+  if (!isMatch) {
+    throw new ApiError(401, "Current password is incorrect.");
+  }
+
+  user.password = newPassword;
+  await user.save();
+
+  res.status(200).json({
+    success: true,
+    message: "Password changed successfully.",
+  });
 });
 
 const homescreenProfiles = async (req, res) => {
@@ -811,14 +838,16 @@ const activateBoost = asyncHandler(async (req, res) => {
   await user.save();
 
   return res.status(200).json(
-    new ApiResponse(200, {
-      boostActiveUntil: user.boostActiveUntil,
-      boostRemaining: user.boost,
-    }, "Boost activated successfully")
+    new ApiResponse(
+      200,
+      {
+        boostActiveUntil: user.boostActiveUntil,
+        boostRemaining: user.boost,
+      },
+      "Boost activated successfully"
+    )
   );
 });
-
-
 
 const googleLoginUser = asyncHandler(async (req, res) => {
   const { email, name, avatar, token } = req.body;
@@ -878,4 +907,5 @@ export {
   unblockUser,
   blockedUsers,
   unmatchUser,
+  changePassword,
 };
