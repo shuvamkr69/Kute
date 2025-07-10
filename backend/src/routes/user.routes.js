@@ -12,6 +12,7 @@ import {
   powerUps,
   premiumActive,
   registerUser,
+  reportProblem,
   resetPasswordWithOTP,
   sendResetOTP,
   unblockUser,
@@ -136,6 +137,11 @@ UserRouter.route('/unmatch/:userId').delete(
   //get user distance
   verifyJWT,
   unmatchUser
+);
+
+UserRouter.route("/report-problem").post(
+  verifyJWT,  // or remove if anonymous reports are allowed
+  reportProblem
 );
 
 

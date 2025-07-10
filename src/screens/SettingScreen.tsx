@@ -23,7 +23,7 @@ import Toast from "react-native-toast-message";
 import * as Notifications from "expo-notifications";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { Feather, FontAwesome, Ionicons } from "@expo/vector-icons";
-import * as IntentLauncher from 'expo-intent-launcher';
+import * as IntentLauncher from "expo-intent-launcher";
 
 type Props = NativeStackScreenProps<any, "Settings">;
 
@@ -71,25 +71,25 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
 
   const handlePasswordChange = async () => {
     navigation.navigate("ChangePassword");
-  }
+  };
 
   const handleLocation = async () => {
-  try {
-    if (Platform.OS === 'android') {
-      IntentLauncher.startActivityAsync(
-        IntentLauncher.ActivityAction.LOCATION_SOURCE_SETTINGS
-      );
-    } else {
-      Alert.alert(
-        "Unsupported",
-        "Please enable location from iOS settings manually."
-      );
+    try {
+      if (Platform.OS === "android") {
+        IntentLauncher.startActivityAsync(
+          IntentLauncher.ActivityAction.LOCATION_SOURCE_SETTINGS
+        );
+      } else {
+        Alert.alert(
+          "Unsupported",
+          "Please enable location from iOS settings manually."
+        );
+      }
+    } catch (error) {
+      console.error("Error opening location settings:", error);
+      Alert.alert("Error", "Unable to open location settings.");
     }
-  } catch (error) {
-    console.error("Error opening location settings:", error);
-    Alert.alert("Error", "Unable to open location settings.");
-  }
-};
+  };
 
   const handleEnableNotifications = async () => {
     if (Platform.OS === "android") {
@@ -174,8 +174,10 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity onPress = {handlePasswordChange} 
-          style={styles.option}>
+          <TouchableOpacity
+            onPress={handlePasswordChange}
+            style={styles.option}
+          >
             <View style={styles.optionRow}>
               <Ionicons
                 name="key-outline"
@@ -297,7 +299,12 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Help & Support</Text>
 
-          <TouchableOpacity style={styles.option}>
+          <TouchableOpacity
+            onPress={() => {
+              navigation.navigate("HelpScreen");
+            }}
+            style={styles.option}
+          >
             <View style={styles.optionRow}>
               <Ionicons
                 name="help-circle-outline"
@@ -309,7 +316,12 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.option}>
+          <TouchableOpacity
+            onPress={() => {
+              navigation.navigate("HelpScreen");
+            }}
+            style={styles.option}
+          >
             <View style={styles.optionRow}>
               <Ionicons
                 name="bug-outline"

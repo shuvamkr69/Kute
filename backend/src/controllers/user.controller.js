@@ -885,6 +885,41 @@ const googleLoginUser = asyncHandler(async (req, res) => {
     );
 });
 
+const reportProblem = asyncHandler(async (req, res) => {
+  const { message } = req.body;
+  const userEmail = req.user?.email || "Anonymous";
+
+  if (!message) {
+    throw new ApiError(400, "Problem description is required.");
+  }
+
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.SMTP_EMAIL,
+      pass: process.env.SMTP_PASS,
+    },
+  });
+
+  const mailOptions = {
+    from: `"App Support" <${process.env.SMTP_EMAIL}>`,
+    to: process.env.REPORTS_EMAIL,
+    subject: "New Problem Reported",
+    text: `From: ${userEmail}\n\n${message}`,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    return res
+      .status(200)
+      .json(new ApiResponse(200, {}, "Your report has been sent. Thank you!"));
+  } catch (err) {
+    console.error("Error sending email:", err);
+    throw new ApiError(500, "Failed to send report email. Please try again.");
+  }
+});
+
+
 export {
   generateAccessAndRefreshTokens,
   registerUser,
@@ -908,4 +943,5 @@ export {
   blockedUsers,
   unmatchUser,
   changePassword,
+  reportProblem,
 };
