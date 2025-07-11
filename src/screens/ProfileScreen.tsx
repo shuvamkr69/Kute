@@ -19,6 +19,7 @@ import { Dimensions, Animated } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { RefreshControl } from "react-native";
 import LoadingScreen from "./LoadingScreen";
+import { Ionicons } from '@expo/vector-icons';
 const VerificationImage = require("../assets/icons/verified-logo.png");
 const PremiumImage = require("../assets/icons/premium.png");
 
@@ -287,12 +288,59 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
     <View style={styles.sectionContainer}>
       <Text style={styles.sectionTitle}>{title}</Text>
       {data.length > 0 ? (
-        data.map((item, index) => (
-          <View key={index} style={styles.infoRow}>
-            <Text style={styles.infoLabel}>{item.label}</Text>
-            <Text style={styles.infoValue}>{item.value}</Text>
-          </View>
-        ))
+        data.map((item, index) => {
+          // Map label to Ionicon name (only valid names)
+          let iconName = '';
+          switch (item.label) {
+            case 'Height in cm:':
+              iconName = 'resize-outline';
+              break;
+            case 'Occupation:':
+              iconName = 'briefcase-outline';
+              break;
+            case 'Working At:':
+              iconName = 'briefcase-outline'; // No business-outline, use briefcase
+              break;
+            case 'Religion:':
+              iconName = 'leaf-outline';
+              break;
+            case 'Pronouns:':
+              iconName = 'person-outline';
+              break;
+            case 'Gender Orientation:':
+              iconName = 'male-female-outline';
+              break;
+            case 'Languages:':
+              iconName = 'globe-outline'; // Use globe-outline for languages
+              break;
+            case 'Love Langauge:':
+              iconName = 'heart-outline';
+              break;
+            case 'Zodiac:':
+              iconName = 'star-outline';
+              break;
+            case 'Family Planning:':
+              iconName = 'people-outline'; // Use people-outline for family planning
+              break;
+            case 'Body Type:':
+              iconName = 'people-outline'; // Use people-outline for body type
+              break;
+            case 'Personality':
+              iconName = 'happy-outline';
+              break;
+            default:
+              iconName = 'ellipse-outline';
+          }
+          return (
+            <View key={index} style={styles.infoRow}>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Ionicons name={iconName as any} size={18} color="#de822c" />
+                <Text style={[styles.infoLabel, { marginLeft: 7, paddingLeft: 0 }]}>{item.label}</Text>
+              </View>
+              <Text style={styles.infoValue}>{item.value}</Text>
+            </View>
+          );
+        })
       ) : (
         <Text style={styles.noInfo}>No information added</Text>
       )}
@@ -701,6 +749,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     marginTop: 10,
+    justifyContent: "center",
   },
   interestBox: {
     backgroundColor: "#de822c",
@@ -777,9 +826,10 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   sectionTitle: {
-    color: "#de822c",
+    color: "white",
     fontSize: 18,
     fontWeight: "bold",
+    textAlign: 'center',
     marginBottom: 25,
   },
   infoRow: {
