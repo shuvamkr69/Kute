@@ -31,7 +31,6 @@ const BlockedUsersScreen: React.FC<Props> = ({ navigation }) => {
       setBlockedUsers(response.data);
     } catch (err) {
       console.error("Error fetching blocked users:", err);
-      Alert.alert("Error", "Failed to load blocked users.");
     } finally {
       setLoading(false);
     }

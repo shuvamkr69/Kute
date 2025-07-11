@@ -1,5 +1,5 @@
 import React, { useRef, useState } from "react";
-import { Image, ScrollView } from "react-native";
+import { Image, ScrollView, TouchableOpacity } from "react-native";
 import {
   View,
   Text,
@@ -57,7 +57,7 @@ const PremiumScreen: React.FC<Props> = ({ navigation }) => {
   if (plans.length === 0) {
     return (
       <View style={styles.container}>
-        <BackButton title="Become a Member" />
+        <BackButton title="Kute Premium" />
         <Text style={{ color: "white", textAlign: "center", marginTop: 50 }}>
           Loading plans...
         </Text>
@@ -79,238 +79,279 @@ const PremiumScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
-  const renderCarouselItem = ({ item, index }: any) => {
-    const inputRange = [
-      (index - 1) * width * 0.65,
-      index * width * 0.65,
-      (index + 1) * width * 0.65,
-    ];
-
-    const rotate = scrollX.interpolate({
-      inputRange,
-      outputRange: ["10deg", "0deg", "-10deg"],
-      extrapolate: "clamp",
-    });
-
-    const scale = scrollX.interpolate({
-      inputRange,
-      outputRange: [0.85, 1.05, 0.85],
-      extrapolate: "clamp",
-    });
-
-    const opacity = scrollX.interpolate({
-      inputRange,
-      outputRange: [0.6, 1, 0.6],
-      extrapolate: "clamp",
-    });
-
-    const isSelected = selectedIndex === index;
-
-    const handleCardPress = () => {
-      flatListRef.current?.scrollToOffset({
-        offset: index * width * 0.65,
-        animated: true,
-      });
-      setSelectedIndex(index);
-    };
-
-    return (
-      <Pressable onPress={handleCardPress}>
-        <Animated.View
-          style={[
-            styles.card,
-            {
-              transform: [{ rotate }, { scale }],
-              opacity,
-              borderColor: isSelected ? "#de822c" : "white",
-              shadowOpacity: isSelected ? 0.6 : 0.2,
-              elevation: isSelected ? 10 : 4,
-            },
-          ]}
-        >
-          <Text style={styles.planName}>{item.name}</Text>
-          <Image source={getImage(item.image)} style={styles.planImage} />
-        </Animated.View>
-      </Pressable>
-    );
+  const handleScroll = (event: any) => {
+    const index = Math.round(event.nativeEvent.contentOffset.x / (CARD_WIDTH + CARD_GAP));
+    setSelectedIndex(index);
   };
 
+  const CARD_WIDTH = 340;
+  const CARD_HEIGHT = 540;
+  const CARD_GAP = 20;
+
   return (
-    <View style={styles.container}>
-      <BackButton title="Become a Member" />
-
-      <View style={styles.upperSection}>
-        <View style={styles.planDetailsBox}>
-          <Text style={styles.selectedPlanTitle}>
-            {plans[selectedIndex].name}
-          </Text>
-          <Text style={styles.selectedPlanPrice}>
-            {plans[selectedIndex].price}
-          </Text>
-
-          <View style={styles.featureScrollContainer}>
-            <ScrollView
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingBottom: 20 }}
-            >
-              {plans[selectedIndex].features.map((feature, i) => (
-                <View key={i} style={styles.featureRow}>
-                  <Image
-                    source={require("../assets/icons/check.png")}
-                    style={styles.tickIcon}
-                  />
-                  <Text style={styles.feature}>{feature}</Text>
-                </View>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
-      </View>
-
-      <View style={styles.carouselContainer}>
-        <Animated.FlatList
+    <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 24 }}>
+      <BackButton title="Kute Premium" />
+      <Text style={styles.unlockTitle}>Unlock the best of Kute</Text>
+      <Text style={styles.unlockDesc}>See who likes you, boost your profile, and more.</Text>
+      {/* Carousel */}
+      <View style={{ alignItems: 'center', marginBottom: 16 }}>
+        <FlatList
           ref={flatListRef}
           data={plans}
-          keyExtractor={(_, i) => i.toString()}
+          keyExtractor={(_, idx) => idx.toString()}
           horizontal
-          pagingEnabled={false}
-          snapToInterval={width * 0.65}
-          decelerationRate="fast"
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{
-            paddingHorizontal: (width - width * 0.65) / 2,
-            alignItems: "center",
-          }}
-          onScroll={Animated.event(
-            [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-            {
-              useNativeDriver: false,
-              listener: (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-                const index = Math.round(
-                  e.nativeEvent.contentOffset.x / (width * 0.65)
-                );
-                setSelectedIndex(index);
-              },
-            }
+          snapToInterval={CARD_WIDTH + CARD_GAP}
+          decelerationRate="fast"
+          contentContainerStyle={{ paddingHorizontal: (Dimensions.get('window').width - CARD_WIDTH) / 2 }}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+          pagingEnabled
+          renderItem={({ item, index }) => (
+            <View style={[styles.planCardCarousel, { marginRight: index === plans.length - 1 ? 0 : CARD_GAP }]}>
+              <View style={{ flexDirection: 'column', gap: 4 }}>
+                <Text style={styles.planCardTitle}>{item.name}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
+                  <Text style={styles.planCardPrice}>{item.price}</Text>
+                </View>
+              </View>
+              <Image source={getImage(item.image)} style={styles.planCardImageLarge} />
+              <View style={{ flexDirection: 'column', gap: 6, marginTop: 8, flex: 1 }}>
+                {item.features.map((feature, i) => (
+                  <View key={i} style={styles.featureRow}>
+                    <Image
+                      source={require("../assets/icons/check.png")}
+                      style={styles.tickIcon}
+                    />
+                    <Text style={styles.featureText}>{feature}</Text>
+                  </View>
+                ))}
+              </View>
+              <TouchableOpacity
+                style={styles.continueBtnBottom}
+                onPress={() => handleSubscribe(item.name)}
+              >
+                <Text style={styles.continueBtnText}>Get Now</Text>
+              </TouchableOpacity>
+            </View>
           )}
-          renderItem={renderCarouselItem}
         />
+        {/* Dot indicator */}
+        <View style={styles.dotContainer}>
+          {plans.map((_, idx) => (
+            <View
+              key={idx}
+              style={[styles.dot, selectedIndex === idx && styles.dotActive]}
+            />
+          ))}
+        </View>
       </View>
-
-      <CustomButton
-        title={`Subscribe`}
-        onPress={() => handleSubscribe(plans[selectedIndex].name)}
-        style={styles.subscribeButton}
-      />
-    </View>
+      <Text style={styles.renewalText}>
+        Subscriptions automatically renew unless auto-renew is turned off at least 24 hours before the end of the current period. You can manage your subscriptions and turn off auto-renewal by going to your Account Settings after purchase.
+      </Text>
+      <View style={styles.bottomLinks}>
+        <TouchableOpacity style={styles.linkBtn}><Text style={styles.linkBtnText}>Terms of Service</Text></TouchableOpacity>
+        <TouchableOpacity style={styles.linkBtn}><Text style={styles.linkBtnText}>Privacy Policy</Text></TouchableOpacity>
+      </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "black",
+    backgroundColor: 'black',
+    minHeight: '100%',
+    paddingBottom: 10,
   },
-  planDetailsBox: {
-    backgroundColor: "#1E1E1E",
-    borderRadius: 20,
-    padding: 24,
-    height: "100%",
-    alignItems: "center", // Centers horizontally
-    justifyContent: "center", // Centers vertically
-    shadowColor: "black",
-    shadowOpacity: 0.2,
-    shadowOffset: { width: 0, height: 6 },
-    shadowRadius: 10,
-    elevation: 6,
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#211b12',
+    padding: 16,
+    paddingBottom: 8,
+    justifyContent: 'space-between',
   },
-  featureScrollContainer: {
-    maxHeight: height * 0.15, // or adjust to how much you want visible
-    width: "100%",
-    paddingTop: 10,
+  closeBtn: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-
-  featureRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center", // centers the row as a whole
-    marginBottom: 10,
-    paddingHorizontal: 10,
+  closeIcon: {
+    width: 24,
+    height: 24,
+    tintColor: 'white',
   },
-  feature: {
-    color: "#C0C0C0",
-    fontSize: 13,
-    textAlign: "left", // keep it left-aligned next to the icon
+  premiumTitle: {
+    color: 'white',
+    fontSize: 20,
+    fontWeight: 'bold',
+    flex: 1,
+    textAlign: 'center',
+    marginRight: 40,
   },
-  
-  
-  selectedPlanTitle: {
-    fontSize: 30,
-    fontWeight: "900",
-    color: "#de822c",
+  unlockTitle: {
+    color: 'white',
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginTop: 16,
+    marginBottom: 4,
+    letterSpacing: -0.5,
+  },
+  unlockDesc: {
+    color: 'white',
+    fontSize: 16,
+    textAlign: 'center',
     marginBottom: 12,
+    marginHorizontal: 16,
   },
-  selectedPlanPrice: {
-    fontSize: 22,
-    color: "white",
+  planGrid: {
+    flexDirection: 'column',
+    gap: 16,
+    alignItems: 'center',
+    paddingHorizontal: 0,
     marginBottom: 16,
-    fontWeight: "700",
   },
-  upperSection: {
-    height: height * 0.43, // was 0.35
-    paddingHorizontal: 20,
-    justifyContent: "flex-end",
+  planCardWide: {
+    display: 'none', // hide old style
   },
-  
-  carouselContainer: {
-    height: height * 0.35,
-    justifyContent: "center",
-    marginTop: 30, // was 70 before, reduced to make it sit just below the box
-  },
-  card: {
-    width: width * 0.6,
-    height: height * 0.29,
-    backgroundColor: "#2E2E2E",
-    borderRadius: 24,
-    marginHorizontal: 10,
-    alignItems: "center",
-    justifyContent: "center",
+  planCardCarousel: {
+    width: 340,
+    height: 540,
+    backgroundColor: '#32281b',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#635036',
     padding: 20,
-    borderWidth: 2,
-    shadowColor: "black",
-    marginBottom: 20,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
   },
-  planName: {
-    fontSize: 27,
-    fontWeight: "800",
-    color: "#E0E0E0",
+  planCardTitle: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 2,
   },
-  planPrice: {
-    fontSize: 18,
-    color: "white",
-    marginTop: 10,
+  planCardPrice: {
+    color: 'white',
+    fontSize: 32,
+    fontWeight: '900',
+    letterSpacing: -1,
   },
-  subscribeButton: {
-    backgroundColor: "#de822c",
-    position: "absolute",
-    bottom: 0,
-    alignSelf: "center",
-    width: "100%",
+  planCardPer: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginLeft: 2,
   },
-  
-  tickIcon: {
-    width: 16,
-    height: 16,
-    marginRight: 6,
-    resizeMode: "contain",
-  },
-  
-  
-  planImage: {
+  planCardImage: {
     width: 60,
     height: 60,
-    resizeMode: "contain",
+    resizeMode: 'contain',
+    alignSelf: 'center',
+    marginVertical: 8,
+  },
+  planCardImageLarge: {
+    width: 100,
+    height: 100,
+    resizeMode: 'contain',
+    alignSelf: 'center',
+    marginVertical: 16,
+  },
+  continueBtn: {
+    backgroundColor: '#de822c',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 32,
+    alignItems: 'center',
+    marginTop: 16,
+    alignSelf: 'center',
+  },
+  continueBtnText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 15,
+  },
+  continueBtnBottom: {
+    backgroundColor: '#de822c',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 32,
+    alignItems: 'center',
+    marginTop: 10,
+    alignSelf: 'center',
+    position: 'absolute',
+    bottom: 10,
+    left: 20,
+    right: 20,
+  },
+  featureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 2,
+  },
+  tickIcon: {
+    width: 20,
+    height: 20,
+    marginRight: 4,
+    tintColor: 'white',
+  },
+  featureText: {
+    color: 'white',
+    fontSize: 13,
+    fontWeight: '400',
+  },
+  renewalText: {
+    color: 'white',
+    fontSize: 14,
+    textAlign: 'center',
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 8,
+    opacity: 0.8,
+  },
+  bottomLinks: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
+    marginTop: 8,
+  },
+  linkBtn: {
+    backgroundColor: '#463825',
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 24,
+    marginHorizontal: 4,
+  },
+  linkBtnText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 15,
+  },
+  dotContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginTop: 12,
+    marginBottom: 4,
+    gap: 8,
+  },
+  dot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#635036',
+    marginHorizontal: 4,
+  },
+  dotActive: {
+    backgroundColor: '#de822c',
+    width: 18,
   },
 });
 

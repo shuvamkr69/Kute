@@ -15,10 +15,12 @@ import {
   reportProblem,
   resetPasswordWithOTP,
   sendResetOTP,
+  toggleAnonymousBrowsing,
   unblockUser,
   unmatchUser,
   updatePushToken,
   userProfile,
+  reportUser,
 } from "../controllers/user.controller.js";
 import { loginUser } from "../controllers/user.controller.js";
 import { logoutUser } from "../controllers/user.controller.js";
@@ -100,7 +102,7 @@ UserRouter.route("/reset-password-otp").post(
   //reset password
   resetPasswordWithOTP
 );
-UserRouter.route('/change-password').post(
+UserRouter.route("/change-password").post(
   //change password from settings screen
   verifyJWT,
   changePassword
@@ -133,16 +135,22 @@ UserRouter.route("/blockedusers").get(
   verifyJWT,
   blockedUsers
 );
-UserRouter.route('/unmatch/:userId').delete(
+UserRouter.route("/unmatch/:userId").delete(
   //get user distance
   verifyJWT,
   unmatchUser
 );
 
 UserRouter.route("/report-problem").post(
-  verifyJWT,  // or remove if anonymous reports are allowed
+  verifyJWT, // or remove if anonymous reports are allowed
   reportProblem
 );
 
+UserRouter.route("/toggle-anonymous").post(
+  verifyJWT, 
+  toggleAnonymousBrowsing
+);
+
+UserRouter.post("/report-user", verifyJWT, reportUser);
 
 export default UserRouter;

@@ -88,16 +88,13 @@ const MainApp = () => {
 export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      {/* <ClerkProvider 
-        publishableKey="pk_test_bWF0dXJlLW9jdG9wdXMtNTkuY2xlcmsuYWNjb3VudHMuZGV2JA"
-        tokenCache={tokenCache}
-      > */}
+      {/* <ThemeProvider> */}
         <RegistrationProvider>
           <AuthProvider>
             <MainApp />
           </AuthProvider>
         </RegistrationProvider>
-      {/* </ClerkProvider> */}
+      {/* </ThemeProvider> */}
     </GestureHandlerRootView>
   );
 }

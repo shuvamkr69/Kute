@@ -16,12 +16,16 @@ import {
   Dimensions,
   Button,
   Alert,
+  TextInput,
+  Share,
 } from "react-native";
 import Swiper from "react-native-deck-swiper";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import api from "../utils/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from '@expo/vector-icons';
+import { Easing } from 'react-native-reanimated';
 
 const VerificationImage = require("../assets/icons/verified-logo.png");
 
@@ -65,6 +69,25 @@ if (
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
+const DAILY_FREE_LIKES = 1;
+const PREMIUM_LIKE_LIMITS: Record<string, number> = {
+  gold: 1000,
+  platinum: 10000,
+  plus: 100,
+};
+
+const getTodayKey = () => {
+  const now = new Date();
+  return `likes_${now.getFullYear()}_${now.getMonth()}_${now.getDate()}`;
+};
+
+const getResetTime = () => {
+  const now = new Date();
+  const reset = new Date(now);
+  reset.setHours(24, 0, 0, 0); // midnight
+  return reset.getTime();
+};
+
 const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -76,6 +99,10 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const [distance, setDistance] = useState<number | null>(null);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [isSuperLikeSwipe, setIsSuperLikeSwipe] = useState(false);
+  const [dailyLikes, setDailyLikes] = useState(0);
+  const [likeLimit, setLikeLimit] = useState(DAILY_FREE_LIKES);
+  const [premiumPlan, setPremiumPlan] = useState<string | null>(null);
+  const [swiperKey, setSwiperKey] = useState(0);
 
   const swipeX = useRef(new Animated.Value(0)).current;
   const swipeY = useRef(new Animated.Value(0)).current; // Add this line
@@ -94,17 +121,41 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     }).start(() => setIsModalAnimated(false));
   };
 
-  const borderColor = swipeX.interpolate({
-    inputRange: [-SWIPE_THRESHOLD, 0, SWIPE_THRESHOLD],
-    outputRange: ["#FF0000", "#121212", "#00FF00"],
-    extrapolate: "clamp",
-  });
-
-  const borderWidth = swipeX.interpolate({
-    inputRange: [-SWIPE_THRESHOLD, 0, SWIPE_THRESHOLD],
-    outputRange: [5, 0, 5],
-    extrapolate: "clamp",
-  });
+  let borderColor: string | Animated.AnimatedInterpolation<any>;
+  let borderWidth: number | Animated.AnimatedInterpolation<any>;
+  if (isSuperLikeSwipe) {
+    borderColor = "#00B4FF";
+    borderWidth = 5;
+  } else {
+    borderColor = swipeX.interpolate({
+      inputRange: [
+        -SWIPE_THRESHOLD,
+        -SWIPE_THRESHOLD * 0.2,
+        0,
+        SWIPE_THRESHOLD * 0.2,
+        SWIPE_THRESHOLD
+      ],
+      outputRange: [
+        "#FF0000",
+        "transparent",
+        "transparent",
+        "transparent",
+        "#00FF00"
+      ],
+      extrapolate: "clamp",
+    });
+    borderWidth = swipeX.interpolate({
+      inputRange: [
+        -SWIPE_THRESHOLD,
+        -SWIPE_THRESHOLD * 0.2,
+        0,
+        SWIPE_THRESHOLD * 0.2,
+        SWIPE_THRESHOLD
+      ],
+      outputRange: [5, 0, 0, 0, 5],
+      extrapolate: "clamp",
+    });
+  }
 
   const [swipeFeedback, setSwipeFeedback] = useState<{
     visible: boolean;
@@ -214,6 +265,55 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     fetchProfiles();
   }, []);
 
+  useEffect(() => {
+    const loadLikes = async () => {
+      const userString = await AsyncStorage.getItem("user");
+      const user = userString ? JSON.parse(userString) : {};
+      const plan = user.ActivePremiumPlan || null;
+      setPremiumPlan(plan);
+      let limit = DAILY_FREE_LIKES;
+      if (plan && PREMIUM_LIKE_LIMITS[plan]) limit = PREMIUM_LIKE_LIMITS[plan];
+      setLikeLimit(limit);
+      const todayKey = getTodayKey();
+      const storedLikes = await AsyncStorage.getItem(todayKey);
+      setDailyLikes(storedLikes ? parseInt(storedLikes, 10) : 0);
+      // Set/reset timer for midnight reset
+      const resetTime = getResetTime();
+      const now = Date.now();
+      setTimeout(() => {
+        AsyncStorage.setItem(todayKey, '0');
+        setDailyLikes(0);
+      }, resetTime - now);
+    };
+    loadLikes();
+  }, []);
+
+  const incrementLikes = async () => {
+    const todayKey = getTodayKey();
+    const newLikes = dailyLikes + 1;
+    setDailyLikes(newLikes);
+    await AsyncStorage.setItem(todayKey, newLikes.toString());
+  };
+
+  const showPremiumModal = () => {
+    // Animate and navigate to Premium screen
+    Animated.timing(modalAnimatedValue, {
+      toValue: 1,
+      duration: 500,
+      easing: Easing.bounce,
+      useNativeDriver: true,
+    }).start(() => {
+      navigation.navigate("Premium", { from: "likesLimit" });
+      setTimeout(() => {
+        modalAnimatedValue.setValue(0);
+      }, 500);
+    });
+    Alert.alert(
+      "Out of Likes!",
+      "You've reached your daily free likes. Get unlimited likes with Premium!"
+    );
+  };
+
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     fetchProfiles();
@@ -261,7 +361,13 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
   const userLiked = async (index: number) => {
     if (index >= profiles.length) return;
-
+    if (dailyLikes >= likeLimit) {
+      showPremiumModal();
+      // Do NOT modify profiles array, just force Swiper to reset
+      setSwiperKey((k) => k + 1); // Force Swiper to reset
+      return;
+    }
+    await incrementLikes();
     const likedUserId = profiles[index]._id;
     // console.log("Liked user ID before sending:", likedUserId);
 
@@ -313,6 +419,10 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
   const handleSuperLike = async (index: number) => {
     if (index >= profiles.length) return;
+    if (dailyLikes >= likeLimit) {
+      showPremiumModal();
+      return;
+    }
 
     const superLikedUserId = profiles[index]._id;
 
@@ -418,6 +528,30 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     haversineDistance;
   }, []);
 
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [reportModalVisible, setReportModalVisible] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+
+  const handleShareProfile = async () => {
+    if (!selectedProfile) return;
+    try {
+      const profileLink = `https://kuteapp.com/profile/${selectedProfile._id}`; // Replace with your actual profile URL pattern
+      const message = `🌟 Hey! Check out this amazing Kute profile! 🌟\n\n` +
+        `👤 Name: ${selectedProfile.fullName}\n` +
+        `🎂 Age: ${selectedProfile.age}\n` +
+        `⚧️ Gender: ${selectedProfile.gender}\n` +
+        `💬 Bio: ${selectedProfile.bio}\n` +
+        `🔥 Interests: ${selectedProfile.interests}\n\n` +
+        `👉 View their profile here: ${profileLink}\n` +
+        `\nJoin me on Kute and discover awesome people! 🚀`;
+      await Share.share({
+        message,
+      });
+    } catch (error) {
+      Alert.alert("Error", error.message || "Failed to share profile.");
+    }
+  };
+
   return (
     <ScrollView
       style={styles.container}
@@ -430,12 +564,19 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         />
       }
     >
+      <View style={styles.container}>
+      </View>
       {loading ? (
-        <ActivityIndicator size="large" color="#de822c" />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', height: availableHeight }}>
+          <ActivityIndicator size="large" color="#de822c" />
+        </View>
       ) : profiles.length > 0 ? (
         <View style={styles.swiperContainer}>
           <Swiper
-            key={profiles.length}
+            key={swiperKey}
+            verticalSwipe={true}
+            verticalThreshold={150} // or your preferred threshold
+            disableBottomSwipe={true}
             onSwiping={(x, y) => {
               swipeX.setValue(x);
               swipeY.setValue(y);
@@ -586,6 +727,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
             onSwipedTop={(index) => handleSuperLike(index)}
             onSwipedRight={(index) => userLiked(index)}
             onSwipedLeft={(index) => userPassed(index)}
+            onSwipedBottom={() => setSwiperKey((k) => k + 1)}
             // cardIndex={currentCardIndex}
             backgroundColor="transparent"
             stackSize={3}
@@ -653,6 +795,92 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.modalContent}>
             {selectedProfile && (
               <ScrollView contentContainerStyle={styles.modalScrollContainer}>
+                {/* Top bar with close and 3-dots menu icons */}
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                  <TouchableOpacity activeOpacity={0.8}
+                  onPress={() => setSelectedProfile(null)} style={{ paddingVertical: 8, paddingHorizontal: 16 }}>
+                    <Image
+                      source={require("../assets/icons/red-cross.png")}
+                      style={styles.closeIconSmall}
+                    />
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => setMenuVisible(true)} style={{ paddingVertical: 8, paddingHorizontal: 16 }}>
+                    <Ionicons name="ellipsis-vertical" size={28} color="#de822c" />
+                  </TouchableOpacity>
+                </View>
+                {/* Menu Modal */}
+                <Modal
+                  visible={menuVisible}
+                  transparent
+                  animationType="fade"
+                  onRequestClose={() => setMenuVisible(false)}
+                >
+                  <TouchableOpacity style={styles.menuOverlay} activeOpacity={1} onPress={() => setMenuVisible(false)}>
+                    <View style={styles.menuContainer}>
+                      <TouchableOpacity
+                        style={styles.menuItem}
+                        onPress={() => {
+                          if (selectedProfile) {
+                            handleBlockUser(selectedProfile._id);
+                            setSelectedProfile(null);
+                            setMenuVisible(false);
+                          }
+                        }}
+                      >
+                        <Text style={styles.menuText}>Block User</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); setReportModalVisible(true); }}>
+                        <Text style={styles.menuText}>Report User</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); handleShareProfile(); }}>
+                        <Text style={styles.menuText}>Share Profile</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </TouchableOpacity>
+                </Modal>
+                {/* Report User Modal */}
+                <Modal
+                  visible={reportModalVisible}
+                  transparent
+                  animationType="fade"
+                  onRequestClose={() => setReportModalVisible(false)}
+                >
+                  <TouchableOpacity style={styles.menuOverlay} activeOpacity={1} onPress={() => setReportModalVisible(false)}>
+                    <View style={styles.reportModalContainer}>
+                      <Text style={styles.reportTitle}>Report User</Text>
+                      <TextInput
+                        style={styles.reportInput}
+                        placeholder="Enter reason for reporting..."
+                        placeholderTextColor="#888"
+                        value={reportReason}
+                        onChangeText={setReportReason}
+                        multiline
+                      />
+                      <TouchableOpacity
+                        style={styles.reportButton}
+                        onPress={async () => {
+                          if (!reportReason.trim()) {
+                            Alert.alert("Error", "Please enter a reason.");
+                            return;
+                          }
+                          try {
+                            await api.post("/api/v1/users/report-user", {
+                              reportedUserId: selectedProfile?._id,
+                              reason: reportReason,
+                            });
+                            Alert.alert("Success", "User reported successfully.");
+                            setReportModalVisible(false);
+                            setReportReason("");
+                          } catch (err) {
+                            Alert.alert("Error", "Failed to report user. Please try again.");
+                          }
+                        }}
+                      >
+                        <Text style={styles.reportButtonText}>Submit Report</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </TouchableOpacity>
+                </Modal>
                 {/* Image Navigation with Smooth Animation */}
                 <View style={styles.imageContainer}>
                   <TouchableOpacity
@@ -782,42 +1010,6 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
                   <View style={styles.divider} />
                 </View>
 
-                <TouchableOpacity
-                  style={{
-                    backgroundColor: "#FF3B30",
-                    padding: 10,
-                    borderRadius: 10,
-                    marginTop: 20,
-                    marginHorizontal: 20,
-                  }}
-                  onPress={() => {
-                    if (selectedProfile) {
-                      handleBlockUser(selectedProfile._id);
-                      setSelectedProfile(null);
-                    }
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: "white",
-                      textAlign: "center",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    Block User
-                  </Text>
-                </TouchableOpacity>
-
-                {/* Close Button */}
-                <TouchableOpacity
-                  onPress={() => setSelectedProfile(null)}
-                  activeOpacity={0.7}
-                >
-                  <Image
-                    source={require("../assets/icons/red-cross.png")}
-                    style={styles.closeIcon}
-                  />
-                </TouchableOpacity>
               </ScrollView>
             )}
           </View>
@@ -1095,6 +1287,81 @@ const styles = StyleSheet.create({
     width: 28,
     marginLeft: 10,
     marginTop: 10,
+  },
+  menuOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-end',
+  },
+  menuContainer: {
+    backgroundColor: 'black',
+    borderRadius: 10,
+    marginTop: 60,
+    marginRight: 20,
+    paddingVertical: 8,
+    width: 180,
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  menuItem: {
+    paddingVertical: 14,
+    paddingHorizontal: 18,
+  },
+  menuText: {
+    fontSize: 16,
+    color: '#fff',
+  },
+  reportModalContainer: {
+    backgroundColor: 'black',
+    borderRadius: 12,
+    padding: 20,
+    marginTop: 100,
+    marginRight: 20,
+    width: 300,
+    alignSelf: 'flex-end',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  reportTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: '#fff',
+  },
+  reportInput: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 8,
+    padding: 10,
+    minHeight: 60,
+    marginBottom: 15,
+    color: '#fff',
+    fontSize: 15,
+    backgroundColor: '#222',
+  },
+  reportButton: {
+    backgroundColor: '#de822c',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  reportButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  closeIconSmall: {
+    width: 28,
+    height: 28,
+    tintColor: '#de822c',
+    marginLeft: 10,
   },
 });
 

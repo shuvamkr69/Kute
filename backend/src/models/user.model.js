@@ -227,6 +227,10 @@ const userSchema = new Schema(
         default: [],
       },
     ],
+    anonymousBrowsing: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );
@@ -266,6 +270,5 @@ userSchema.methods.generateRefreshToken = function () {
     }
   );
 };
-
 
 export const User = mongoose.model("User", userSchema);

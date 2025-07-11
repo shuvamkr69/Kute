@@ -83,6 +83,9 @@ web_modules/
 .env.production.local
 .env.local
 
+test-script-for-anything-in-mngodbAtlas.js
+test-script-for-anything-in-mngodbAtlas
+
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache

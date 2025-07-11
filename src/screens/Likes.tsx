@@ -6,7 +6,6 @@ import {
   FlatList,
   Image,
   TouchableOpacity,
-  ActivityIndicator,
   RefreshControl,
   Alert,
   Modal,
@@ -30,10 +29,11 @@ const Likes: React.FC<Props> = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [selectedUser, setSelectedUser] = useState<LikedUser | null>(null);
   const [showOptions, setShowOptions] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
 
-  const fetchLikedUsers = async () => {
+  const fetchLikedUsers = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const response = await api.get("/api/v1/users/userLiked");
       const formattedUsers = response.data.map((user: any) => ({
         _id: user._id,
@@ -41,16 +41,25 @@ const Likes: React.FC<Props> = ({ navigation }) => {
         profileImage: user.profileImage || "https://via.placeholder.com/150",
       }));
       setLikedUsers(formattedUsers);
+      setIsOffline(false); // ✅ Reset offline status if successful
     } catch (error) {
       console.error("Error fetching liked users:", error);
+      setIsOffline(true); // ✅ Set offline if it fails
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchLikedUsers();
-  }, []);
+  fetchLikedUsers(); // Initial fetch
+
+  const interval = setInterval(() => {
+    fetchLikedUsers(true); // Silent polling
+  }, 2000); // ✅ every 2 seconds
+
+  return () => clearInterval(interval); // Cleanup on unmount
+}, []);
+
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -80,9 +89,11 @@ const Likes: React.FC<Props> = ({ navigation }) => {
       <TouchableOpacity
         onPress={async () => {
           const userId = await getUserId();
-          console.log("User ID:", userId);
-          navigation.navigate("OtherProfile", {
-            userId: selectedUser?._id,
+          navigation.navigate("Chat", {
+            likedUserId: item._id,
+            userName: item.fullName,
+            loggedInUserId: userId,
+            likedUserAvatar: item.profileImage,
           });
         }}
         style={styles.chatButton}
@@ -94,7 +105,10 @@ const Likes: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.heading}>Matches</Text>
+      <View style={styles.headingContainer}>
+        <Text style={styles.heading}>Matches</Text>
+        {isOffline && <Text style={styles.offlineBadge}>⚠️</Text>}
+      </View>
 
       <FlatList
         data={likedUsers}
@@ -140,19 +154,6 @@ const Likes: React.FC<Props> = ({ navigation }) => {
         >
           <View style={styles.optionContainer}>
             <Text style={styles.optionTitle}>{selectedUser?.fullName}</Text>
-
-            {/* <TouchableOpacity
-              style={styles.optionButton}
-              onPress={() => {
-                // TODO: Navigate to profile if you want
-                setShowOptions(false);
-                navigation.navigate("OtherProfile", {
-                  likedUserId: selectedUser?._id,
-                });
-              }}
-            >
-              <Text style={styles.optionText}>View Profile</Text>
-            </TouchableOpacity> */}
 
             <TouchableOpacity
               style={[styles.optionButton, { backgroundColor: "#400" }]}
@@ -320,5 +321,16 @@ const styles = StyleSheet.create({
   optionText: {
     color: "white",
     fontSize: 16,
+  },
+  headingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 20,
+    paddingHorizontal: 10,
+  },
+  offlineBadge: {
+    fontSize: 16,
+    color: "#ff4d4d",
   },
 });

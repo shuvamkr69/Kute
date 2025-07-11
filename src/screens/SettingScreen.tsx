@@ -9,6 +9,7 @@ import {
   Button,
   Linking,
   Platform,
+  Image,
 } from "react-native";
 import React, { useState } from "react";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
@@ -24,6 +25,7 @@ import * as Notifications from "expo-notifications";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { Feather, FontAwesome, Ionicons } from "@expo/vector-icons";
 import * as IntentLauncher from "expo-intent-launcher";
+import { Video, ResizeMode } from 'expo-av';
 
 type Props = NativeStackScreenProps<any, "Settings">;
 
@@ -32,11 +34,44 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
 
   const [notifications, setNotifications] = useState(true);
   const [location, setLocation] = useState(false);
-  const [visibility, setVisibility] = useState(true);
   const [showLogoutAlert, setShowLogoutAlert] = useState(false);
 
-  const handleLogout = () => {
-    setShowLogoutAlert(true); // Show the custom alert
+  const [isPremium, setIsPremium] = useState(false);
+  const [visibility, setVisibility] = useState(false);
+  const [loadingAnon, setLoadingAnon] = useState(false);
+  const DARK_MODE_KEY = 'darkMode';
+  const [showMeme, setShowMeme] = useState(false);
+  const [memeVideo, setMemeVideo] = useState<any>(null); // Use any for require()
+
+  const fetchUserStatus = async () => {
+    try {
+      const response = await api.get("/api/v1/users/me");
+      setIsPremium(!!response.data.ActivePremiumPlan);
+      setVisibility(!!response.data.anonymousBrowsing);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleToggleAnonymous = async () => {
+    if (!isPremium) {
+      Alert.alert(
+        "Premium Required",
+        "Anonymous browsing is available only for premium users."
+      );
+      return;
+    }
+
+    try {
+      setLoadingAnon(true);
+      const response = await api.post("/api/v1/users/toggle-anonymous");
+      setVisibility(response.data.data.anonymousBrowsing);
+    } catch (err) {
+      console.error(err);
+      Alert.alert("Error", "Failed to update anonymous browsing setting.");
+    } finally {
+      setLoadingAnon(false);
+    }
   };
 
   const confirmLogout = async () => {
@@ -138,13 +173,20 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
 
   React.useEffect(() => {
     navigation.setOptions({ title: "Settings" });
+    fetchUserStatus();
   }, [navigation]);
 
   return (
     <View style={styles.backButtonContainer}>
       <BackButton title={"User Settings"} />
-
       <ScrollView style={styles.container}>
+        <View style={styles.logoContainer}>
+          <Image
+            source={require("../assets/icons/logo.webp")}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+        </View>
         <CustomAlert
           visible={showLogoutAlert}
           title="Confirm Logout"
@@ -255,9 +297,10 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
             </View>
             <Switch
               value={visibility}
-              onValueChange={setVisibility}
+              onValueChange={handleToggleAnonymous}
               thumbColor={visibility ? "#de822c" : "#B0B0B0"}
               trackColor={{ false: "#555", true: "#de822c" }}
+              disabled={!isPremium || loadingAnon}
             />
           </View>
 
@@ -352,7 +395,7 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <TouchableOpacity style={styles.logoutButton} onPress={confirmLogout}>
             <View style={styles.optionRow}>
               <Ionicons
                 name="exit-outline"
@@ -365,6 +408,22 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
           </TouchableOpacity>
         </View>
       </ScrollView>
+      {/* Fullscreen Meme Video Overlay */}
+      {showMeme && memeVideo && (
+        <View style={styles.fullscreenOverlay}>
+          <Video
+            source={memeVideo}
+            style={styles.fullscreenVideo}
+            resizeMode={ResizeMode.COVER}
+            isLooping={false}
+            shouldPlay
+            isMuted
+            onPlaybackStatusUpdate={status => {
+              if (status.isLoaded && status.didJustFinish) setShowMeme(false);
+            }}
+          />
+        </View>
+      )}
     </View>
   );
 };
@@ -475,6 +534,28 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 12,
     fontWeight: "bold",
+  },
+  logoContainer: {
+    alignItems: "center",
+  },
+  logo: {
+    width: 160,
+    height: 160,
+  },
+  fullscreenOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'black',
+    zIndex: 9999,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullscreenVideo: {
+    width: '100%',
+    height: '100%',
   },
 });
 

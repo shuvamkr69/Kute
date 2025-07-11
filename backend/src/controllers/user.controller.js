@@ -5,6 +5,8 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { Filter } from "../models/filter.model.js";
 import { Like } from "../models/liked.model.js";
+import { Conversation } from "../models/conversation.model.js";
+import { Message } from "../models/message.model.js";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
 import bcrypt from "bcryptjs";
@@ -393,7 +395,8 @@ const homescreenProfiles = async (req, res) => {
     const excludedIds = likes.map((like) => like.likedUserId.toString());
 
     // Default filter (gender-based)
-    let filter = { _id: { $ne: currentUserId } };
+    let filter = { _id: { $ne: currentUserId }, anonymousBrowsing: false };
+
 
     if (genderOrientation === "Straight") {
       filter.gender = gender === "Male" ? "Female" : "Male";
@@ -618,22 +621,42 @@ const blockedUsers = asyncHandler(async (req, res) => {
   res.status(200).json(user.blockedUsers);
 });
 
+
+
 const unmatchUser = asyncHandler(async (req, res) => {
   const userId = req.user._id;
-  const otherUserId = req.params.userId;
+  const unmatchedUserId = req.params.userId;
 
-  // Remove both sides of the like if mutual
+  if (!unmatchedUserId) {
+    throw new ApiError(400, "User ID to unmatch is required");
+  }
+
+  // ✅ Step 1: Remove from likes (if you're using a Like model)
   await Like.deleteMany({
     $or: [
-      { userId: userId, likedUserId: otherUserId },
-      { userId: otherUserId, likedUserId: userId },
+      { userId, likedUserId: unmatchedUserId },
+      { userId: unmatchedUserId, likedUserId: userId },
     ],
   });
 
-  return res
+  // ✅ Step 2: Delete conversation between them (if exists)
+  const conversation = await Conversation.findOne({
+    participants: { $all: [userId, unmatchedUserId] },
+  });
+
+  if (conversation) {
+    // ✅ Step 3: Delete all messages
+    await Message.deleteMany({ conversationId: conversation._id });
+
+    // ✅ Step 4: Delete the conversation
+    await Conversation.findByIdAndDelete(conversation._id);
+  }
+
+  res
     .status(200)
-    .json(new ApiResponse(200, {}, "Unmatched successfully"));
+    .json(new ApiResponse(200, {}, "Unmatched user and deleted all chat data"));
 });
+
 
 const userProfile = async (req, res) => {
   //getting our own profile
@@ -653,8 +676,8 @@ const userProfile = async (req, res) => {
     userObj.interests = Array.isArray(userObj.interests)
       ? userObj.interests
       : typeof userObj.interests === "string"
-      ? userObj.interests.split(",").map((i) => i.trim())
-      : [];
+        ? userObj.interests.split(",").map((i) => i.trim())
+        : [];
 
     res.status(200).json(user);
   } catch (error) {
@@ -808,6 +831,24 @@ const powerUps = async (req, res) => {
   res.status(200).json(user);
 };
 
+const toggleAnonymousBrowsing = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id);
+
+  if (!user) throw new ApiError(404, "User not found");
+
+  if (!user.ActivePremiumPlan) {
+    throw new ApiError(403, "Anonymous browsing is only available for premium users.");
+  }
+
+  user.anonymousBrowsing = !user.anonymousBrowsing;
+  await user.save();
+
+  res.status(200).json(
+    new ApiResponse(200, { anonymousBrowsing: user.anonymousBrowsing }, "Anonymous browsing updated")
+  );
+});
+
+
 const activateBoost = asyncHandler(async (req, res) => {
   const userId = req.user._id;
 
@@ -919,6 +960,38 @@ const reportProblem = asyncHandler(async (req, res) => {
   }
 });
 
+const reportUser = asyncHandler(async (req, res) => {
+  const { reportedUserId, reason } = req.body;
+  const userEmail = req.user?.email || "Anonymous";
+
+  if (!reportedUserId || !reason) {
+    throw new ApiError(400, "Reported user ID and reason are required.");
+  }
+
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.SMTP_EMAIL,
+      pass: process.env.SMTP_PASS,
+    },
+  });
+
+  const mailOptions = {
+    from: `App Support <${process.env.SMTP_EMAIL}>`,
+    to: "kutedating.problemcenter@gmail.com",
+    subject: "User Reported on Kute",
+    text: `Reported User ID: ${reportedUserId}\nReported By: ${userEmail}\nReason: ${reason}`,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    return res.status(200).json(new ApiResponse(200, {}, "User report sent successfully!"));
+  } catch (err) {
+    console.error("Error sending report email:", err);
+    throw new ApiError(500, "Failed to send report email. Please try again.");
+  }
+});
+
 
 export {
   generateAccessAndRefreshTokens,
@@ -938,10 +1011,12 @@ export {
   activateBoost,
   distanceFetcher,
   googleLoginUser,
+  toggleAnonymousBrowsing,
   blockUser,
   unblockUser,
   blockedUsers,
   unmatchUser,
   changePassword,
   reportProblem,
+  reportUser,
 };

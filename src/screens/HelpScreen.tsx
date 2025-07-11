@@ -248,6 +248,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginTop: 15,
     marginBottom: 5,
+    fontWeight: "bold",
   },
   text: {
     color: "#B0B0B0",

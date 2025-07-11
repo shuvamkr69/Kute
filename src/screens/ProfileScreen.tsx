@@ -66,7 +66,6 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
     const fetchCounters = async () => {
       try {
         const response = await api.get("/api/v1/users/powerUps");
-        console.log(response.data.superLike);
         setSuperLikes(response.data.superLike);
         setBoosts(response.data.boost);
       } catch (error) {
@@ -835,12 +834,14 @@ const styles = StyleSheet.create({
     fontSize: 20,
     paddingHorizontal: 1,
     paddingTop: 15,
+    paddingBottom: 10,
   },
   activateNowButton: {
     backgroundColor: "#de822c",
     borderRadius: 15,
     paddingVertical: 6,
     paddingHorizontal: 12,
+    marginTop: 10,
   },
   activateNowButtonText: {
     color: "white",

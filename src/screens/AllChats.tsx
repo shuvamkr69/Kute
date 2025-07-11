@@ -88,12 +88,6 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
         setIsOffline(true); // ✅ offline mode active
       } else {
         setChats([]);
-        if (!silent) {
-          Alert.alert(
-            "Error",
-            "Unable to load chats. Please check connection."
-          );
-        }
       }
     } finally {
       setLoading(false);
@@ -107,7 +101,6 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
       setBlockedUsers(response.data.map((user: { _id: string }) => user._id)); // just extract IDs
     } catch (err) {
       console.error("Error fetching blocked users:", err);
-      Alert.alert("Error", "Failed to load blocked users.");
     }
   };
 
