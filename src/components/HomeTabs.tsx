@@ -4,6 +4,7 @@ import { View, Platform, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Image, Text, StyleSheet } from "react-native";
+import { BlurView } from 'expo-blur';
 
 // Import screens
 import HomeScreen from "../screens/HomeScreen";
@@ -24,6 +25,10 @@ const HomeTabs: React.FC<Props> = ({ navigation }) => {
 
   const [superLikes, setSuperLikes] = useState(0);
   const [boosts, setBoosts] = useState(0);
+  const [boostActive, setBoostActive] = useState(false);
+  const [boostTimeLeft, setBoostTimeLeft] = useState('');
+  const [showBoostModal, setShowBoostModal] = useState(false);
+  const [boostActiveUntil, setBoostActiveUntil] = useState(null);
 
   useEffect(() => {
     const fetchCounters = async () => {
@@ -38,6 +43,48 @@ const HomeTabs: React.FC<Props> = ({ navigation }) => {
     fetchCounters();
   }, []);
 
+  useEffect(() => {
+    // Fetch boostActiveUntil from backend
+    const fetchBoost = async () => {
+      try {
+        const res = await api.get('/api/v1/users/me');
+        const until = res.data.boostActiveUntil ? new Date(res.data.boostActiveUntil) : null;
+        setBoostActiveUntil(until);
+        if (until && until > new Date()) {
+          setBoostActive(true);
+        } else {
+          setBoostActive(false);
+        }
+      } catch (e) {
+        setBoostActive(false);
+      }
+    };
+    fetchBoost();
+  }, []);
+
+  useEffect(() => {
+    if (!boostActiveUntil || boostActiveUntil <= new Date()) {
+      setBoostActive(false);
+      setBoostTimeLeft('');
+      return;
+    }
+    setBoostActive(true);
+    const interval = setInterval(() => {
+      const now = new Date();
+      const diff = boostActiveUntil.getTime() - now.getTime();
+      if (diff <= 0) {
+        setBoostActive(false);
+        setBoostTimeLeft('');
+        clearInterval(interval);
+        return;
+      }
+      const minutes = Math.floor(diff / 1000 / 60);
+      const seconds = Math.floor((diff / 1000) % 60);
+      setBoostTimeLeft(`${minutes}m ${seconds}s`);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [boostActiveUntil]);
+
   return (
     <View style={{ flex: 1, backgroundColor: "#181818" }}>
       {/* Custom Top Bar */}
@@ -49,17 +96,28 @@ const HomeTabs: React.FC<Props> = ({ navigation }) => {
             flexDirection: "row",
             justifyContent: "space-between",
             alignItems: "center",
-            paddingHorizontal: 20,            
+            paddingHorizontal: 20,
+            position: 'relative',
+            zIndex: 100,
           }}
         >
           <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <Image source={require('../assets/icons/logo.webp')} style={{ width: 56, height: 56, left: -15 }}/> 
-              
+            <Image source={require('../assets/icons/logo.webp')} style={{ width: 56, height: 56, left: -15 }}/>
           </View>
-
-          
-
-          <View style={{ flexDirection: "row"}}>
+          <View style={{ flexDirection: "row" }}>
+            <View>
+              <Image
+                source={require("../assets/icons/popularity.png")}
+                style={{
+                  width: 22,
+                  height: 22,
+                  marginRight: 18,
+                  tintColor: boostActive ? undefined : '#888',
+                  opacity: boostActive ? 1 : 0.6,
+                }}
+                resizeMode="contain"
+              />
+            </View>
             <Ionicons
               name="search-outline"
               size={23}
@@ -67,7 +125,6 @@ const HomeTabs: React.FC<Props> = ({ navigation }) => {
               style={{ marginRight: 15 }}
               onPress={() => navigation.navigate("AdvancedFiltering")}
             />
-         
             <Ionicons
               name="notifications-outline"
               size={23}
@@ -84,7 +141,21 @@ const HomeTabs: React.FC<Props> = ({ navigation }) => {
           </View>
         </View>
       </SafeAreaView>
-
+      {/* Boost Modal rendered outside the top bar */}
+      {showBoostModal && (
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => setShowBoostModal(false)}
+          style={{ position: 'absolute', top: 65, right: 140, zIndex: 9999, elevation: 9999 }}
+        >
+          <BlurView intensity={60} tint="dark" style={{ borderRadius: 12, overflow: 'hidden' }}>
+            <View style={{ backgroundColor: 'rgba(0,0,0,0.95)', padding: 16, borderRadius: 12, minWidth: 140, alignItems: 'center' }}>
+              <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>Boost is Active</Text>
+              <Text style={{ color: '#de822c', marginTop: 6, fontSize: 14 }}>{boostTimeLeft} left</Text>
+            </View>
+          </BlurView>
+        </TouchableOpacity>
+      )}
       {/* Bottom Tab Navigator */}
       <Tab.Navigator
         screenOptions={({ route }) => ({

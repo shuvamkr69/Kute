@@ -133,6 +133,12 @@ const userSchema = new Schema(
     },
     occupation: {
       type: String,
+      enum: [
+        'Student',
+        'Job',
+        'Retired',
+        'Unemployed',
+      ],
       default: null,
     },
     height: {
@@ -165,6 +171,14 @@ const userSchema = new Schema(
     },
     loveLanguage: {
       type: String,
+      enum: [
+        'Compliments',
+        'Thoughtful Gestures',
+        'Time Together',
+        'Exchanging Presents',
+        'Physical Touch',
+        'Deep Conversations',
+      ],
       default: null,
     },
     genderOrientation: {

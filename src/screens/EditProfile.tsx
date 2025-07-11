@@ -103,6 +103,21 @@ const religionOptions = [
   "Other",
 ];
 
+const loveLanguageOptions = [
+  'Compliments',
+  'Thoughtful Gestures',
+  'Time Together',
+  'Exchanging Presents',
+  'Physical Touch',
+  'Deep Conversations',
+];
+const occupationOptions = [
+  'Student',
+  'Job',
+  'Retired',
+  'Unemployed',
+];
+
 // Add this RIGHT BEFORE your EditProfileScreen component definition
 // (after all the imports but before const EditProfileScreen: React.FC<Props> = ...)
 
@@ -561,13 +576,20 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
                 />
               </View>
 
-              <Text style={styles.label}>Occupation</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your occupation"
-                placeholderTextColor="#B0B0B0"
-                value={occupation}
-                onChangeText={setOccupation}
+              <Text style={[styles.sectionTitle, {marginTop: 20, marginBottom: 10}]}>Important</Text>
+
+              <PickerComponent
+                label="Occupation"
+                selectedValue={occupation}
+                options={occupationOptions}
+                onValueChange={setOccupation}
+              />
+
+              <PickerComponent
+                label="Love Language"
+                selectedValue={loveLanguage}
+                options={loveLanguageOptions}
+                onValueChange={setloveLanguage}
               />
 
               <Text style={styles.label}>Working At / Student At</Text>
@@ -578,25 +600,6 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
                 value={workingAt}
                 onChangeText={setWorkingAt}
               />
-
-              <Text style={styles.label}>Languages I Know</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter languages separated by commas"
-                placeholderTextColor="#B0B0B0"
-                value={languages}
-                onChangeText={setLanguages}
-              />
-
-              <Text style={styles.label}>Love Language</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="How do you feel loved?"
-                placeholderTextColor="#B0B0B0"
-                value={loveLanguage}
-                onChangeText={setloveLanguage}
-              />
-              <View style={{marginBottom : 30}}></View>
 
               <PickerComponent
                 label="Relationship Type"
@@ -857,6 +860,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 10,
     marginTop: 30,
+  },
+  sectionTitle: {
+    color: "#de822c",
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 10,
   },
 });
 

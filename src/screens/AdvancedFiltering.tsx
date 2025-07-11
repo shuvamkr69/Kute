@@ -7,8 +7,10 @@ import {
   ScrollView,
   StyleSheet,
   Switch,
+  Image,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { BlurView } from 'expo-blur';
 import PickerComponent from "../components/PickerComponent";
 import Slider from "@react-native-community/slider";
 import { TextInput } from "react-native";
@@ -74,6 +76,11 @@ const interestOptions = [
 ];
 const personalityOptions = ["Extrovert", "Ambivert", "Introvert", "Any"];
 
+const distanceSteps = [0, 200, 400, 600, 800, 1000];
+function getNearestStep(value) {
+  return distanceSteps.reduce((prev, curr) => Math.abs(curr - value) < Math.abs(prev - value) ? curr : prev);
+}
+
 const AdvancedFilteringScreen = ({ navigation }) => {
   const [genderPreference, setGenderPreference] = useState("Everyone");
   const [relationshipType, setRelationshipType] = useState("");
@@ -90,6 +97,28 @@ const AdvancedFilteringScreen = ({ navigation }) => {
   const [zodiac, setZodiac] = useState("");
   const [isPremium, setIsPremium] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [sliderValue, setSliderValue] = useState(distance);
+
+  // Example: Simulate boost active for demo
+  useEffect(() => {
+    // TODO: Replace with real boost logic
+  }, []);
+
+  useEffect(() => {
+    // Fetch boostActiveUntil from backend
+    const fetchBoost = async () => {
+      try {
+        const res = await api.get('/api/v1/users/me');
+        const until = res.data.boostActiveUntil ? new Date(res.data.boostActiveUntil) : null;
+      } catch (e) {
+      }
+    };
+    fetchBoost();
+  }, []);
+
+  useEffect(() => {
+    // Remove boostActive, boostTimeLeft, showBoostModal, boostActiveUntil logic
+  }, []);
 
   const applyFilters = async () => {
     const userId = await getUserId(); // Replace with actual user ID from auth
@@ -216,86 +245,132 @@ const AdvancedFilteringScreen = ({ navigation }) => {
       <BackButton title="Discover" />
       <SafeAreaView style={styles.container}>
         <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-          <FilterSwitch
-            label="Verified User"
-            value={verifiedUser}
-            onValueChange={setVerifiedUser}
-          />
-
-          <PickerComponent
-            label="Personality"
-            selectedValue={personality}
-            options={personalityOptions}
-            onValueChange={setPersonality}
-          />
-
-          <PickerComponent
-            label="Workout"
-            selectedValue={workout}
-            options={workoutOptions}
-            onValueChange={setWorkout}
-          />
-
-          <PickerComponent
-            label="Drinking"
-            selectedValue={drinking}
-            options={drinkingOptions}
-            onValueChange={setDrinking}
-          />
-
-          <PickerComponent
-            label="Smoking"
-            selectedValue={smoking}
-            options={smokingOptions}
-            onValueChange={setSmoking}
-          />
-
-          <PickerComponent
-            label="Family Planning"
-            selectedValue={familyPlanning}
-            options={familyPlanningOptions}
-            onValueChange={setFamilyPlanning}
-          />
-
-          <PickerComponent
-            label="Zodiac Sign"
-            selectedValue={zodiac}
-            options={zodiacOptions}
-            onValueChange={setZodiac}
-          />
-
-          <PickerComponent
-            label="Relationship Type"
-            selectedValue={relationshipType}
-            options={relationshipOptions}
-            onValueChange={setRelationshipType}
-          />
-
-          <PickerComponent
-            label="Gender Orientation"
-            selectedValue={genderOrientation}
-            options={genderOrientationOptions}
-            onValueChange={setGenderOrientation}
-          />
-
-          <Slider
-            style={{ width: "100%", height: 40 }}
-            minimumValue={0}
-            maximumValue={1000}
-            step={1}
-            value={distance}
-            onValueChange={setDistance}
-            minimumTrackTintColor="#de822c"
-            maximumTrackTintColor="#fff"
-          />
-          <Text style={{ color: "#fff" }}>Distance: {distance} km</Text>
-
-          <TouchableOpacity onPress={applyFilters} style={styles.applyButton}>
-            <Text style={styles.applyButtonText}>Apply Filters</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={resetFilters} style={styles.resetButton}>
-            <Text style={styles.applyButtonText}>Reset</Text>
-          </TouchableOpacity>
+          <View style={{ alignItems: 'center', backgroundColor: 'black' }}>
+            <Image
+              source={require("../assets/icons/logo.webp")}
+              style={{ width: 160, height: 160 }}
+              resizeMode="contain"
+            />
+          </View>
+          {/* Verified User in its own box */}
+          <View style={styles.sectionContainer}>
+            <FilterSwitch
+              label={<View style={{ flexDirection: 'row', alignItems: 'center' }}><Ionicons name="checkmark-done-circle-outline" size={20} color="#de822c" style={{ marginRight: 7 }} /><Text style={{ color: '#fff' }}>Verified User</Text></View>}
+              value={verifiedUser}
+              onValueChange={setVerifiedUser}
+            />
+          </View>
+          {/* All other pickers in one box */}
+          <View style={styles.sectionContainer}>
+            <PickerComponent
+              label="Personality"
+              icon={<Ionicons name="happy-outline" size={20} color="#de822c" />}
+              selectedValue={personality}
+              options={personalityOptions}
+              onValueChange={setPersonality}
+            />
+            <PickerComponent
+              label="Workout"
+              icon={<Ionicons name="barbell-outline" size={20} color="#de822c" />}
+              selectedValue={workout}
+              options={workoutOptions}
+              onValueChange={setWorkout}
+            />
+            <PickerComponent
+              label="Drinking"
+              icon={<Ionicons name="wine-outline" size={20} color="#de822c" />}
+              selectedValue={drinking}
+              options={drinkingOptions}
+              onValueChange={setDrinking}
+            />
+            <PickerComponent
+              label="Smoking"
+              icon={<Ionicons name="cafe-outline" size={20} color="#de822c" />}
+              selectedValue={smoking}
+              options={smokingOptions}
+              onValueChange={setSmoking}
+            />
+            <PickerComponent
+              label="Family Planning"
+              icon={<Ionicons name="people-outline" size={20} color="#de822c" />}
+              selectedValue={familyPlanning}
+              options={familyPlanningOptions}
+              onValueChange={setFamilyPlanning}
+            />
+            <PickerComponent
+              label="Zodiac Sign"
+              icon={<Ionicons name="star-outline" size={20} color="#de822c" />}
+              selectedValue={zodiac}
+              options={zodiacOptions}
+              onValueChange={setZodiac}
+            />
+            <PickerComponent
+              label="Relationship Type"
+              icon={<Ionicons name="heart-outline" size={20} color="#de822c" />}
+              selectedValue={relationshipType}
+              options={relationshipOptions}
+              onValueChange={setRelationshipType}
+            />
+            <PickerComponent
+              label="Gender Orientation"
+              icon={<Ionicons name="male-female-outline" size={20} color="#de822c" />}
+              selectedValue={genderOrientation}
+              options={genderOrientationOptions}
+              onValueChange={setGenderOrientation}
+            />
+          </View>
+          {/* Distance in its own box */}
+          <View style={styles.sectionContainer}>
+            <View style={styles.sliderBox}>
+              <Text style={styles.sliderLabel}>Distance</Text>
+              <View style={{ position: 'relative', width: '100%' }}>
+                <Slider
+                  style={{ width: "100%", height: 40 }}
+                  minimumValue={0}
+                  maximumValue={1000}
+                  step={1}
+                  value={getNearestStep(sliderValue)}
+                  onValueChange={val => {
+                    const snapped = getNearestStep(val);
+                    setSliderValue(snapped);
+                  }}
+                  onSlidingComplete={val => {
+                    const snapped = getNearestStep(val);
+                    setSliderValue(snapped);
+                    setDistance(snapped);
+                  }}
+                  minimumTrackTintColor="#de822c"
+                  maximumTrackTintColor="#fff"
+                  thumbTintColor="#de822c"
+                />
+                {/* Tick lines absolutely positioned over the slider */}
+                <View style={{ position: 'absolute', left: 0, right: 0, top: 18, height: 16, flexDirection: 'row', justifyContent: 'space-between', pointerEvents: 'none' }}>
+                  {distanceSteps.map((step, idx) => (
+                    <View key={step} style={{ alignItems: 'center', width: idx === 0 || idx === distanceSteps.length-1 ? 30 : 40 }}>
+                      <View style={{ width: 2, height: 16, backgroundColor: '#de822c' }} />
+                    </View>
+                  ))}
+                </View>
+                {/* Labels below the slider */}
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginTop: 18, alignItems: 'flex-start' }}>
+                  {distanceSteps.map((step, idx) => (
+                    <View key={step} style={{ alignItems: 'center', width: idx === 0 || idx === distanceSteps.length-1 ? 30 : 40 }}>
+                      <Text style={{ color: '#fff', fontSize: 12, textAlign: 'center' }}>{step}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+              <Text style={styles.sliderValue}>{getNearestStep(sliderValue)} km</Text>
+            </View>
+          </View>
+          <View style={styles.buttonRow}>
+            <TouchableOpacity onPress={resetFilters} style={styles.resetButton}>
+              <Text style={styles.applyButtonText}>Reset</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={applyFilters} style={styles.applyButton}>
+              <Text style={styles.applyButtonText}>Apply Filters</Text>
+            </TouchableOpacity>
+          </View>
         </ScrollView>
       </SafeAreaView>
     </View>
@@ -321,18 +396,20 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   applyButton: {
+    flex: 1,
     backgroundColor: "#de822c",
     padding: 15,
     borderRadius: 10,
-    marginTop: 30,
     alignItems: "center",
+    justifyContent: "center",
   },
   resetButton: {
+    flex: 1,
     backgroundColor: "#ff1212",
     padding: 15,
     borderRadius: 10,
-    marginTop: 30,
     alignItems: "center",
+    justifyContent: "center",
   },
   applyButtonText: {
     color: "#FFF",
@@ -351,6 +428,39 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 20,
+  },
+  sectionContainer: {
+    backgroundColor: "#1E1E1E",
+    padding: 20,
+    borderRadius: 15,
+    marginBottom: 20,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 10,
+    marginTop: 30,
+    marginBottom: 30,
+  },
+  sliderBox: {
+    backgroundColor: '#232323',
+    borderRadius: 15,
+    padding: 18,
+    marginBottom: 18,
+    marginTop: 10,
+    alignItems: 'center',
+  },
+  sliderLabel: {
+    color: '#fff',
+    fontWeight: 'bold',
+    marginBottom: 8,
+    fontSize: 16,
+  },
+  sliderValue: {
+    color: '#de822c',
+    fontWeight: 'bold',
+    fontSize: 16,
+    marginTop: 8,
   },
 });
 

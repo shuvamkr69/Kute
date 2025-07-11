@@ -30,6 +30,8 @@ const BasicDetails: React.FC<Props> = ({ navigation }) => {
   const [showRelationshipModal, setShowRelationshipModal] = useState(false);
   const [genderOrientation, setGenderOrientation] = useState("");
   const [religion, setReligion] = useState("");
+  const [occupation, setOccupation] = useState("");
+  const [loveLanguage, setloveLanguage] = useState("");
 
   const genderOptions = ["Male", "Female", "Other"];
   const personalityType = ["Introvert", "Ambivert", "Extrovert"];
@@ -77,6 +79,21 @@ const BasicDetails: React.FC<Props> = ({ navigation }) => {
     "New Age",
     "Prefer not to say",
     "Other",
+  ];
+
+  const loveLanguageOptions = [
+    'Compliments',
+    'Thoughtful Gestures',
+    'Time Together',
+    'Exchanging Presents',
+    'Physical Touch',
+    'Deep Conversations',
+  ];
+  const occupationOptions = [
+    'Student',
+    'Job',
+    'Retired',
+    'Unemployed',
   ];
 
   const selectInterest = (item: string) => {
@@ -140,6 +157,8 @@ const BasicDetails: React.FC<Props> = ({ navigation }) => {
       userData.relationshipType = relationshipType.trim();
       userData.genderOrientation = genderOrientation.trim();
       userData.religion = religion.trim();
+      userData.occupation = occupation.trim();
+      userData.loveLanguage = loveLanguage.trim();
 
       await AsyncStorage.setItem("tempUserData", JSON.stringify(userData));
 
@@ -203,6 +222,20 @@ const BasicDetails: React.FC<Props> = ({ navigation }) => {
             options={religionOptions}
             onValueChange={setReligion}
             icon={<Ionicons name="leaf-outline" size={20} color="#de822c" />}
+          />
+
+          <PickerComponent
+            label="Occupation"
+            selectedValue={occupation}
+            options={occupationOptions}
+            onValueChange={setOccupation}
+          />
+
+          <PickerComponent
+            label="Love Language"
+            selectedValue={loveLanguage}
+            options={loveLanguageOptions}
+            onValueChange={setloveLanguage}
           />
         </View>
 

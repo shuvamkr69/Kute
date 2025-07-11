@@ -20,6 +20,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { RefreshControl } from "react-native";
 import LoadingScreen from "./LoadingScreen";
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 const VerificationImage = require("../assets/icons/verified-logo.png");
 const PremiumImage = require("../assets/icons/premium.png");
 
@@ -60,7 +61,58 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
 
   const [boostActiveUntil, setBoostActiveUntil] = useState<Date | null>(null);
   const [boostTimer, setBoostTimer] = useState<string | null>(null);
+  const [showFullLoveLanguage, setShowFullLoveLanguage] = useState(false);
 
+  // Move fetchUser to before useEffect and useFocusEffect
+  const fetchUser = async () => {
+    setLoading(true);
+    try {
+      await AsyncStorage.removeItem("user"); // ✅ Ensure no stale data is loaded
+      // ✅ Always fetch fresh user data from API first
+      const response = await api.get("/api/v1/users/me");
+      const user = response.data;
+      setName(user.fullName || "");
+      setAge(user.age || null);
+      setProfilePhoto(user.avatar1 || profilePhoto);
+      setBio(user.bio || "");
+      setIsVerified(user.isVerified || false);
+      setActivePremium(user.ActivePremiumPlan || null);
+      setOccupation(user.occupation || "");
+      setWorkingAt(user.workingAt || "");
+      setReligion(user.religion || "");
+      setPronouns(user.pronouns || "");
+      setGenderOrientation(user.genderOrientation || "");
+      setLanguages(user.languages || "");
+      setloveLanguage(user.loveLanguage || "");
+      setzodiac(user.zodiac || "");
+      setFamilyPlanning(user.familyPlanning || "");
+      setBodyType(user.bodyType || "");
+      setHeight(user.height || "");
+      setHeightUnit(user.heightUnit || "cm");
+      setPersonality(user.personality || "Any");
+      setInterests(user.interests || []);
+      setBoostActiveUntil(
+        user.boostActiveUntil ? new Date(user.boostActiveUntil) : null
+      );
+      // ✅ Save API response for offline access
+      await AsyncStorage.setItem("user", JSON.stringify(user));
+    } catch (error) {
+      console.log("API error, loading from AsyncStorage", error);
+      // 🔄 Load offline data only if API fails
+      const userData = await AsyncStorage.getItem("user");
+      if (userData) {
+        const user = JSON.parse(userData);
+        setName(user.fullName || "");
+        setAge(user.age || null);
+        setProfilePhoto(user.avatar1 || profilePhoto);
+        setBio(user.bio || "");
+      } else {
+        ToastAndroid.show("No data found/ server error", ToastAndroid.SHORT);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   //boosts count
   useEffect(() => {
@@ -124,62 +176,15 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
 
   //getting profile of user's self profile
   useEffect(() => {
-    const fetchUser = async () => {
-      setLoading(true);
-      try {
-        await AsyncStorage.removeItem("user"); // ✅ Ensure no stale data is loaded
-
-        // ✅ Always fetch fresh user data from API first
-        const response = await api.get("/api/v1/users/me");
-        const user = response.data;
-
-        setName(user.fullName || "");
-        setAge(user.age || null);
-        setProfilePhoto(user.avatar1 || profilePhoto);
-        setBio(user.bio || "");
-        setIsVerified(user.isVerified || false);
-        setActivePremium(user.ActivePremiumPlan || null);
-        setOccupation(user.occupation || "");
-        setWorkingAt(user.workingAt || "");
-        setReligion(user.religion || "");
-        setPronouns(user.pronouns || "");
-        setGenderOrientation(user.genderOrientation || "");
-        setLanguages(user.languages || "");
-        setloveLanguage(user.loveLanguage || "");
-        setzodiac(user.zodiac || "");
-        setFamilyPlanning(user.familyPlanning || "");
-        setBodyType(user.bodyType || "");
-        setHeight(user.height || "");
-        setHeightUnit(user.heightUnit || "cm");
-        setPersonality(user.personality || "Any");
-        setInterests(user.interests || []);
-        setBoostActiveUntil(
-          user.boostActiveUntil ? new Date(user.boostActiveUntil) : null
-        );
-
-        // ✅ Save API response for offline access
-        await AsyncStorage.setItem("user", JSON.stringify(user));
-      } catch (error) {
-        console.log("API error, loading from AsyncStorage", error);
-
-        // 🔄 Load offline data only if API fails
-        const userData = await AsyncStorage.getItem("user");
-        if (userData) {
-          const user = JSON.parse(userData);
-          setName(user.fullName || "");
-          setAge(user.age || null);
-          setProfilePhoto(user.avatar1 || profilePhoto);
-          setBio(user.bio || "");
-        } else {
-          ToastAndroid.show("No data found/ server error", ToastAndroid.SHORT);
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchUser();
   }, []);
+
+  // Dynamically reload profile when screen is focused
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchUser();
+    }, [])
+  );
 
   //progress for the progrss bar
 
@@ -281,9 +286,11 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   const InfoSection = ({
     title,
     data,
+    renderValue,
   }: {
     title: string;
     data: { label: string; value: string }[];
+    renderValue?: (label: string, value: string) => React.ReactNode;
   }) => (
     <View style={styles.sectionContainer}>
       <Text style={styles.sectionTitle}>{title}</Text>
@@ -337,7 +344,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
                 <Ionicons name={iconName as any} size={18} color="#de822c" />
                 <Text style={[styles.infoLabel, { marginLeft: 7, paddingLeft: 0 }]}>{item.label}</Text>
               </View>
-              <Text style={styles.infoValue}>{item.value}</Text>
+              {renderValue ? renderValue(item.label, item.value) : <Text style={styles.infoValue}>{item.value}</Text>}
             </View>
           );
         })
@@ -463,6 +470,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
           { label: "Languages:", value: languages },
           { label: "Love Langauge:", value: loveLanguage },
         ]}
+        renderValue={(label, value) => <Text style={styles.infoValue}>{value}</Text>}
       />
 
       {/* The Basics Section */}
