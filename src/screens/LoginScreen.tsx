@@ -6,8 +6,13 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
-  Button,
+  SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
+  Image,
+  Pressable,
 } from "react-native";
+import { LinearGradient } from 'expo-linear-gradient';
 import Icon from "react-native-vector-icons/FontAwesome";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import CustomButton from "../components/Button";
@@ -15,9 +20,10 @@ import api from "../utils/api";
 import { useAuth } from "../navigation/AuthContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { registerForPushNotifications } from "../utils/notifications";
-import * as GoogleSignIn from "expo-google-app-auth";
-import { GoogleAuthProvider, signInWithCredential } from "firebase/auth";
 import GoogleLoginButton from "../components/GoogleLoginButton";
+const googleLogo = require('../assets/icons/googleLogoIcon.png');
+
+const logo = require("../assets/icons/logo.webp");
 
 type Props = NativeStackScreenProps<any, "Login">;
 
@@ -25,24 +31,17 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { signIn } = useAuth();
+  const [buttonPressed, setButtonPressed] = useState(false);
 
   const loginHandler = async () => {
     if (!email || !password) {
       Alert.alert("Error", "Please fill in all fields");
       return;
     }
-
     try {
-      const loginResponse = await api.post("/api/v1/users/login", {
-        email,
-        password,
-      });
-
-      console.log("Login Response:", loginResponse.data); // Debug log
-
+      const loginResponse = await api.post("/api/v1/users/login", { email, password });
       if (loginResponse.status === 200) {
         const { accessToken, refreshToken, user } = loginResponse.data.data;
-
         if (!accessToken || !refreshToken) {
           Alert.alert("Error", "Authentication failed: Missing tokens");
           return;
@@ -52,36 +51,18 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
         await AsyncStorage.setItem("refreshToken", refreshToken);
         await AsyncStorage.setItem("avatar", user.avatar1);
         await AsyncStorage.setItem("location", JSON.stringify(user.location));
-        const location = await AsyncStorage.getItem("location");
-        console.log("User data stored successfully:", location);
-
         const token = await registerForPushNotifications();
         if (token) {
           const storedToken = await AsyncStorage.getItem("pushToken");
-
           if (storedToken !== token) {
             try {
-              await api.post("/api/v1/users/updatePushToken", {
-                pushToken: token,
-              });
+              await api.post("/api/v1/users/updatePushToken", { pushToken: token });
               await AsyncStorage.setItem("pushToken", token);
-              console.log("Push token updated successfully.");
-            } catch (error) {
-              console.error(
-                "Error updating push token:",
-                error.response?.data || error.message
-              );
-            }
+            } catch (error) {}
           }
         }
-        // NEW: Update auth state so that user remains logged in
         await signIn();
-
-        // Navigate to HomeTabs
-        navigation.reset({
-          index: 0,
-          routes: [{ name: "HomeTabs" }],
-        });
+        navigation.reset({ index: 0, routes: [{ name: "HomeTabs" }] });
       } else {
         Alert.alert("Error", "Unexpected response from server");
       }
@@ -105,7 +86,6 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
       } else {
         Alert.alert("Error", "An unexpected error occurred");
       }
-      console.error("Login Error:", error);
     }
   };
 
@@ -114,108 +94,106 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.logo}>Kute</Text>
-      <Text style={styles.tagline}>Find Your Kutie</Text>
-
-      <View style={styles.inputContainer}>
-        <Icon name="envelope" size={20} color="#de822c" style={styles.icon} />
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          placeholderTextColor="#B0B0B0"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-        />
-      </View>
-
-      <View style={styles.inputContainer}>
-        <Icon name="lock" size={20} color="#de822c" style={styles.icon} />
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          placeholderTextColor="#B0B0B0"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
-      </View>
-
-      <TouchableOpacity>
-        <Text style={styles.forgotPassword} onPress={handleForgotPassword}>
-          Forgot your Password?
-        </Text>
-      </TouchableOpacity>
-
-      <CustomButton
-        title="Login"
-        onPress={loginHandler}
-        style={styles.loginButton}
-      />
-
-      <Text style={{ color: "#B0B0B0", marginVertical: 10 }}>or</Text>
-
-      <GoogleLoginButton
-        onLogin={async (token) => {
-          try {
-            const userInfoRes = await fetch(
-              "https://www.googleapis.com/userinfo/v2/me",
-              {
-                headers: { Authorization: `Bearer ${token}` },
-              }
-            );
-            const user = await userInfoRes.json();
-
-            const response = await api.post("/api/v1/users/googleLogin", {
-              email: user.email,
-              name: user.name,
-              avatar: user.picture,
-              token,
-            });
-
-            const {
-              accessToken,
-              refreshToken,
-              user: userData,
-            } = response.data.data;
-
-            await AsyncStorage.setItem("user", JSON.stringify(userData));
-            await AsyncStorage.setItem("accessToken", accessToken);
-            await AsyncStorage.setItem("refreshToken", refreshToken);
-            await AsyncStorage.setItem("avatar", userData.avatar1);
-            await AsyncStorage.setItem(
-              "location",
-              JSON.stringify(userData.location)
-            );
-
-            const pushToken = await registerForPushNotifications();
-            if (pushToken) {
-              const storedToken = await AsyncStorage.getItem("pushToken");
-              if (storedToken !== pushToken) {
-                await api.post("/api/v1/users/updatePushToken", { pushToken });
-                await AsyncStorage.setItem("pushToken", pushToken);
-              }
-            }
-
-            await signIn();
-            navigation.reset({ index: 0, routes: [{ name: "HomeTabs" }] });
-          } catch (error: any) {
-            console.error("Google login error:", error);
-            Alert.alert("Login Failed", "Could not complete Google login.");
-          }
-        }}
-      />
-
-      <Text style={styles.registerText}>
-        Don't have an account?{" "}
-        <Text
-          style={styles.registerLink}
-          onPress={() => navigation.navigate("Register")}
+    <View style={{ flex: 1, backgroundColor: '#181A20' }}>
+      <SafeAreaView style={{ flex: 1 }}>
+        <KeyboardAvoidingView
+          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
         >
-          Register
-        </Text>
-      </Text>
+          <View style={{ alignItems: 'center', width: '100%' }}>
+            <Image source={logo} style={styles.logoImgXLarge} resizeMode="contain" />
+          </View>
+          <View style={styles.card}>
+            <Text style={styles.tagline}>Find Your <Text style={styles.taglineAccent}>Kutie</Text></Text>
+            <View style={styles.inputContainer}>
+              <Icon name="envelope" size={20} color="#FF7A3D" style={styles.icon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Email"
+                placeholderTextColor="#B0B0B0"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+              />
+            </View>
+            <View style={styles.inputContainer}>
+              <Icon name="lock" size={20} color="#FF7A3D" style={styles.icon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Password"
+                placeholderTextColor="#B0B0B0"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+              />
+            </View>
+            <TouchableOpacity>
+              <Text style={styles.forgotPassword} onPress={handleForgotPassword}>
+                Forgot your Password?
+              </Text>
+            </TouchableOpacity>
+            <Pressable
+              style={({ pressed }) => [
+                styles.loginButton,
+                pressed || buttonPressed ? { transform: [{ scale: 0.97 }], opacity: 0.85 } : null
+              ]}
+              onPressIn={() => setButtonPressed(true)}
+              onPressOut={() => setButtonPressed(false)}
+              onPress={loginHandler}
+            >
+              <LinearGradient
+                colors={["#FF8C42", "#FF6B3F"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.loginButtonGradient}
+              >
+                <Text style={styles.loginButtonText}>Login</Text>
+              </LinearGradient>
+            </Pressable>
+            <View style={styles.divider} />
+            <View style={styles.googleRow}>
+              <Text style={styles.googleRowText}>Or continue with</Text>
+              <Pressable
+                style={({ pressed }) => [styles.googleLogoOnly, pressed ? { opacity: 0.7, transform: [{ scale: 0.95 }] } : null]}
+                onPress={async () => {
+                  // TODO: Implement Google login logic here
+                  // try {
+                  //   const token = ... // get Google token
+                  //   const userInfoRes = await fetch(
+                  //     "https://www.googleapis.com/userinfo/v2/me",
+                  //     {
+                  //       headers: { Authorization: `Bearer ${token}` },
+                  //     }
+                  //   );
+                  //   const user = await userInfoRes.json();
+                  //   const response = await api.post("/api/v1/users/googleLogin", {
+                  //     email: user.email,
+                  //     name: user.name,
+                  //     avatar: user.picture,
+                  //     token,
+                  //   });
+                  //   // ...rest of logic
+                  // } catch (error: any) {
+                  //   console.error("Google login error:", error);
+                  //   Alert.alert("Login Failed", "Could not complete Google login.");
+                  // }
+                }}
+              >
+                <Image source={googleLogo} style={styles.googleLogoOnlyImg} />
+              </Pressable>
+            </View>
+            <Text style={styles.registerText}>
+              Don't have an account?{" "}
+              <Text
+                style={styles.registerLink}
+                onPress={() => navigation.navigate("Register")}
+              >
+                Register
+              </Text>
+            </Text>
+          </View>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
     </View>
   );
 };
@@ -223,62 +201,195 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "black",
+    backgroundColor: "#000",
     justifyContent: "center",
-    paddingHorizontal: 20,
     alignItems: "center",
+    paddingHorizontal: 20,
   },
-  logo: {
-    fontSize: 40,
-    color: "#de822c",
-    fontWeight: "bold",
+  card: {
+    width: '100%',
+    maxWidth: 360,
+    backgroundColor: '#16181C',
+    borderRadius: 14,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.10,
+    shadowRadius: 12,
+    elevation: 4,
+    marginTop: 24,
+    marginBottom: 24,
+    borderWidth: 0,
+    alignItems: 'center',
+  },
+  logoImg: {
+    width: 80,
+    height: 80,
     marginBottom: 10,
+    alignSelf: 'center',
+  },
+  logoImgLarge: {
+    width: 120,
+    height: 120,
+    marginBottom: -60,
+    zIndex: 2,
+    alignSelf: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+  },
+  logoImgXLarge: {
+    width: 150,
+    height: 150,
+    marginBottom: 12,
+    zIndex: 2,
+    alignSelf: 'center',
   },
   tagline: {
-    color: "#B0B0B0",
-    marginBottom: 40,
-    fontSize: 16,
+    color: "#A1A7B3",
+    marginBottom: 28,
+    fontSize: 22,
+    textAlign: "center",
+    fontWeight: "700",
+    letterSpacing: 0.5,
+  },
+  taglineAccent: {
+    color: "#FF8C42",
+    fontWeight: '900',
+    fontSize: 24,
   },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#1E1E1E",
-    borderRadius: 10,
-    marginBottom: 20,
-    paddingHorizontal: 15,
+    backgroundColor: "#181A20",
+    borderRadius: 8,
+    marginBottom: 14,
+    paddingHorizontal: 12,
     borderWidth: 1,
-    borderColor: "#de822c",
+    borderColor: "#353945",
     width: "100%",
   },
   input: {
     flex: 1,
-    height: 50,
-    color: "white",
-    paddingLeft: 10,
+    height: 46,
+    color: "#fff",
+    paddingLeft: 8,
+    fontSize: 16,
+    fontWeight: '400',
+    letterSpacing: 0.2,
   },
   icon: {
-    marginRight: 10,
+    marginRight: 8,
   },
   forgotPassword: {
-    color: "#de822c",
-    marginBottom: 20,
+    color: "#FF7A3D",
+    marginBottom: 12,
     textAlign: "center",
+    fontWeight: "500",
+    fontSize: 15,
+    letterSpacing: 0.2,
   },
   loginButton: {
-    backgroundColor: "#de822c",
-    paddingVertical: 15,
     borderRadius: 10,
     width: "100%",
-    textAlign: "center",
-    marginBottom: 20,
+    marginBottom: 16,
+    marginTop: 2,
+    elevation: 3,
+    shadowColor: '#FF8C42',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.13,
+    shadowRadius: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+    overflow: 'hidden',
+  },
+  loginButtonGradient: {
+    width: '100%',
+    paddingVertical: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loginButtonText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 17,
+    letterSpacing: 0.5,
+    textAlign: 'center',
   },
   registerText: {
-    color: "#B0B0B0",
-    marginTop: 10,
+    color: "#A1A7B3",
+    marginTop: 12,
+    textAlign: "center",
+    fontSize: 15,
+    fontWeight: '400',
   },
   registerLink: {
-    color: "#de822c",
-    fontWeight: "bold",
+    color: "#FF7A3D",
+    fontWeight: "700",
+    fontSize: 15,
+    letterSpacing: 0.2,
+  },
+  divider: {
+    height: 1,
+    width: '80%',
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    marginVertical: 14,
+    alignSelf: 'center',
+    borderRadius: 1,
+  },
+  googleButton: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 18,
+    marginTop: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.10,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  googleButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  googleLogo: {
+    width: 26,
+    height: 26,
+    marginRight: 10,
+  },
+  googleButtonText: {
+    color: '#222',
+    fontWeight: '700',
+    fontSize: 16,
+    letterSpacing: 0.2,
+  },
+  googleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+    marginBottom: 18,
+  },
+  googleRowText: {
+    color: '#fff',
+    opacity: 0.7,
+    fontSize: 13,
+    marginRight: 10,
+  },
+  googleLogoOnly: {
+    padding: 4,
+    borderRadius: 100,
+  },
+  googleLogoOnlyImg: {
+    width: 28,
+    height: 28,
   },
 });
 

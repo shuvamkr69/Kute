@@ -45,6 +45,7 @@ const Likes: React.FC<Props> = ({ navigation }) => {
     } catch (error) {
       console.error("Error fetching liked users:", error);
       setIsOffline(true); // ✅ Set offline if it fails
+      setLikedUsers([]); // Clear liked users to avoid rendering errors
     } finally {
       if (!silent) setLoading(false);
     }
@@ -88,13 +89,17 @@ const Likes: React.FC<Props> = ({ navigation }) => {
       </Text>
       <TouchableOpacity
         onPress={async () => {
-          const userId = await getUserId();
-          navigation.navigate("Chat", {
-            likedUserId: item._id,
-            userName: item.fullName,
-            loggedInUserId: userId,
-            likedUserAvatar: item.profileImage,
-          });
+          try {
+            const userId = await getUserId();
+            navigation.navigate("Chat", {
+              likedUserId: item._id,
+              userName: item.fullName,
+              loggedInUserId: userId,
+              likedUserAvatar: item.profileImage,
+            });
+          } catch (err) {
+            Alert.alert("Error", "Could not open chat. Please try again later.");
+          }
         }}
         style={styles.chatButton}
       >
@@ -102,6 +107,18 @@ const Likes: React.FC<Props> = ({ navigation }) => {
       </TouchableOpacity>
     </TouchableOpacity>
   );
+
+  // Render fallback UI if offline or error
+  if (isOffline) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#181A20' }}>
+        <Text style={{ color: '#fff', fontSize: 16, marginBottom: 12 }}>Could not load liked users.</Text>
+        <TouchableOpacity onPress={() => fetchLikedUsers(false)} style={{ backgroundColor: '#de822c', padding: 12, borderRadius: 8 }}>
+          <Text style={{ color: '#fff', fontWeight: 'bold' }}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>

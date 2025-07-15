@@ -19,7 +19,7 @@ import { io } from "socket.io-client";
 import LoadingScreen from "./LoadingScreen";
 import { useFocusEffect } from "@react-navigation/native";
 
-const socket = io("http://192.168.18.150:3000");
+const socket = io("http://10.21.36.128:3000");
 
 type Props = NativeStackScreenProps<any, "AllChatScreen">;
 

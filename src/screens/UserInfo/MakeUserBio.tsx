@@ -73,7 +73,7 @@ const MakeBio: React.FC<Props> = ({ navigation }) => {
       formData.append("age", String(userData.age));
       formData.append("gender", userData.gender);
       formData.append("personality", userData.personality);
-      formData.append("interests", userData.interests);
+      formData.append("interests", JSON.stringify(userData.interests));
       formData.append("relationshipType", userData.relationshipType);
       formData.append("bio", bio.trim());
       formData.append("genderOrientation", userData.genderOrientation);
@@ -100,11 +100,43 @@ const MakeBio: React.FC<Props> = ({ navigation }) => {
       });
 
       if (response.status === 201) {
-        const { accessToken } = response.data.data;
-        await AsyncStorage.setItem("accessToken", accessToken);
-        await AsyncStorage.setItem("avatar", photos[0]);
-        signIn();
-        navigation.reset({ index: 0, routes: [{ name: "Home" }] });
+        // Registration successful, now login automatically
+        try {
+          const loginResponse = await api.post("/api/v1/users/login", {
+            email: userData.email,
+            password: userData.password,
+          });
+          if (loginResponse.status === 200) {
+            const { accessToken, refreshToken, user } = loginResponse.data.data;
+            if (!accessToken || !refreshToken) {
+              throw new Error("Authentication failed: Missing tokens");
+            }
+            await AsyncStorage.setItem("user", JSON.stringify(user));
+            await AsyncStorage.setItem("accessToken", accessToken);
+            await AsyncStorage.setItem("refreshToken", refreshToken);
+            await AsyncStorage.setItem("avatar", user.avatar1);
+            await AsyncStorage.setItem("location", JSON.stringify(user.location));
+            // Register push token and update if needed
+            const token = await registerForPushNotifications();
+            if (token) {
+              const storedToken = await AsyncStorage.getItem("pushToken");
+              if (storedToken !== token) {
+                try {
+                  await api.post("/api/v1/users/updatePushToken", { pushToken: token });
+                  await AsyncStorage.setItem("pushToken", token);
+                } catch (error) {}
+              }
+            }
+            signIn();
+            navigation.reset({ index: 0, routes: [{ name: "HomeTabs" }] });
+          } else {
+            throw new Error("Unexpected response from server");
+          }
+        } catch (loginError: any) {
+          console.error("Auto-login error after registration:", loginError.message);
+          Alert.alert("Registration Complete", "Account created, but automatic login failed. Please login manually.");
+          navigation.reset({ index: 0, routes: [{ name: "Login" }] });
+        }
       } else {
         throw new Error(response.data?.message || "Failed to submit data");
       }

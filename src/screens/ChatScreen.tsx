@@ -54,7 +54,7 @@ type Message = {
 
 type Props = NativeStackScreenProps<any, "Chat">;
 
-const socket = io("http://192.168.18.150:3000");
+const socket = io("http://10.21.36.128:3000");
 
 const MessageItem = memo(
   (props: {

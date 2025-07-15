@@ -171,8 +171,8 @@ const BasicDetails: React.FC<Props> = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <BackButton title={"Tell us about yourself"} />
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <TouchableOpacity style={styles.inputContainer} activeOpacity={1}>
+      <ScrollView contentContainerStyle={[styles.scrollContainer, { paddingBottom: 40 }]}>
+        <TouchableOpacity style={[styles.inputContainer, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]} activeOpacity={1}>
           <Icon
             name="calendar"
             size={20}
@@ -180,7 +180,7 @@ const BasicDetails: React.FC<Props> = ({ navigation }) => {
             alignItems={"flex-end"}
           />
           <TextInput
-            style={[styles.input, { width: "100%" }]}
+            style={[styles.input, { flex: 1, textAlign: 'right' }]}
             placeholder="Select Age"
             placeholderTextColor="#B0B0B0"
             value={age}
@@ -229,6 +229,7 @@ const BasicDetails: React.FC<Props> = ({ navigation }) => {
             selectedValue={occupation}
             options={occupationOptions}
             onValueChange={setOccupation}
+            icon={<Ionicons name="briefcase-outline" size={20} color="#de822c" />}
           />
 
           <PickerComponent
@@ -236,45 +237,51 @@ const BasicDetails: React.FC<Props> = ({ navigation }) => {
             selectedValue={loveLanguage}
             options={loveLanguageOptions}
             onValueChange={setloveLanguage}
+            icon={<Ionicons name="heart-circle-outline" size={20} color="#de822c" />}
           />
         </View>
 
         <TouchableOpacity
-          style={styles.inputContainer}
+          style={[styles.inputContainer, { marginTop: 18 }]}
           onPress={() => setShowInterestModal(true)}
         >
-          <View style={styles.tagsContainer}>
-            {selectedInterests.map((item, index) => (
-              <TouchableOpacity
-                key={index}
-                style={styles.tag}
-                onPress={() => removeInterest(item)}
-              >
-                <Text style={styles.tagText}>{item}</Text>
-              </TouchableOpacity>
-            ))}
-            {selectedInterests.length === 0 && (
-              <Text style={{ color: "#B0B0B0", paddingLeft: 10 }}>
-                Your interests
-              </Text>
-            )}
-            <Icon name="pencil" size={20} color="white" justifyContent={"flex-end"} />
+          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, justifyContent: 'space-between' }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', flex: 1 }}>
+              {selectedInterests.length === 0 ? (
+                <Text style={{ color: "#B0B0B0", paddingLeft: 10 }}>
+                  Your interests
+                </Text>
+              ) : (
+                selectedInterests.map((item, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={styles.tag}
+                    onPress={() => removeInterest(item)}
+                  >
+                    <Text style={styles.tagText}>{item}</Text>
+                  </TouchableOpacity>
+                ))
+              )}
+            </View>
+            <Icon name="pencil" size={20} color="#de822c" style={{ marginLeft: 8 }} />
           </View>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.inputContainer}
+          style={[styles.inputContainer, { marginBottom: 24 }]}
           onPress={() => setShowRelationshipModal(true)}
         >
-          <Icon name="heart" size={20} color="white" />
-          <Text
-            style={{
-              color: relationshipType ? "#FFF" : "#B0B0B0",
-              paddingLeft: 10,
-            }}
-          >
-            {relationshipType || "Select Relationship Type"}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, justifyContent: 'space-between' }}>
+            <Text
+              style={{
+                color: relationshipType ? "#FFF" : "#B0B0B0",
+                paddingLeft: 10,
+              }}
+            >
+              {relationshipType || "Select Relationship Type"}
+            </Text>
+            <Icon name="heart" size={20} color="#de822c" style={{ marginLeft: 8 }} />
+          </View>
         </TouchableOpacity>
 
         <Modal visible={showInterestModal} transparent animationType="fade">
@@ -344,10 +351,10 @@ const BasicDetails: React.FC<Props> = ({ navigation }) => {
             </View>
           </View>
         </Modal>
+        <TouchableOpacity style={styles.button} onPress={detailHandler}>
+          <Text style={styles.buttonText}>Update Profile</Text>
+        </TouchableOpacity>
       </ScrollView>
-      <TouchableOpacity style={styles.button} onPress={detailHandler}>
-        <Text style={styles.buttonText}>Update Profile</Text>
-      </TouchableOpacity>
     </SafeAreaView>
   );
 };
@@ -360,6 +367,7 @@ const styles = StyleSheet.create({
   scrollContainer: {
     padding: 20,
     alignItems: "center",
+    backgroundColor: "black",
   },
   header: {
     fontSize: 24,
@@ -388,9 +396,11 @@ const styles = StyleSheet.create({
   },
   tag: {
     backgroundColor: "#de822c",
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    borderRadius: 16,
+    paddingHorizontal: 8, // reduced horizontal padding
+    paddingVertical: 4,  // reduced vertical padding
+    marginHorizontal: 2,  // reduced horizontal margin
+    marginVertical: 3,    // reduced vertical margin
   },
   tagText: {
     color: "#FFF",
@@ -461,8 +471,6 @@ const styles = StyleSheet.create({
     width: "100%",
     alignItems: "center",
     marginTop: 20,
-    position: "absolute",
-    bottom: 0,
   },
   buttonText: {
     color: "#FFF",

@@ -20,7 +20,7 @@
 
 // type Props = NativeStackScreenProps<RootStackParamList, "Call">;
 
-// const socket = io("http://192.168.18.150:3000");
+// const socket = io("http://10.21.36.128:3000");
 
 // export default function CallScreen({ route, navigation }: Props) {
 //   const { conversationId, loggedInUserId } = route.params;

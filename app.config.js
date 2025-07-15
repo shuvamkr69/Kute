@@ -21,7 +21,8 @@ export default {
           mode: "development",
           iosDisplayInForeground: true
         }
-      ]
+      ],
+      "react-native-video"
     ],
     assetBundlePatterns: ["**/*"],
     ios: {
