@@ -42,6 +42,10 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
   const DARK_MODE_KEY = 'darkMode';
   const [showMeme, setShowMeme] = useState(false);
   const [memeVideo, setMemeVideo] = useState<any>(null); // Use any for require()
+  const [currentLocation, setCurrentLocation] = useState<string>("");
+  const [loadingCurrentLocation, setLoadingCurrentLocation] = useState(false);
+  const [showLocationConfirm, setShowLocationConfirm] = useState(false);
+  const [pendingLocation, setPendingLocation] = useState<{address: string, latitude: number, longitude: number} | null>(null);
 
   const fetchUserStatus = async () => {
     try {
@@ -171,6 +175,62 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
     );
   };
 
+  // Fetch and set current location (address) with confirmation and backend update
+  const handleSetCurrentLocation = async () => {
+    setLoadingCurrentLocation(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Permission Denied", "Location permission is required to fetch your location.");
+        setLoadingCurrentLocation(false);
+        return;
+      }
+      const locationObj = await Location.getCurrentPositionAsync({});
+      const { latitude, longitude } = locationObj.coords;
+      const addressArr = await Location.reverseGeocodeAsync({ latitude, longitude });
+      let addr = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+      if (addressArr && addressArr.length > 0) {
+        const item = addressArr[0];
+        addr = `${item.name ? item.name + ', ' : ''}${item.street ? item.street + ', ' : ''}${item.city ? item.city + ', ' : ''}${item.region ? item.region + ', ' : ''}${item.country ? item.country : ''}`;
+      }
+      setPendingLocation({ address: addr, latitude, longitude });
+      setShowLocationConfirm(true);
+    } catch (error) {
+      Alert.alert('Location Error', 'Unable to fetch location');
+      console.error(error);
+      setLoadingCurrentLocation(false);
+    }
+  };
+
+  // Confirm and update location in backend
+  const confirmSetLocation = async () => {
+    if (!pendingLocation) return;
+    setShowLocationConfirm(false);
+    setLoadingCurrentLocation(true);
+    try {
+      // Update backend
+      await api.post('/api/v1/users/updateLocation', {
+        address: pendingLocation.address,
+        lat: pendingLocation.latitude,
+        lng: pendingLocation.longitude,
+      });
+      setCurrentLocation(pendingLocation.address);
+      Toast.show({ type: 'success', text1: 'Location updated!' });
+    } catch (error) {
+      Alert.alert('Error', 'Failed to update location in backend.');
+      console.error(error);
+    } finally {
+      setLoadingCurrentLocation(false);
+      setPendingLocation(null);
+    }
+  };
+
+  const cancelSetLocation = () => {
+    setShowLocationConfirm(false);
+    setPendingLocation(null);
+    setLoadingCurrentLocation(false);
+  };
+
   React.useEffect(() => {
     navigation.setOptions({ title: "Settings" });
     fetchUserStatus();
@@ -284,6 +344,49 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
               </Text>
             </TouchableOpacity>
           </View>
+
+          {/* New: Set Current Location */}
+          <View style={[styles.optionWithSwitch, { marginBottom: 18, marginTop: 8 }]}> {/* Add spacing */}
+            <View style={styles.optionRow}>
+              <Ionicons
+                name="map-outline"
+                size={18}
+                color="#de822c"
+                style={styles.icon}
+              />
+              <Text style={styles.optionText}>Set your current location</Text>
+            </View>
+            <TouchableOpacity
+              onPress={handleSetCurrentLocation}
+              style={styles.locationButton}
+              disabled={loadingCurrentLocation}
+            >
+              <Text style={styles.locationButtonText}>
+                {loadingCurrentLocation ? "Setting..." : "Set"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+          {/* Show the current location address below the row */}
+          {currentLocation ? (
+            <View style={styles.currentLocationBox}>
+              <Text style={styles.currentLocationLabel}>Current Location:</Text>
+              <Text style={styles.currentLocationText}>{currentLocation}</Text>
+            </View>
+          ) : null}
+          <CustomAlert
+            visible={showLocationConfirm}
+            title="Set Current Location"
+            message={pendingLocation ? (
+              <Text>
+                Set your current location to:{"\n"}
+                <Text style={{color:'#de822c'}}>{pendingLocation.address}</Text>
+              </Text>
+            ) : <Text />}
+            onClose={cancelSetLocation}
+            onConfirm={confirmSetLocation}
+            confirmText="Yes, Set Location"
+            cancelText="Cancel"
+          />
 
           <View style={styles.optionWithSwitch}>
             <View style={styles.optionRow}>
@@ -556,6 +659,30 @@ const styles = StyleSheet.create({
   fullscreenVideo: {
     width: '100%',
     height: '100%',
+  },
+  currentLocationBox: {
+    backgroundColor: '#23242a',
+    borderRadius: 8,
+    padding: 14,
+    marginTop: 0,
+    marginBottom: 18,
+    marginLeft: 36,
+    marginRight: 8,
+    minHeight: 48,
+    justifyContent: 'center',
+  },
+  currentLocationLabel: {
+    color: '#de822c',
+    fontWeight: 'bold',
+    fontSize: 13,
+    marginBottom: 2,
+    textAlign: 'left',
+  },
+  currentLocationText: {
+    color: '#fff',
+    fontSize: 15,
+    textAlign: 'left',
+    fontWeight: '500',
   },
 });
 
