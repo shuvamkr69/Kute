@@ -93,6 +93,56 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
     navigation.navigate("ForgotPassword");
   };
 
+  const handleGoogleLogin = async (accessToken: string) => {
+    try {
+      // Get user info from Google
+      const userInfoRes = await fetch(
+        "https://www.googleapis.com/userinfo/v2/me",
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        }
+      );
+      const user = await userInfoRes.json();
+      if (!user.email) throw new Error("No email from Google");
+      // Call backend to login/register
+      const response = await api.post("/api/v1/users/googleLogin", {
+        email: user.email,
+        name: user.name,
+        avatar: user.picture,
+        token: accessToken,
+      });
+      if (response.status === 200) {
+        const { accessToken: jwt, refreshToken, user: backendUser } = response.data.data;
+        if (!jwt || !refreshToken) {
+          Alert.alert("Error", "Authentication failed: Missing tokens");
+          return;
+        }
+        await AsyncStorage.setItem("user", JSON.stringify(backendUser));
+        await AsyncStorage.setItem("accessToken", jwt);
+        await AsyncStorage.setItem("refreshToken", refreshToken);
+        await AsyncStorage.setItem("avatar", backendUser.avatar1);
+        await AsyncStorage.setItem("location", JSON.stringify(backendUser.location));
+        const pushToken = await registerForPushNotifications();
+        if (pushToken) {
+          const storedToken = await AsyncStorage.getItem("pushToken");
+          if (storedToken !== pushToken) {
+            try {
+              await api.post("/api/v1/users/updatePushToken", { pushToken });
+              await AsyncStorage.setItem("pushToken", pushToken);
+            } catch (error) {}
+          }
+        }
+        await signIn();
+        navigation.reset({ index: 0, routes: [{ name: "HomeTabs" }] });
+      } else {
+        Alert.alert("Error", "Unexpected response from server");
+      }
+    } catch (error: any) {
+      console.error("Google login error:", error);
+      Alert.alert("Login Failed", error.message || "Could not complete Google login.");
+    }
+  };
+
   return (
     <View style={{ flex: 1, backgroundColor: '#181A20' }}>
       <SafeAreaView style={{ flex: 1 }}>
@@ -153,34 +203,8 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
             <View style={styles.divider} />
             <View style={styles.googleRow}>
               <Text style={styles.googleRowText}>Or continue with</Text>
-              <Pressable
-                style={({ pressed }) => [styles.googleLogoOnly, pressed ? { opacity: 0.7, transform: [{ scale: 0.95 }] } : null]}
-                onPress={async () => {
-                  // TODO: Implement Google login logic here
-                  // try {
-                  //   const token = ... // get Google token
-                  //   const userInfoRes = await fetch(
-                  //     "https://www.googleapis.com/userinfo/v2/me",
-                  //     {
-                  //       headers: { Authorization: `Bearer ${token}` },
-                  //     }
-                  //   );
-                  //   const user = await userInfoRes.json();
-                  //   const response = await api.post("/api/v1/users/googleLogin", {
-                  //     email: user.email,
-                  //     name: user.name,
-                  //     avatar: user.picture,
-                  //     token,
-                  //   });
-                  //   // ...rest of logic
-                  // } catch (error: any) {
-                  //   console.error("Google login error:", error);
-                  //   Alert.alert("Login Failed", "Could not complete Google login.");
-                  // }
-                }}
-              >
-                <Image source={googleLogo} style={styles.googleLogoOnlyImg} />
-              </Pressable>
+              {/* Replace icon with working GoogleLoginButton */}
+              <GoogleLoginButton onLogin={handleGoogleLogin} />
             </View>
             <Text style={styles.registerText}>
               Don't have an account?{" "}

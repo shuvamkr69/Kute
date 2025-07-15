@@ -15,6 +15,9 @@ import api from "../../utils/api"; // Import the API utility
 import { useAuth } from "../../navigation/AuthContext";
 import { registerForPushNotifications } from "../../utils/notifications";
 import BackButton from "../../components/BackButton";
+import CustomAlert from "../../components/CustomAlert";
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 /** Type Definitions */
 type Props = NativeStackScreenProps<any, "MakeBio">;
@@ -23,6 +26,8 @@ const MakeBio: React.FC<Props> = ({ navigation }) => {
   const [bio, setBio] = useState<string>("");
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [pushToken, setPushToken] = useState<string | null>(null);
+  const [showUserExistsAlert, setShowUserExistsAlert] = useState(false);
+  const [existingEmail, setExistingEmail] = useState("");
 
   useEffect(() => {
     const fetchPushToken = async () => {
@@ -39,6 +44,7 @@ const MakeBio: React.FC<Props> = ({ navigation }) => {
 
   /** Function to submit user data */
   const submitData = async () => {
+    let attemptedEmail = "";
     if (!bio.trim()) {
       Alert.alert("Error", "Bio cannot be empty.");
       return;
@@ -54,6 +60,7 @@ const MakeBio: React.FC<Props> = ({ navigation }) => {
       if (!userData.email) {
         throw new Error("Missing required user details.");
       }
+      attemptedEmail = userData.email;
 
       userData.bio = bio;
       userData.pushToken =
@@ -142,24 +149,39 @@ const MakeBio: React.FC<Props> = ({ navigation }) => {
       }
     } catch (error: any) {
       console.error("Submit Error:", error.message);
-      Alert.alert(
-        "Error",
-        error.response?.data?.message || "Failed to submit data."
-      );
+      const errorMsg = error.response?.data?.message || "Failed to submit data.";
+      if (errorMsg.includes("User already exists")) {
+        setExistingEmail(attemptedEmail);
+        setShowUserExistsAlert(true);
+      } else {
+        Alert.alert("Error", errorMsg);
+      }
     } finally {
       setIsUploading(false);
     }
+  };
+
+  // CustomAlert for user already exists
+  const handleUserExistsConfirm = () => {
+    setShowUserExistsAlert(false);
+    navigation.navigate("Login", { email: existingEmail });
+  };
+  const handleUserExistsCancel = () => {
+    setShowUserExistsAlert(false);
   };
 
   return (
     <View style={styles.backButtonContainer}>
       <BackButton title={"Bio"} />
       <SafeAreaView style={styles.container}>
-        <Text style={styles.header}>Your Love Resume</Text>
-        <View style={styles.inputContainer}>
+        <Text style={styles.header}>Your Story</Text>
+        <Text style={styles.subtitle}>
+          Share a glimpse of your world. What makes you, you?
+        </Text>
+        <View style={styles.card}>
           <TextInput
             style={styles.input}
-            placeholder="Tell us about yourself"
+            placeholder="Tell us about yourself..."
             placeholderTextColor="#888"
             value={bio}
             onChangeText={(text) => {
@@ -168,24 +190,49 @@ const MakeBio: React.FC<Props> = ({ navigation }) => {
             multiline
             maxLength={500}
           />
-          <Text
-            style={[styles.charCount, bio.length === 500 && { color: "red" }]}
-          >
-            {bio.length}/500
-          </Text>
+          <View style={styles.charCountRow}>
+            <Text style={[styles.charCount, bio.length === 500 && { color: "#FF3B30" }]}> 
+              {bio.length}/500
+            </Text>
+            <Text style={styles.tipText}>Tip: Be genuine and specific!</Text>
+          </View>
+        </View>
+        <View style={styles.infoBox}>
+          <Text style={styles.infoTitle}>What to write:</Text>
+          <Text style={styles.infoText}>• Your passions and what excites you</Text>
+          <Text style={styles.infoText}>• What you're looking for</Text>
+          <Text style={styles.infoText}>• A fun fact or a quirky trait</Text>
+          <Text style={styles.infoText}>• What makes you unique</Text>
         </View>
       </SafeAreaView>
       <TouchableOpacity
-        style={[styles.submitButton, isUploading && styles.disabledButton]}
+        style={styles.buttonWrapper}
         onPress={submitData}
         disabled={isUploading}
+        activeOpacity={0.9}
       >
-        {isUploading ? (
-          <ActivityIndicator color="#FFF" />
-        ) : (
-          <Text style={styles.buttonText}>Submit</Text>
-        )}
+        <LinearGradient
+          colors={["#de822c", "#ff172e"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.buttonGradient}
+        >
+          {isUploading ? (
+            <ActivityIndicator color="#FFF" />
+          ) : (
+            <Text style={styles.buttonText}>Continue</Text>
+          )}
+        </LinearGradient>
       </TouchableOpacity>
+      <CustomAlert
+        visible={showUserExistsAlert}
+        title="User already exists"
+        message="Would you like to login?"
+        onClose={handleUserExistsCancel}
+        onConfirm={handleUserExistsConfirm}
+        confirmText="Yes, Login"
+        cancelText="Cancel"
+      />
     </View>
   );
 };
@@ -196,56 +243,141 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "black",
     alignItems: "center",
-    padding: 20,
+    paddingVertical: 20,
+    paddingHorizontal: 0,
+    justifyContent: 'flex-start',
+    // Remove maxWidth and alignSelf for full width
   },
   header: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: "bold",
     color: "#de822c",
-    marginBottom: 20,
+    marginBottom: 12,
+    textAlign: 'center',
+    letterSpacing: 0.2,
   },
-  inputContainer: {
-    width: "100%",
-    position: "relative",
-    marginBottom: 30,
+  subtitle: {
+    color: '#A1A7B3',
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 24,
+    marginTop: 2,
+    fontWeight: '400',
+    letterSpacing: 0.1,
+    paddingHorizontal: 8,
+    lineHeight: 22,
+  },
+  card: {
+    width: '100%',
+    // Remove maxWidth and alignSelf for full width
+    backgroundColor: '#181A20',
+    borderRadius: 18,
+    paddingVertical: 32,
+    paddingHorizontal: 8,
+    shadowColor: '#de822c',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.13,
+    shadowRadius: 18,
+    elevation: 6,
+    marginTop: 8,
+    marginBottom: 18,
+    borderWidth: 1.5,
+    borderColor: '#23242a',
+    alignItems: 'stretch',
   },
   input: {
-    width: "100%",
-    height: 160,
-    backgroundColor: "#1E1E1E",
-    color: "#FFF",
-    padding: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#de822c",
-    textAlignVertical: "top",
+    width: '100%',
+    height: 240,
+    backgroundColor: '#23242a',
+    color: '#FFF',
+    padding: 18,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: '#de822c',
+    textAlignVertical: 'top',
+    fontSize: 17,
+    fontWeight: '400',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+  },
+  charCountRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 10,
   },
   charCount: {
-    position: "absolute",
-    right: 10,
-    bottom: 10,
-    fontSize: 12,
+    fontSize: 13,
     color: "#888",
+    fontWeight: '500',
   },
-
-  submitButton: {
-    backgroundColor: "#de822c",
-    paddingVertical: 15,
-    borderRadius: 10,
-    width: "100%",
-    alignItems: "center",
+  tipText: {
+    color: '#de822c',
+    fontSize: 13,
+    fontWeight: '500',
+    marginLeft: 8,
   },
-  disabledButton: {
-    opacity: 0.5,
+  infoBox: {
+    backgroundColor: '#181A20',
+    borderRadius: 14,
+    padding: 18,
+    marginTop: 8,
+    marginBottom: 18,
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#23242a',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    alignItems: 'center', // Center children horizontally
+  },
+  infoTitle: {
+    color: '#de822c',
+    fontWeight: 'bold',
+    fontSize: 15,
+    marginBottom: 6,
+    textAlign: 'center', // Center text
+  },
+  infoText: {
+    color: '#A1A7B3',
+    fontSize: 14,
+    marginBottom: 2,
+    marginLeft: 2,
+    textAlign: 'center', // Center text
+  },
+  buttonWrapper: {
+    width: '90%',
+    alignSelf: 'center',
+    marginTop: 10,
+    borderRadius: 12,
+    overflow: 'hidden',
+    elevation: 3,
+    shadowColor: '#de822c',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.13,
+    shadowRadius: 4,
+  },
+  buttonGradient: {
+    width: '100%',
+    paddingVertical: 18,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   buttonText: {
     color: "#FFF",
     fontWeight: "bold",
-    fontSize: 16,
+    fontSize: 17,
+    letterSpacing: 0.2,
+    textAlign: 'center',
   },
   backButtonContainer: {
     flex: 1,
     backgroundColor: "#121212",
+    // Remove any width or centering constraints
   },
 });
 
