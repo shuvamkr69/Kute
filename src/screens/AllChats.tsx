@@ -201,7 +201,7 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
 
     return (
       <TouchableOpacity
-        style={[styles.chatItem, isBlocked && { opacity: 0.4 }]} // grey out
+        style={[styles.chatItem, isBlocked && { opacity: 0.4 }]}
         onPress={() =>
           isBlocked
             ? Alert.alert("Blocked", "You have blocked this user.")
@@ -210,10 +210,14 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
                 userName: otherParticipant.fullName,
                 loggedInUserId: userId,
                 likedUserAvatar: otherParticipant.avatar1,
-                isBlockedByMe: true, // optional if you want to pass this flag to ChatScreen
+                isBlockedByMe: true,
               })
         }
       >
+        {/* Instagram-style unread dot */}
+        {lastMessage && lastMessage.isRead === false && lastMessage.senderId !== userId && (
+          <View style={styles.unreadDot} />
+        )}
         <Image
           source={{
             uri: otherParticipant?.avatar1 || "https://via.placeholder.com/150",
@@ -235,9 +239,6 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
             style={[
               styles.lastMessage,
               isBlocked && { color: "#888", fontStyle: "italic" },
-              lastMessage?.isRead === false && lastMessage.senderId !== userId
-                ? styles.unreadMessage
-                : {},
             ]}
             numberOfLines={1}
           >
@@ -252,9 +253,7 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
     <View style={styles.container}>
       <View style={styles.headingContainer}>
         <Text style={styles.headingText}>Chats</Text>
-        {isOffline && <Text style={styles.noInternetBadge}>No Internet</Text>}
       </View>
-
       <FlatList
         data={chats}
         keyExtractor={(item) => item._id}
@@ -267,6 +266,7 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
           />
         }
         contentContainerStyle={[
+          { paddingTop: 50 },
           chats.length === 0 && { flex: 1, justifyContent: "center" },
         ]}
         ListEmptyComponent={
@@ -289,14 +289,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "black",
-    padding: 20,
+    padding: 0,
   },
   headingText: {
-    marginLeft: 2,
     color: "white",
     fontSize: 18,
     fontWeight: "bold",
-    marginBottom: 20,
+    marginBottom: 0,
+    marginLeft: 20,
   },
   chatTime: {
     color: "#B0B0B0",
@@ -354,10 +354,17 @@ const styles = StyleSheet.create({
     color: "#de822c",
   },
   headingContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 20,
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 10,
+    justifyContent: 'flex-start',
+    width: '100%',
+    paddingLeft: 10,
+    position: 'absolute',
+    top: 0,
+    zIndex: 10,
+    backgroundColor: 'transparent',
   },
 
   noInternetBadge: {
@@ -370,6 +377,14 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     overflow: "hidden",
     fontWeight: "600",
+  },
+  unreadDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#3797f0', // Instagram blue
+    marginRight: 10,
+    alignSelf: 'center',
   },
 });
 

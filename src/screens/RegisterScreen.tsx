@@ -5,6 +5,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../utils/api';
+import GoogleLoginButton from '../components/GoogleLoginButton';
+import Constants from 'expo-constants';
 const googleLogo = require('../assets/icons/googleLogoIcon.png');
 
 const logo = require('../assets/icons/logo.webp');
@@ -23,6 +25,8 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
       duration: 1200,
       useNativeDriver: true,
     }).start();
+    // Log Expo owner for debugging
+    console.log('Expo Owner:', Constants.expoConfig?.owner);
   }, []);
 
   const handleRegister = async () => {
@@ -40,6 +44,41 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
     } catch (error) {
       console.log(error);
       Alert.alert('Error', 'Data not stored');
+    }
+  };
+
+  // Add Google login handler
+  const handleGoogleLogin = async (token: string) => {
+    try {
+      // Fetch user info from Google
+      const userInfoRes = await fetch(
+        'https://www.googleapis.com/userinfo/v2/me',
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      const user = await userInfoRes.json();
+      // Call backend to login or register
+      const response = await api.post('/api/v1/users/googleLogin', {
+        email: user.email,
+        name: user.name,
+        avatar: user.picture,
+        token,
+      });
+      if (response.status === 200) {
+        const { accessToken, refreshToken, user: backendUser } = response.data.data;
+        await AsyncStorage.setItem('user', JSON.stringify(backendUser));
+        await AsyncStorage.setItem('accessToken', accessToken);
+        await AsyncStorage.setItem('refreshToken', refreshToken);
+        await AsyncStorage.setItem('avatar', backendUser.avatar1);
+        await AsyncStorage.setItem('location', JSON.stringify(backendUser.location));
+        navigation.reset({ index: 0, routes: [{ name: 'HomeTabs' }] });
+      } else {
+        Alert.alert('Error', 'Unexpected response from server');
+      }
+    } catch (error: any) {
+      console.error('Google login error:', error);
+      Alert.alert('Login Failed', 'Could not complete Google login.');
     }
   };
 
@@ -111,34 +150,9 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
             <View style={styles.divider} />
             <View style={styles.googleRow}>
               <Text style={styles.googleRowText}>Or continue with</Text>
-              <Pressable
-                style={({ pressed }) => [styles.googleLogoOnly, pressed ? { opacity: 0.7, transform: [{ scale: 0.95 }] } : null]}
-                onPress={async () => {
-                  // TODO: Implement Google login logic here
-                  // try {
-                  //   const token = ... // get Google token
-                  //   const userInfoRes = await fetch(
-                  //     "https://www.googleapis.com/userinfo/v2/me",
-                  //     {
-                  //       headers: { Authorization: `Bearer ${token}` },
-                  //     }
-                  //   );
-                  //   const user = await userInfoRes.json();
-                  //   const response = await api.post("/api/v1/users/googleLogin", {
-                  //     email: user.email,
-                  //     name: user.name,
-                  //     avatar: user.picture,
-                  //     token,
-                  //   });
-                  //   // ...rest of logic
-                  // } catch (error: any) {
-                  //   console.error("Google login error:", error);
-                  //   Alert.alert("Login Failed", "Could not complete Google login.");
-                  // }
-                }}
-              >
-                <Image source={googleLogo} style={styles.googleLogoOnlyImg} />
-              </Pressable>
+              <View style={{ alignItems: 'center', marginBottom: 18 }}>
+                <GoogleLoginButton onLogin={handleGoogleLogin} />
+              </View>
             </View>
             <Text style={styles.loginPrompt}>
               Already have an account?{' '}

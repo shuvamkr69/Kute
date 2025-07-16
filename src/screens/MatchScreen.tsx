@@ -37,6 +37,10 @@ const MatchScreen: React.FC<Props> = ({ navigation, route }) => {
       <View style={styles.overlay} />
 
       <SafeAreaView style={styles.contentWrapper}>
+        {/* Title at the top, matching Chats screen */}
+        <View style={styles.headingContainer}>
+          <Text style={styles.headingText}>Matches</Text>
+        </View>
         {/* Tinder Match Text Image at Top */}
         <View style={styles.matchImageWrapper}>
           <Image
@@ -170,6 +174,22 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 40,
     width: "100%",
+  },
+  headingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 10,
+    justifyContent: 'flex-start',
+    width: '100%',
+    paddingLeft: 10,
+  },
+  headingText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 0,
+    marginLeft: 2,
   },
 });
 

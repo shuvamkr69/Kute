@@ -50,6 +50,7 @@ type Message = {
     text: string;
     senderId: string;
   };
+  isRead?: boolean; // <-- add this
 };
 
 type Props = NativeStackScreenProps<any, "Chat">;
@@ -71,6 +72,9 @@ const MessageItem = memo(
     onReply: () => void; // ✅ Add this
     loggedInUserId: string;
     isSelected: boolean;
+    isLastMyMessage: boolean; // <-- new prop
+    isRead: boolean | undefined; // <-- new prop
+    otherUserAvatar?: string; // <-- new prop
   }) => {
     const {
       text,
@@ -82,6 +86,9 @@ const MessageItem = memo(
       loggedInUserId,
       isSelected,
       onReply, // ✅
+      isLastMyMessage, // <-- new
+      isRead, // <-- new
+      otherUserAvatar, // <-- new
     } = props;
 
     const formatTime = (isoDate?: string) => {
@@ -149,6 +156,16 @@ const MessageItem = memo(
           <Text style={styles.messageText}>{text}</Text>
           {createdAt && (
             <Text style={styles.timeText}>{formatTime(createdAt)}</Text>
+          )}
+          {/* Instagram-style read receipt for my last message */}
+          {isMyMessage && isLastMyMessage && (
+            isRead ? (
+              otherUserAvatar ? (
+                <Image source={{ uri: otherUserAvatar }} style={styles.readAvatar} />
+              ) : (
+                <Ionicons name="checkmark-done" size={16} color="#3797f0" style={styles.readCheck} />
+              )
+            ) : null
           )}
         </View>
       </Pressable>
@@ -778,6 +795,9 @@ navigation.goBack();
                   onPress={() => handlePress(item._id)}
                   isSelected={selectedMessages.has(item._id)}
                   onReply={() => setReplyingTo(item)} // ✅ For reply
+                  isLastMyMessage={item.senderId === loggedInUserId && item._id === messages[messages.length - 1]?._id}
+                  isRead={item.isRead ?? false}
+                  otherUserAvatar={item.senderId === loggedInUserId ? profileImage : undefined}
                 />
               )}
               keyExtractor={(item) => item._id}
@@ -1150,6 +1170,21 @@ const styles = StyleSheet.create({
   cancelReplyButton: {
     padding: 4,
     marginTop: 4, // Align close button with text
+  },
+  readAvatar: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    borderWidth: 1,
+    borderColor: '#fff',
+  },
+  readCheck: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
   },
 });
 

@@ -7,6 +7,7 @@ import {
   FlatList,
   Dimensions,
   Text,
+  Alert,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 
@@ -51,10 +52,9 @@ const GamesScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.topBar}>
-        <Text style={styles.header}>Games</Text>
+      <View style={styles.headingContainer}>
+        <Text style={styles.headingText}>Games</Text>
       </View>
-
       <FlatList
         data={games}
         horizontal
@@ -70,7 +70,6 @@ const GamesScreen: React.FC<Props> = ({ navigation }) => {
           />
         )}
       />
-
       {/* Fixed pagination dots */}
       <View style={styles.pagination}>
         {games.map((_, i) => (
@@ -91,23 +90,30 @@ const GamesScreen: React.FC<Props> = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
+  headingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 10,
+    justifyContent: 'flex-start',
+    width: '100%',
+    paddingLeft: 10,
+    position: 'absolute',
+    top: 0,
+    zIndex: 10,
+    backgroundColor: 'transparent',
+  },
+  headingText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 0,
+    marginLeft: 20,
+  },
   container: {
     flex: 1,
     backgroundColor: '#000',
-  },
-
-  topBar: {
-    position: 'absolute',
-    zIndex: 10,
-    width: '100%',
-    paddingHorizontal: 20,
-  },
-
-  header: {
-    fontSize: 18,
-    paddingTop:10,
-    fontWeight: 'bold',
-    color: 'white',
+    padding: 0,
   },
 
   card: {

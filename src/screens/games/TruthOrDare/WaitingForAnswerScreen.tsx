@@ -10,8 +10,9 @@ type Props = NativeStackScreenProps<any, "WaitingForAnswerScreen">;
 const WaitingForAnswerScreen: React.FC<Props> = ({ navigation, route }) => {
   const { currentUserId, matchId } = route?.params || {};
 
-  
-
+  // --- 2-PLAYER ONLY LOGIC ---
+  // Only the opponent waits for the chooser's answer
+  // Remove any code for >2 players
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
@@ -63,4 +64,4 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     textAlign: "center",
   },
-});
+}); 

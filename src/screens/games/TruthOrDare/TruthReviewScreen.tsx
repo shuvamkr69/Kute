@@ -32,7 +32,7 @@ const TruthReviewScreen: React.FC<Props> = ({ route, navigation }) => {
       });
 
       navigation.navigate("MultiPlayerGame", {
-        currentUserId: "", // 👈 Replace with actual user ID if needed
+        currentUserId: "TODO_USER_ID" // TODO: Replace with actual user ID from context or params
       });
     } catch (err) {
       console.error("❌ Failed to rate answer:", err);
@@ -113,4 +113,4 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
   },
-});
+}); 
