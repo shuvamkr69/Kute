@@ -1,14 +1,15 @@
 // index.js
 import dotenv from "dotenv";
+dotenv.config({
+  path: '../.env'
+});
 import { createServer } from "http";
 import connectDB from "./db/index.js";
 import { app } from "./app.js";
 import { initializeSocket, getIO } from "./utils/socket.js";
 
-dotenv.config({
-  path: '../.env'
-});
 
+console.log(process.env.CLOUDINARY_CLOUD_NAME);
 // Create HTTP Server
 const server = createServer(app);
 

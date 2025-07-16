@@ -740,10 +740,11 @@ const editUserProfile = async (req, res) => {
         if (uploadedAvatar && uploadedAvatar.url) {
           existingUser[field] = uploadedAvatar.url;
         } else {
-          console.error(`Cloudinary upload failed for field: ${field}`);
+          const errorMsg = uploadedAvatar && uploadedAvatar.error ? uploadedAvatar.error : `Failed to upload image for ${field}`;
+          console.error(`Cloudinary upload failed for field: ${field} - ${errorMsg}`);
           return res
             .status(500)
-            .json({ message: `Failed to upload image for ${field}` });
+            .json({ message: `Failed to upload image for ${field}`, error: errorMsg });
         }
       }
       // ✅ If no image uploaded and no 'null' value, keep the existing image

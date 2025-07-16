@@ -50,7 +50,7 @@ import BlockedUsersScreen from "../screens/BlockedUsersScreen";
 import ResetPasswordScreen from "../screens/ResetPasswordScreen";
 import ChangePasswordScreen from "../screens/ChangePasswordScreen";
 import HelpScreen from "../screens/HelpScreen";
-// import CallScreen from "../screens/CallScreen";
+//import CallScreen from "../screens/CallScreen";
 
 const Stack = createNativeStackNavigator(); // Standard Stack Navigator
 
@@ -79,6 +79,7 @@ export default function AppNavigation() {
       >
         {isSignedIn ? (
           <>
+            {/* <Stack.Screen name="CallScreen" component={CallScreen} /> */}
             <Stack.Screen name="HomeTabs" component={HomeTabs} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
             <Stack.Screen name="EditProfile" component={EditProfileScreen} />
