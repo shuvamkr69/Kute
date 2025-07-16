@@ -360,6 +360,18 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
     // (If you prefer the plain container, keep the same JSX you deleted.)
   }
 
+  // 1. Add mock offers for preview (replace with API if needed)
+  const superLikeOffers = [
+    { id: 'sl1', name: '5 Super Likes', price: '$2.99' },
+    { id: 'sl2', name: '15 Super Likes', price: '$6.99' },
+    { id: 'sl3', name: '30 Super Likes', price: '$12.99' },
+  ];
+  const boostOffers = [
+    { id: 'b1', name: '1 Boost', price: '$1.99' },
+    { id: 'b2', name: '5 Boosts', price: '$7.99' },
+    { id: 'b3', name: '10 Boosts', price: '$14.99' },
+  ];
+
   return (
     <ScrollView
       style={styles.container}
@@ -562,6 +574,16 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
                 <Text style={styles.featureButtonText}>Activate Now</Text>
               </LinearGradient>
             </TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('BuyFeatures', { initialTab: 'boosts' })} style={[styles.featureButton, { minWidth: 110, paddingVertical: 6, paddingHorizontal: 0 }]}>
+              <LinearGradient
+                colors={["#de822c", "#ff172e"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.featureButtonGradient}
+              >
+                <Text style={styles.featureButtonText}>Buy Boosts</Text>
+              </LinearGradient>
+            </TouchableOpacity>
           </View>
           {boostTimer && (
             <Text style={styles.featureTimer}>{boostTimer}</Text>
@@ -585,9 +607,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
           <Text style={styles.featureDescription}>Send special likes to your crush and stand out!</Text>
           <View style={styles.featureFooter}>
             <View style={styles.featureCounterBox}><Text style={styles.featureCounterText}>x{superLikes}</Text></View>
-            <TouchableOpacity onPress={() => navigation.navigate("BoostsAndLikes")}
-              style={styles.featureButton}
-            >
+            <TouchableOpacity onPress={() => navigation.navigate('BuyFeatures', { initialTab: 'superlikes' })} style={[styles.featureButton, { minWidth: 110, paddingVertical: 6, paddingHorizontal: 0 }]}>
               <LinearGradient
                 colors={["#de822c", "#ff172e"]}
                 start={{ x: 0, y: 0 }}

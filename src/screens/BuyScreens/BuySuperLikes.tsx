@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import api from '../../utils/api';
 
 interface Product {
@@ -18,13 +18,26 @@ interface Product {
   price: string;
 }
 
-const BuySuperLikes: React.FC = () => {
+type BuyTab = 'superlikes' | 'boosts';
+
+type RouteParams = {
+  initialTab?: BuyTab;
+};
+
+const BuyFeaturesScreen: React.FC = () => {
   const navigation = useNavigation();
-  const [products, setProducts] = useState<Product[]>([]);
+  const route = useRoute();
+  const [activeTab, setActiveTab] = useState<BuyTab>('superlikes');
+  const [superLikeProducts, setSuperLikeProducts] = useState<Product[]>([]);
+  const [boostProducts, setBoostProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [purchasing, setPurchasing] = useState<string | null>(null);
 
   useEffect(() => {
+    // Set initial tab from navigation params
+    const params = (route.params || {}) as RouteParams;
+    if (params.initialTab === 'boosts') setActiveTab('boosts');
+    else setActiveTab('superlikes');
     fetchProducts();
   }, []);
 
@@ -32,7 +45,8 @@ const BuySuperLikes: React.FC = () => {
     try {
       setLoading(true);
       const response = await api.get('/products');
-      setProducts(response.data.data.superLikes);
+      setSuperLikeProducts(response.data.data.superLikes);
+      setBoostProducts(response.data.data.boosts);
     } catch (error) {
       console.error('Error fetching products:', error);
       Alert.alert('Error', 'Failed to load products');
@@ -41,19 +55,15 @@ const BuySuperLikes: React.FC = () => {
     }
   };
 
-  const handlePurchase = async (product: Product) => {
+  const handlePurchase = async (product: Product, type: BuyTab) => {
     try {
       setPurchasing(product.id);
-      
-      // Simulate Google Play Store purchase
-      // In a real app, you would integrate with react-native-iap or similar
-      const purchaseToken = `token_${Date.now()}`; // Mock token
-      
-      const response = await api.post('/purchase/superlike', {
+      const purchaseToken = `token_${Date.now()}`;
+      const endpoint = type === 'superlikes' ? '/purchase/superlike' : '/purchase/boost';
+      await api.post(endpoint, {
         purchaseToken,
         productId: product.id,
       });
-
       Alert.alert(
         'Success!',
         `Successfully purchased ${product.name}!`,
@@ -72,6 +82,94 @@ const BuySuperLikes: React.FC = () => {
     }
   };
 
+  const renderTabBar = () => (
+    <View style={styles.tabContainer}>
+      <TouchableOpacity
+        style={[styles.tab, activeTab === 'superlikes' && styles.activeTab]}
+        onPress={() => setActiveTab('superlikes')}
+      >
+        <Text style={[styles.tabText, activeTab === 'superlikes' && styles.activeTabText]}>Super Likes</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.tab, activeTab === 'boosts' && styles.activeTab]}
+        onPress={() => setActiveTab('boosts')}
+      >
+        <Text style={[styles.tabText, activeTab === 'boosts' && styles.activeTabText]}>Boosts</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  const renderSuperLikes = () => (
+    <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <View style={styles.infoSection}>
+        <Ionicons name="star" size={48} color="#FF6B6B" />
+        <Text style={styles.infoTitle}>Stand Out!</Text>
+        <Text style={styles.infoDescription}>
+          Super Likes let someone know you're really interested. They'll see a blue star and know you Super Liked them.
+        </Text>
+      </View>
+      <View style={styles.productsContainer}>
+        {superLikeProducts.map((product) => (
+          <View key={product.id} style={styles.productCard}>
+            <View style={styles.productInfo}>
+              <Text style={styles.productName}>{product.name}</Text>
+              <Text style={styles.productPrice}>{product.price}</Text>
+            </View>
+            <TouchableOpacity
+              style={[styles.buyButton, { marginLeft: 12 }]}
+              onPress={() => handlePurchase(product, 'superlikes')}
+              disabled={purchasing === product.id}
+              activeOpacity={0.9}
+            >
+              <Text style={styles.buyButtonText}>{purchasing === product.id ? 'Buying...' : 'Buy'}</Text>
+            </TouchableOpacity>
+          </View>
+        ))}
+      </View>
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>Purchases will be charged to your Google Play account</Text>
+      </View>
+    </ScrollView>
+  );
+
+  const renderBoosts = () => (
+    <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <View style={styles.infoSection}>
+        <Ionicons name="flash" size={48} color="#FF6B6B" />
+        <Text style={styles.infoTitle}>Get More Matches!</Text>
+        <Text style={styles.infoDescription}>
+          Boosts put your profile at the top of the stack for 30 minutes, increasing your chances of getting matches.
+        </Text>
+      </View>
+      <View style={styles.productsContainer}>
+        {boostProducts.map((product) => (
+          <View key={product.id} style={styles.productCard}>
+            <View style={styles.productInfo}>
+              <Text style={styles.productName}>{product.name}</Text>
+              <Text style={styles.productPrice}>{product.price}</Text>
+            </View>
+            <TouchableOpacity
+              style={[styles.buyButton, { marginLeft: 12 }]}
+              onPress={() => handlePurchase(product, 'boosts')}
+              disabled={purchasing === product.id}
+              activeOpacity={0.9}
+            >
+              <Text style={styles.buyButtonText}>{purchasing === product.id ? 'Buying...' : 'Buy'}</Text>
+            </TouchableOpacity>
+          </View>
+        ))}
+      </View>
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>Purchases will be charged to your Google Play account</Text>
+      </View>
+      {/* Buy More Boost Button */}
+      <TouchableOpacity style={styles.buyMoreButton} onPress={() => setActiveTab('boosts')}>
+        <Ionicons name="flash" size={20} color="#fff" style={{ marginRight: 8 }} />
+        <Text style={styles.buyMoreButtonText}>Buy More Boost</Text>
+      </TouchableOpacity>
+    </ScrollView>
+  );
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -83,58 +181,10 @@ const BuySuperLikes: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-          activeOpacity={0.9}
-        >
-          <Ionicons name="arrow-back" size={24} color="#FF6B6B" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Buy Super Likes</Text>
-        <View style={styles.placeholder} />
-      </View>
-
-      {/* Content */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.infoSection}>
-          <Ionicons name="star" size={48} color="#FF6B6B" />
-          <Text style={styles.infoTitle}>Stand Out!</Text>
-          <Text style={styles.infoDescription}>
-            Super Likes let someone know you're really interested. 
-            They'll see a blue star and know you Super Liked them.
-          </Text>
-        </View>
-
-        <View style={styles.productsContainer}>
-          {products.map((product) => (
-            <TouchableOpacity
-              key={product.id}
-              style={styles.productCard}
-              onPress={() => handlePurchase(product)}
-              disabled={purchasing === product.id}
-              activeOpacity={0.9}
-            >
-              <View style={styles.productInfo}>
-                <Text style={styles.productName}>{product.name}</Text>
-                <Text style={styles.productPrice}>{product.price}</Text>
-              </View>
-              {purchasing === product.id ? (
-                <ActivityIndicator size="small" color="#FF6B6B" />
-              ) : (
-                <Ionicons name="chevron-forward" size={24} color="#FF6B6B" />
-              )}
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            Purchases will be charged to your Google Play account
-          </Text>
-        </View>
-      </ScrollView>
+      {/* Tab Bar */}
+      {renderTabBar()}
+      {/* Tab Content */}
+      {activeTab === 'superlikes' ? renderSuperLikes() : renderBoosts()}
     </View>
   );
 };
@@ -155,25 +205,28 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
   },
-  header: {
+  tabContainer: {
     flexDirection: 'row',
+    justifyContent: 'space-around',
+    backgroundColor: '#1E1E1E',
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 15,
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 60,
-    paddingBottom: 20,
-    backgroundColor: '#1a1a1a',
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
   },
-  backButton: {
-    padding: 8,
+  activeTab: {
+    borderBottomColor: '#de822c',
   },
-  headerTitle: {
-    fontSize: 20,
+  tabText: {
+    color: '#B0B0B0',
+    fontSize: 16,
+  },
+  activeTabText: {
+    color: '#de822c',
     fontWeight: 'bold',
-    color: '#fff',
-  },
-  placeholder: {
-    width: 40,
   },
   content: {
     flex: 1,
@@ -208,6 +261,11 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 12,
     marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
   productInfo: {
     flex: 1,
@@ -232,6 +290,39 @@ const styles = StyleSheet.create({
     color: '#888',
     textAlign: 'center',
   },
+  buyButton: {
+    backgroundColor: '#de822c',
+    borderRadius: 8,
+    paddingVertical: 6, // smaller height
+    paddingHorizontal: 12, // smaller width
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buyButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 15,
+  },
+  buyMoreButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#de822c',
+    borderRadius: 8,
+    paddingVertical: 14,
+    marginTop: 24,
+    marginHorizontal: 40,
+    shadowColor: '#de822c',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  buyMoreButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
 });
 
-export default BuySuperLikes; 
+export default BuyFeaturesScreen; 

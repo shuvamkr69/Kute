@@ -51,6 +51,7 @@ import TruthAnswerScreen from "../screens/games/TruthOrDare/TruthAnswerScreen";
 import TruthSetScreen from "../screens/games/TruthOrDare/TruthSetScreen";
 import TruthReviewScreen from "../screens/games/TruthOrDare/TruthReviewScreen";
 import WaitingForAnswerScreen from "../screens/games/TruthOrDare/WaitingForAnswerScreen";
+import BuyFeaturesScreen from '../screens/BuyScreens/BuySuperLikes';
 
 const Stack = createNativeStackNavigator(); // Standard Stack Navigator
 
@@ -95,6 +96,7 @@ export default function AppNavigation() {
             <Stack.Screen name="PhotoVerification" component={PhotoVerificationScreen} />
             <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
             <Stack.Screen name="HelpScreen" component={HelpScreen} />
+            <Stack.Screen name="BuyFeatures" component={BuyFeaturesScreen} />
             
             {/* User Info Screens */}
             
