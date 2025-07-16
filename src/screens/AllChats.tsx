@@ -201,7 +201,7 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
 
     return (
       <TouchableOpacity
-        style={[styles.chatItem, isBlocked && { opacity: 0.4 }]} // grey out
+        style={[styles.chatItem, isBlocked && { opacity: 0.4 }]}
         onPress={() =>
           isBlocked
             ? Alert.alert("Blocked", "You have blocked this user.")
@@ -210,10 +210,14 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
                 userName: otherParticipant.fullName,
                 loggedInUserId: userId,
                 likedUserAvatar: otherParticipant.avatar1,
-                isBlockedByMe: true, // optional if you want to pass this flag to ChatScreen
+                isBlockedByMe: true,
               })
         }
       >
+        {/* Instagram-style unread dot */}
+        {lastMessage && lastMessage.isRead === false && lastMessage.senderId !== userId && (
+          <View style={styles.unreadDot} />
+        )}
         <Image
           source={{
             uri: otherParticipant?.avatar1 || "https://via.placeholder.com/150",
@@ -235,9 +239,6 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
             style={[
               styles.lastMessage,
               isBlocked && { color: "#888", fontStyle: "italic" },
-              lastMessage?.isRead === false && lastMessage.senderId !== userId
-                ? styles.unreadMessage
-                : {},
             ]}
             numberOfLines={1}
           >
@@ -265,6 +266,7 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
           />
         }
         contentContainerStyle={[
+          { paddingTop: 50 },
           chats.length === 0 && { flex: 1, justifyContent: "center" },
         ]}
         ListEmptyComponent={
@@ -375,6 +377,14 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     overflow: "hidden",
     fontWeight: "600",
+  },
+  unreadDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#3797f0', // Instagram blue
+    marginRight: 10,
+    alignSelf: 'center',
   },
 });
 

@@ -69,7 +69,7 @@ if (
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-const DAILY_FREE_LIKES = 1;
+const DAILY_FREE_LIKES = 15;
 const PREMIUM_LIKE_LIMITS: Record<string, number> = {
   gold: 1000,
   platinum: 10000,
@@ -209,50 +209,49 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
       const myLocation = await AsyncStorage.getItem("location");
       const locationArray = myLocation ? JSON.parse(myLocation) : null;
       const response = await api.get("/api/v1/users/");
-      const formattedProfiles = response.data.map((profile: any) => ({
-        _id: profile._id,
-        fullName: profile.name,
-        age: profile.age,
-        relationshipType: profile.relationshipType,
-        bio: profile.bio || "No bio available.",
-        images:
-          profile.images && profile.images.length > 0
-            ? profile.images.slice(0, 6)
-            : [
-                "https://via.placeholder.com/400x600/AAAAAA/FFFFFF?text=No+Image",
-              ],
-        gender: profile.gender,
-        location: profile.location,
-        interests: Array.isArray(profile.interests)
-          ? profile.interests.join(", ")
-          : profile.interests || "No interests listed",
-
-        distance: profile.location
-          ? haversineDistance(
-              locationArray[0],
-              locationArray[1],
-              profile.location[0],
-              profile.location[1]
-            )
-          : null,
-
-        occupation: profile.occupation,
-        workingAt: profile.workingAt,
-        pronouns: profile.pronouns,
-        genderOrientation: profile.genderOrientation,
-        languages: profile.languages,
-        loveLanguage: profile.loveLanguage,
-        zodiac: profile.zodiac,
-        familyPlanning: profile.familyPlanning,
-        bodyType: profile.bodyType,
-        drinking: profile.drinking,
-        smoking: profile.smoking,
-        workout: profile.workout,
-        verifiedUser: profile.isVerified,
-        ActivePremiumPlan: profile.ActivePremiumPlan,
-      }));
-      // console.log(formattedProfiles);
-
+      const formattedProfiles = response.data.map((profile: any) => {
+        // Defensive: ensure images is always an array
+        let images = Array.isArray(profile.images) && profile.images.length > 0
+          ? profile.images.slice(0, 6)
+          : [
+              "https://via.placeholder.com/400x600/AAAAAA/FFFFFF?text=No+Image",
+            ];
+        return {
+          _id: profile._id,
+          fullName: profile.name,
+          age: profile.age,
+          relationshipType: profile.relationshipType,
+          bio: profile.bio || "No bio available.",
+          images,
+          gender: profile.gender,
+          location: profile.location,
+          interests: Array.isArray(profile.interests)
+            ? profile.interests.join(", ")
+            : profile.interests || "No interests listed",
+          distance: profile.location
+            ? haversineDistance(
+                locationArray[0],
+                locationArray[1],
+                profile.location[0],
+                profile.location[1]
+              )
+            : null,
+          occupation: profile.occupation,
+          workingAt: profile.workingAt,
+          pronouns: profile.pronouns,
+          genderOrientation: profile.genderOrientation,
+          languages: profile.languages,
+          loveLanguage: profile.loveLanguage,
+          zodiac: profile.zodiac,
+          familyPlanning: profile.familyPlanning,
+          bodyType: profile.bodyType,
+          drinking: profile.drinking,
+          smoking: profile.smoking,
+          workout: profile.workout,
+          verifiedUser: profile.isVerified,
+          ActivePremiumPlan: profile.ActivePremiumPlan,
+        };
+      });
       setProfiles(formattedProfiles);
     } catch (error) {
       console.error("Error fetching profiles:", error);
@@ -363,24 +362,19 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     if (index >= profiles.length) return;
     if (dailyLikes >= likeLimit) {
       showPremiumModal();
-      // Do NOT modify profiles array, just force Swiper to reset
-      setSwiperKey((k) => k + 1); // Force Swiper to reset
+      setSwiperKey((k) => k + 1);
       return;
     }
     await incrementLikes();
     const likedUserId = profiles[index]._id;
-    // console.log("Liked user ID before sending:", likedUserId);
-
     try {
       const response = await api.post(
         "/api/v1/users/userLiked",
         { likedUserId },
         { headers: { "Content-Type": "application/json" } }
       );
-
       if (response.data?.data?.matched === true) {
         const matchedUser = response.data.data.matchedUser;
-
         const userString = await AsyncStorage.getItem("user");
         const user = userString ? JSON.parse(userString) : {};
         const avatar = await AsyncStorage.getItem("avatar");
@@ -388,7 +382,6 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           fullName: user.fullName,
           image: avatar,
         };
-
         navigation.navigate("MatchScreen", {
           user: currentUser,
           matchedUser: {
@@ -397,18 +390,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           },
         });
       }
-
-      // console.log("User liked response:", response.data);
-
-      // Changed from filter to splice to maintain array references
-      setProfiles((prevProfiles) => {
-        const newProfiles = [...prevProfiles];
-        newProfiles.splice(index, 1);
-        return newProfiles;
-      });
-
-      // Update current card index
-      // setCurrentCardIndex(Math.min(index, profiles.length - 2));
+      // Do NOT remove the profile here
     } catch (error) {
       console.error(
         "Error liking user:",
@@ -423,22 +405,16 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
       showPremiumModal();
       return;
     }
-
     const superLikedUserId = profiles[index]._id;
-
     try {
       const response = await api.post(
-        "/api/v1/users/userSuperLiked", // Your backend endpoint
+        "/api/v1/users/userSuperLiked",
         { likedUserId: superLikedUserId },
         { headers: { "Content-Type": "application/json" } }
       );
-
-      // console.log("Super Like response:", response.data);
-
-      // Show Super Like feedback
       setSwipeFeedback({
         visible: true,
-        type: "superLike", // New feedback type
+        type: "superLike",
       });
       Animated.spring(feedbackAnim, {
         toValue: 1,
@@ -451,20 +427,11 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           }).start(() => {
             setSwipeFeedback({ visible: false, type: null });
           });
-        }, 1000); // Keep feedback visible for 1 second
+        }, 1000);
       });
-
-      // Remove the card from the stack
-      setProfiles((prevProfiles) => {
-        const newProfiles = [...prevProfiles];
-        newProfiles.splice(index, 1);
-        return newProfiles;
-      });
-
-      // Handle matching (if applicable)
+      // Do NOT remove the profile here
       if (response.data?.data?.matched === true) {
         const matchedUser = response.data.data.matchedUser;
-
         const userString = await AsyncStorage.getItem("user");
         const user = userString ? JSON.parse(userString) : {};
         const avatar = await AsyncStorage.getItem("avatar");
@@ -472,7 +439,6 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           fullName: user.fullName,
           image: avatar,
         };
-
         navigation.navigate("MatchScreen", {
           user: currentUser,
           matchedUser: {
@@ -638,8 +604,9 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
               }
             }}
             onSwiped={(index) => {
-              // Update current card index when swiped
-
+              // Always remove the first card and force Swiper to re-render
+              setProfiles((prev) => prev.slice(1));
+              setSwiperKey((k) => k + 1);
               Animated.spring(feedbackAnim, {
                 toValue: 0,
                 useNativeDriver: true,
@@ -649,8 +616,12 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
             }}
             cards={profiles}
             renderCard={(profile, index) => {
+              if (!profile) return null;
               const isTopCard = index === currentCardIndex;
-
+              // Defensive: ensure images is always an array
+              const images = Array.isArray(profile.images) && profile.images.length > 0
+                ? profile.images
+                : ["https://via.placeholder.com/400x600/AAAAAA/FFFFFF?text=No+Image"];
               return (
                 <View style={styles.card} key={profile._id}>
                   <TouchableOpacity
@@ -678,7 +649,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
                         <Image
                           source={{
                             uri:
-                              profile.images[0] ||
+                              images[0] ||
                               "https://via.placeholder.com/400x600/AAAAAA/FFFFFF?text=No+Image",
                           }}
                           style={styles.profileImage}
@@ -776,7 +747,14 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           />
         </View>
       ) : (
-        <Text style={styles.noProfiles}>No profiles available</Text>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', height: availableHeight }}>
+          <Image
+            source={require('../assets/icons/surprised.png')}
+            style={{ width: 150, height: 150, marginBottom: 20 }}
+          />
+          <Text style={styles.noProfilesCentered}>No more profiles.</Text>
+          <Text style={styles.noProfilesCentered}>Try changing your preferences.</Text>
+        </View>
       )}
 
       {renderFeedbackSticker()}
@@ -888,7 +866,12 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
                     onPress={() => handlePrevImage()}
                   />
                   <Animated.Image
-                    source={{ uri: selectedProfile.images[currentImageIndex] }}
+                    source={{
+                      uri:
+                        Array.isArray(selectedProfile.images) && selectedProfile.images.length > 0
+                          ? selectedProfile.images[currentImageIndex]
+                          : "https://via.placeholder.com/400x600/AAAAAA/FFFFFF?text=No+Image",
+                    }}
                     style={[styles.modalImage, { opacity: fadeAnim }]}
                   />
                   <TouchableOpacity
@@ -899,30 +882,32 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
                 {/* Dotted Navigation */}
                 <View style={styles.dotsContainer}>
-                  {selectedProfile?.images.map((_, index) => {
-                    return (
-                      <Animated.View
-                        key={index}
-                        style={[
-                          styles.dot,
-                          {
-                            transform: [
+                  {Array.isArray(selectedProfile.images) && selectedProfile.images.length > 0
+                    ? selectedProfile.images.map((_, index) => {
+                        return (
+                          <Animated.View
+                            key={index}
+                            style={[
+                              styles.dot,
                               {
-                                translateX: dotAnimation.interpolate({
-                                  inputRange: [index - 1, index, index + 1],
-                                  outputRange: [-1, 0, 1], // Adjust for sliding effect
-                                  extrapolate: "clamp",
-                                }),
+                                transform: [
+                                  {
+                                    translateX: dotAnimation.interpolate({
+                                      inputRange: [index - 1, index, index + 1],
+                                      outputRange: [-1, 0, 1],
+                                      extrapolate: "clamp",
+                                    }),
+                                  },
+                                ],
+                                backgroundColor:
+                                  currentImageIndex === index ? "#de822c" : "#777",
+                                width: currentImageIndex === index ? 30 : 30,
                               },
-                            ],
-                            backgroundColor:
-                              currentImageIndex === index ? "#de822c" : "#777",
-                            width: currentImageIndex === index ? 30 : 30,
-                          },
-                        ]}
-                      />
-                    );
-                  })}
+                            ]}
+                          />
+                        );
+                      })
+                    : [<Animated.View key={0} style={[styles.dot, { backgroundColor: "#777", width: 30 }]} />]}
                 </View>
 
                 {/* Profile Details */}
@@ -1138,6 +1123,12 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 18,
     marginTop: 20,
+  },
+  noProfilesCentered: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    textAlign: 'center',
+    marginTop: 0,
   },
   modalContainer: {
     flex: 1,

@@ -243,19 +243,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10, // Added horizontal padding
   },
   emptyStateContainer: {
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
     padding: 20,
   },
-
   noLikes: {
-    fontSize: 18,
-    color: "#B0B0B0",
-    textAlign: "center",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 20,
-    paddingHorizontal: 10,
+    color: '#B0B0B0',
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 90,
   },
 
   columnWrapper: {
