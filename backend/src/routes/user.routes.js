@@ -21,6 +21,8 @@ import {
   updatePushToken,
   userProfile,
   reportUser,
+  addProfileView,
+  getViewedBy,
 } from "../controllers/user.controller.js";
 import { loginUser } from "../controllers/user.controller.js";
 import { logoutUser } from "../controllers/user.controller.js";
@@ -152,5 +154,8 @@ UserRouter.route("/toggle-anonymous").post(
 );
 
 UserRouter.post("/report-user", verifyJWT, reportUser);
+
+UserRouter.post('/profileViewed', verifyJWT, addProfileView);
+UserRouter.get('/viewedBy', verifyJWT, getViewedBy);
 
 export default UserRouter;

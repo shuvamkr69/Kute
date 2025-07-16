@@ -992,6 +992,46 @@ const reportUser = asyncHandler(async (req, res) => {
   }
 });
 
+// Add a profile view (called when someone views a profile modal)
+const addProfileView = async (req, res) => {
+  try {
+    const viewerId = req.user._id;
+    const { userId } = req.body; // The profile being viewed
+    if (!userId) return res.status(400).json({ message: 'userId is required' });
+    if (viewerId.toString() === userId) return res.status(400).json({ message: 'Cannot view your own profile' });
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    // Only add if not already viewed in last 24h
+    const now = new Date();
+    user.profileViews = user.profileViews.filter(v => v.viewerId.toString() !== viewerId.toString() || (now - v.viewedAt) > 24*60*60*1000);
+    user.profileViews.push({ viewerId, viewedAt: now });
+    await user.save();
+    res.status(200).json({ message: 'Profile view recorded' });
+  } catch (e) {
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Get users who viewed my profile
+const getViewedBy = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const user = await User.findById(userId).populate('profileViews.viewerId', 'fullName avatar1');
+    if (!user) return res.status(404).json([]);
+    // Sort by most recent
+    const views = [...user.profileViews].sort((a, b) => b.viewedAt - a.viewedAt);
+    const formatted = views.map(v => ({
+      _id: v.viewerId._id,
+      fullName: v.viewerId.fullName,
+      profileImage: v.viewerId.avatar1 || 'https://via.placeholder.com/150',
+      viewedAt: v.viewedAt,
+    }));
+    res.status(200).json(formatted);
+  } catch (e) {
+    res.status(500).json([]);
+  }
+};
+
 
 export {
   generateAccessAndRefreshTokens,
@@ -1019,4 +1059,6 @@ export {
   changePassword,
   reportProblem,
   reportUser,
+  addProfileView,
+  getViewedBy,
 };

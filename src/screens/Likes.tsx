@@ -14,10 +14,18 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import Icon from "react-native-vector-icons/FontAwesome";
 import api from "../utils/api";
 import { getUserId } from "../utils/constants";
+import { BlurView } from 'expo-blur';
+import { useFocusEffect } from '@react-navigation/native';
 
 type Props = NativeStackScreenProps<any, "Likes">;
 
 interface LikedUser {
+  _id: string;
+  fullName: string;
+  profileImage: string;
+}
+
+interface ViewedByUser {
   _id: string;
   fullName: string;
   profileImage: string;
@@ -30,6 +38,10 @@ const Likes: React.FC<Props> = ({ navigation }) => {
   const [selectedUser, setSelectedUser] = useState<LikedUser | null>(null);
   const [showOptions, setShowOptions] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
+  const [tab, setTab] = useState<'matches' | 'viewedBy'>('matches');
+  const [viewedBy, setViewedBy] = useState<ViewedByUser[]>([]);
+  const [premiumPlan, setPremiumPlan] = useState<string | null>(null);
+  const [viewedLoading, setViewedLoading] = useState(false);
 
   const fetchLikedUsers = async (silent = false) => {
     try {
@@ -50,6 +62,55 @@ const Likes: React.FC<Props> = ({ navigation }) => {
       if (!silent) setLoading(false);
     }
   };
+
+  // Fetch premium status
+  useEffect(() => {
+    const fetchPremium = async () => {
+      try {
+        const res = await api.get('/api/v1/users/me');
+        setPremiumPlan(res.data.ActivePremiumPlan || null);
+      } catch (e) {
+        setPremiumPlan(null);
+      }
+    };
+    fetchPremium();
+  }, []);
+
+  // Fetch viewed by users
+  useEffect(() => {
+    if (tab === 'viewedBy') {
+      setViewedLoading(true);
+      api.get('/api/v1/users/viewedBy') // <-- Replace with your actual endpoint
+        .then(res => {
+          setViewedBy(res.data.map((user: any) => ({
+            _id: user._id,
+            fullName: user.fullName,
+            profileImage: user.profileImage || 'https://via.placeholder.com/150',
+          })));
+        })
+        .catch(() => setViewedBy([]))
+        .finally(() => setViewedLoading(false));
+    }
+  }, [tab]);
+
+  // Add focus effect to refresh viewedBy when returning to Likes screen
+  useFocusEffect(
+    React.useCallback(() => {
+      if (tab === 'viewedBy') {
+        setViewedLoading(true);
+        api.get('/api/v1/users/viewedBy')
+          .then(res => {
+            setViewedBy(res.data.map((user: any) => ({
+              _id: user._id,
+              fullName: user.fullName,
+              profileImage: user.profileImage || 'https://via.placeholder.com/150',
+            })));
+          })
+          .catch(() => setViewedBy([]))
+          .finally(() => setViewedLoading(false));
+      }
+    }, [tab])
+  );
 
   useEffect(() => {
   fetchLikedUsers(); // Initial fetch
@@ -108,6 +169,16 @@ const Likes: React.FC<Props> = ({ navigation }) => {
     </TouchableOpacity>
   );
 
+  // Add a custom render function for viewed by cards
+  const renderViewedByItem = ({ item }: { item: ViewedByUser }) => (
+    <View style={styles.viewedByCard}>
+      <Image source={{ uri: item.profileImage }} style={styles.viewedByImage} />
+      <Text style={styles.viewedByName} numberOfLines={1} ellipsizeMode="tail">
+        {item.fullName}
+      </Text>
+    </View>
+  );
+
   // Render fallback UI if offline or error
   if (isOffline) {
     return (
@@ -122,41 +193,126 @@ const Likes: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.headingContainer}>
-        <Text style={styles.heading}>Matches</Text>
-        {isOffline && <Text style={styles.offlineBadge}>⚠️</Text>}
+      {/* Tab Bar */}
+      <View style={styles.tabBar}>
+        <TouchableOpacity
+          style={[styles.tab, tab === 'matches' && styles.tabActive]}
+          onPress={() => setTab('matches')}
+        >
+          <Text style={[styles.tabText, tab === 'matches' && styles.tabTextActive]}>Matches</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, tab === 'viewedBy' && styles.tabActive]}
+          onPress={() => setTab('viewedBy')}
+        >
+          <Text style={[styles.tabText, tab === 'viewedBy' && styles.tabTextActive]}>Viewed By</Text>
+        </TouchableOpacity>
       </View>
-
-      <FlatList
-        data={likedUsers}
-        keyExtractor={(item) => item._id}
-        renderItem={renderItem}
-        numColumns={2}
-        columnWrapperStyle={styles.columnWrapper}
-        contentContainerStyle={[
-          styles.list,
-          likedUsers.length === 0 && { flex: 1, justifyContent: "center" },
-        ]}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={["#de822c"]}
-          />
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyStateContainer}>
-            <Image
-              source={require("../assets/icons/broken-heart.png")}
-              style={{ width: 150, height: 150, marginBottom: 20 }}
+  
+      {/* Tab Content */}
+      {tab === 'matches' ? (
+        <FlatList
+          data={likedUsers}
+          keyExtractor={(item) => item._id}
+          renderItem={renderItem}
+          numColumns={2}
+          columnWrapperStyle={styles.columnWrapper}
+          contentContainerStyle={[
+            styles.list,
+            likedUsers.length === 0 && { flex: 1, justifyContent: 'center' },
+          ]}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={['#de822c']}
             />
-            <Text style={styles.noLikes}>
-              No likes? The algorithm must be jealous
-            </Text>
-          </View>
-        }
-        key="two-columns"
-      />
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyStateContainer}>
+              <Image
+                source={require('../assets/icons/broken-heart.png')}
+                style={{ width: 150, height: 150, marginBottom: 20 }}
+              />
+              <Text style={styles.noLikes}>
+                No likes? The algorithm must be jealous
+              </Text>
+            </View>
+          }
+          key="two-columns"
+        />
+      ) : (
+        <View style={{ flex: 1 }}>
+          {premiumPlan === 'Standard' || premiumPlan === 'Diamond' ? (
+            viewedLoading ? (
+              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <Text style={{ color: '#fff' }}>Loading...</Text>
+              </View>
+            ) : (
+              <FlatList
+                data={viewedBy}
+                keyExtractor={(item) => item._id}
+                renderItem={renderViewedByItem}
+                numColumns={1}
+                contentContainerStyle={[
+                  styles.list,
+                  viewedBy.length === 0 && { flex: 1, justifyContent: 'center' },
+                ]}
+                refreshControl={
+                  <RefreshControl
+                    refreshing={viewedLoading}
+                    onRefresh={() => {
+                      setViewedLoading(true);
+                      api.get('/api/v1/users/viewedBy')
+                        .then(res => {
+                          setViewedBy(res.data.map((user: any) => ({
+                            _id: user._id,
+                            fullName: user.fullName,
+                            profileImage: user.profileImage || 'https://via.placeholder.com/150',
+                          })));
+                        })
+                        .catch(() => setViewedBy([]))
+                        .finally(() => setViewedLoading(false));
+                    }}
+                    colors={['#de822c']}
+                  />
+                }
+                ListEmptyComponent={
+                  <View style={styles.emptyStateContainer}>
+                    <Image
+                      source={require('../assets/icons/surprised.png')}
+                      style={{ width: 150, height: 150, marginBottom: 20 }}
+                    />
+                    <Text style={styles.noLikes}>
+                      No one has viewed your profile yet!
+                    </Text>
+                  </View>
+                }
+                key="viewed-by-list"
+              />
+            )
+          ) : (
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+              <BlurView intensity={80} tint="dark" style={styles.blurOverlay}>
+                <Image
+                  source={require('../assets/icons/surprised.png')}
+                  style={{ width: 150, height: 150, marginBottom: 20 }}
+                />
+                <Text style={styles.blurTitle}>Unlock "Who Viewed You"</Text>
+                <Text style={styles.blurDesc}>
+                  See everyone who checked out your profile. Upgrade to Standard or Diamond Premium to unlock!
+                </Text>
+                <TouchableOpacity
+                  style={styles.premiumButton}
+                  onPress={() => navigation.navigate('BuyPremium')}
+                >
+                  <Text style={styles.premiumButtonText}>Unlock with Premium</Text>
+                </TouchableOpacity>
+              </BlurView>
+            </View>
+          )}
+        </View>
+      )}
 
       <Modal
         animationType="fade"
@@ -345,5 +501,101 @@ const styles = StyleSheet.create({
   offlineBadge: {
     fontSize: 16,
     color: "#ff4d4d",
+  },
+  tabBar: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 20,
+    backgroundColor: '#181A20',
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+  },
+  tabActive: {
+    backgroundColor: '#23262F',
+  },
+  tabText: {
+    color: '#B0B0B0',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  tabTextActive: {
+    color: '#de822c',
+  },
+  blurOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    borderRadius: 20,
+    padding: 30,
+    marginTop: 30,
+  },
+  blurTitle: {
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  blurDesc: {
+    color: '#B0B0B0',
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 30,
+  },
+  premiumButton: {
+    backgroundColor: '#de822c',
+    borderRadius: 25,
+    paddingVertical: 14,
+    paddingHorizontal: 40,
+    alignItems: 'center',
+    marginTop: 10,
+    shadowColor: '#de822c',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  premiumButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  viewedByCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#181A20',
+    borderRadius: 12,
+    marginBottom: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    width: '100%',
+    minHeight: 64,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  viewedByImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    marginRight: 16,
+    backgroundColor: '#333',
+  },
+  viewedByName: {
+    color: '#fff',
+    fontSize: 17,
+    fontWeight: 'bold',
+    flex: 1,
   },
 });

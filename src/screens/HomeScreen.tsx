@@ -26,6 +26,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from '@expo/vector-icons';
 import { Easing } from 'react-native-reanimated';
+import { getUserId } from '../utils/constants';
 
 const VerificationImage = require("../assets/icons/verified-logo.png");
 
@@ -625,12 +626,17 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
               return (
                 <View style={styles.card} key={profile._id}>
                   <TouchableOpacity
-                    onPress={() => {
+                    onPress={async () => {
                       LayoutAnimation.configureNext(
                         LayoutAnimation.Presets.easeInEaseOut
                       );
                       setSelectedProfile(profile);
                       setCurrentImageIndex(0);
+                      // Record profile view if not self
+                      const myId = await getUserId();
+                      if (profile._id !== myId) {
+                        api.post('/api/v1/users/profileViewed', { userId: profile._id }).catch(() => {});
+                      }
                     }}
                     activeOpacity={1}
                   >
