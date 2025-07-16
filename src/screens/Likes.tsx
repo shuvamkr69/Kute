@@ -135,17 +135,18 @@ const Likes: React.FC<Props> = ({ navigation }) => {
     }
   }, [fetchLikedUsers]);
 
-  const renderItem = ({ item }: { item: LikedUser }) => (
+  // Custom render function for matches (full-width, chat button, long-press)
+  const renderMatchesItem = ({ item }: { item: LikedUser }) => (
     <TouchableOpacity
       activeOpacity={0.9}
       onLongPress={() => {
         setSelectedUser(item);
         setShowOptions(true);
       }}
-      style={styles.card}
+      style={styles.viewedByCard}
     >
-      <Image source={{ uri: item.profileImage }} style={styles.profileImage} />
-      <Text style={styles.name} numberOfLines={1} ellipsizeMode="tail">
+      <Image source={{ uri: item.profileImage }} style={styles.viewedByImage} />
+      <Text style={styles.viewedByName} numberOfLines={1} ellipsizeMode="tail">
         {item.fullName}
       </Text>
       <TouchableOpacity
@@ -214,9 +215,8 @@ const Likes: React.FC<Props> = ({ navigation }) => {
         <FlatList
           data={likedUsers}
           keyExtractor={(item) => item._id}
-          renderItem={renderItem}
-          numColumns={2}
-          columnWrapperStyle={styles.columnWrapper}
+          renderItem={renderMatchesItem}
+          numColumns={1}
           contentContainerStyle={[
             styles.list,
             likedUsers.length === 0 && { flex: 1, justifyContent: 'center' },
@@ -239,7 +239,7 @@ const Likes: React.FC<Props> = ({ navigation }) => {
               </Text>
             </View>
           }
-          key="two-columns"
+          key="matches-list"
         />
       ) : (
         <View style={{ flex: 1 }}>
@@ -293,21 +293,23 @@ const Likes: React.FC<Props> = ({ navigation }) => {
             )
           ) : (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-              <BlurView intensity={80} tint="dark" style={styles.blurOverlay}>
-                <Image
-                  source={require('../assets/icons/surprised.png')}
-                  style={{ width: 150, height: 150, marginBottom: 20 }}
-                />
-                <Text style={styles.blurTitle}>Unlock "Who Viewed You"</Text>
-                <Text style={styles.blurDesc}>
-                  See everyone who checked out your profile. Upgrade to Standard or Diamond Premium to unlock!
-                </Text>
-                <TouchableOpacity
-                  style={styles.premiumButton}
-                  onPress={() => navigation.navigate('BuyPremium')}
-                >
-                  <Text style={styles.premiumButtonText}>Unlock with Premium</Text>
-                </TouchableOpacity>
+              <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill}>
+                <View style={styles.blurOverlay}>
+                  <Image
+                    source={require('../assets/icons/surprised.png')}
+                    style={{ width: 150, height: 150, marginBottom: 20 }}
+                  />
+                  <Text style={styles.blurTitle}>See Who Viewed You</Text>
+                  <Text style={styles.blurDesc}>
+                    See everyone who checked out your profile. Upgrade to Standard or Diamond Premium to unlock!
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.premiumButton}
+                    onPress={() => navigation.navigate('BuyPremium')}
+                  >
+                    <Text style={styles.premiumButtonText}>Unlock with Premium</Text>
+                  </TouchableOpacity>
+                </View>
               </BlurView>
             </View>
           )}
@@ -506,8 +508,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 10,
-    marginBottom: 20,
+    marginTop: 24,
+    marginBottom: 28,
     backgroundColor: '#181A20',
     borderRadius: 12,
     overflow: 'hidden',

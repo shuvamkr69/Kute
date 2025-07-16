@@ -431,8 +431,8 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
         style={[
           styles.premiumImage,
           {
-            tintColor: ActivePremiumPlan ? null : "#B0B0B0",
-            opacity: ActivePremiumPlan ? 1 : 0.5,
+            tintColor: ActivePremiumPlan && ActivePremiumPlan !== 'null' && ActivePremiumPlan !== '' ? null : '#B0B0B0',
+            opacity: ActivePremiumPlan && ActivePremiumPlan !== 'null' && ActivePremiumPlan !== '' ? 1 : 0.5,
           },
         ]}
       />
@@ -535,61 +535,96 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
 
       {/* Boost & Roses Section */}
       <View style={styles.cardsContainer}>
-        <TouchableOpacity
-          activeOpacity={1}
-          style={styles.card}
-          onPress={() => navigation.navigate("BoostsAndLikes")}
+        {/* Boost Card */}
+        <LinearGradient
+          colors={["#232526", "#414345"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.featureCard}
         >
-          <Image
-            source={require("../assets/icons/popularity.png")}
-            style={{ width: 34, height: 34 }}
-          />
-          <Text style={styles.cardTitle}>Boost</Text>
-          <Text style={styles.cardText}>Increase your visibility by 11%</Text>
-
-          <View style={styles.counterContainer}>
-            <Text style={styles.counterText}>x{boosts}</Text>
+          <View style={styles.featureCardHeader}>
+            <Image
+              source={require("../assets/icons/popularity.png")}
+              style={styles.featureIcon}
+            />
+            <Text style={styles.featureTitle}>Boost</Text>
           </View>
-          <TouchableOpacity onPress={handleActivateBoost}>
+          <Text style={styles.featureDescription}>Increase your visibility by 3x and get more matches.</Text>
+          <View style={styles.featureFooter}>
+            <View style={styles.featureCounterBox}><Text style={styles.featureCounterText}>x{boosts}</Text></View>
+            <TouchableOpacity onPress={handleActivateBoost} style={styles.featureButton}>
+              <LinearGradient
+                colors={["#de822c", "#ff172e"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.featureButtonGradient}
+              >
+                <Text style={styles.featureButtonText}>Activate Now</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+          {boostTimer && (
+            <Text style={styles.featureTimer}>{boostTimer}</Text>
+          )}
+        </LinearGradient>
+
+        {/* Super Likes Card */}
+        <LinearGradient
+          colors={["#232526", "#414345"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.featureCard}
+        >
+          <View style={styles.featureCardHeader}>
+            <Image
+              source={require("../assets/icons/super-like.png")}
+              style={styles.featureIcon}
+            />
+            <Text style={styles.featureTitle}>Super Likes</Text>
+          </View>
+          <Text style={styles.featureDescription}>Send special likes to your crush and stand out!</Text>
+          <View style={styles.featureFooter}>
+            <View style={styles.featureCounterBox}><Text style={styles.featureCounterText}>x{superLikes}</Text></View>
+            <TouchableOpacity onPress={() => navigation.navigate("BoostsAndLikes")}
+              style={styles.featureButton}
+            >
+              <LinearGradient
+                colors={["#de822c", "#ff172e"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.featureButtonGradient}
+              >
+                <Text style={styles.featureButtonText}>Buy Super Likes</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </LinearGradient>
+
+        {/* Unlock All Features Card */}
+        <LinearGradient
+          colors={["#fffbe6", "#ffe0b2", "#ffd700"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.featureCard, styles.premiumFeatureCard]}
+        >
+          <View style={styles.featureCardHeader}>
+            <Icon name="unlock" size={32} color="#de822c" style={{ marginRight: 12 }} />
+            <Text style={[styles.featureTitle, styles.premiumFeatureTitle]}>Unlock All Features</Text>
+          </View>
+          <Text style={[styles.featureDescription, styles.premiumFeatureDescription]}>Unlock all premium features and maximize your Kute experience.</Text>
+          <TouchableOpacity onPress={() => navigation.navigate("Premium")}
+            style={styles.featureButton}
+          >
             <LinearGradient
               colors={["#de822c", "#ff172e"]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={styles.activateNowButton}
+              style={styles.featureButtonGradient}
             >
-              <Text style={styles.activateNowButtonText}>Activate Now</Text>
+              <Text style={styles.featureButtonText}>Become Premium</Text>
             </LinearGradient>
           </TouchableOpacity>
-          {boostTimer && (
-            <Text style={{ color: "#de822c", marginTop: 6 }}>{boostTimer}</Text>
-          )}
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          activeOpacity={1}
-          style={styles.card}
-          onPress={() => navigation.navigate("BoostsAndLikes")}
-        >
-          <Image
-            source={require("../assets/icons/super-like.png")}
-            style={{ width: 34, height: 34 }}
-          />
-          <Text style={styles.cardTitle}>Super Likes</Text>
-          <Text style={styles.cardText}>Send special likes to your crush!</Text>
-          <View style={styles.counterContainer}>
-            <Text style={styles.counterText}>x{superLikes}</Text>
-          </View>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          activeOpacity={1}
-          style={styles.card}
-          onPress={() => navigation.navigate("Premium")}
-        >
-          <Icon name="unlock" size={34} color="pink" />
-          <Text style={styles.cardTitle}>Unlock all features</Text>
-          <Text style={styles.cardText}>Unlock all the premium features</Text>
-        </TouchableOpacity>
+        </LinearGradient>
       </View>
     </ScrollView>
   );
@@ -903,6 +938,97 @@ const styles = StyleSheet.create({
   },
   activateNowButtonText: {
     color: "white",
+  },
+  featureCard: {
+    borderRadius: 18,
+    marginBottom: 22,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 6,
+    backgroundColor: 'transparent',
+  },
+  featureCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  featureIcon: {
+    width: 38,
+    height: 38,
+    marginRight: 14,
+    backgroundColor: 'transparent',
+    padding: 4,
+    resizeMode: 'contain',
+  },
+  featureTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#fff',
+    letterSpacing: 0.5,
+  },
+  featureDescription: {
+    color: '#B0B0B0',
+    fontSize: 15,
+    marginBottom: 16,
+    marginLeft: 2,
+    marginRight: 2,
+  },
+  featureFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  featureCounterBox: {
+    backgroundColor: '#23262F',
+    borderRadius: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 18,
+    marginRight: 10,
+  },
+  featureCounterText: {
+    color: '#de822c',
+    fontWeight: 'bold',
+    fontSize: 18,
+  },
+  featureButton: {
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  featureButtonGradient: {
+    paddingVertical: 10,
+    paddingHorizontal: 28,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  featureButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+    letterSpacing: 0.2,
+  },
+  featureTimer: {
+    color: '#de822c',
+    marginTop: 10,
+    fontWeight: 'bold',
+    fontSize: 15,
+    textAlign: 'center',
+  },
+  premiumFeatureCard: {
+    borderWidth: 2,
+    borderColor: '#ffd700',
+    backgroundColor: 'rgba(255, 223, 0, 0.08)',
+  },
+  premiumFeatureTitle: {
+    color: '#de822c',
+  },
+  premiumFeatureDescription: {
+    color: '#b8860b',
+    fontWeight: '500',
   },
 });
 
