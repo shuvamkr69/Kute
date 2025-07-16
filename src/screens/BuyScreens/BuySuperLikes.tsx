@@ -44,7 +44,7 @@ const BuyFeaturesScreen: React.FC = () => {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/products');
+      const response = await api.get('/api/v1/payment/products');
       setSuperLikeProducts(response.data.data.superLikes);
       setBoostProducts(response.data.data.boosts);
     } catch (error) {
@@ -162,11 +162,6 @@ const BuyFeaturesScreen: React.FC = () => {
       <View style={styles.footer}>
         <Text style={styles.footerText}>Purchases will be charged to your Google Play account</Text>
       </View>
-      {/* Buy More Boost Button */}
-      <TouchableOpacity style={styles.buyMoreButton} onPress={() => setActiveTab('boosts')}>
-        <Ionicons name="flash" size={20} color="#fff" style={{ marginRight: 8 }} />
-        <Text style={styles.buyMoreButtonText}>Buy More Boost</Text>
-      </TouchableOpacity>
     </ScrollView>
   );
 

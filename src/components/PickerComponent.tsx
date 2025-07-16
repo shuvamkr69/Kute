@@ -5,13 +5,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   Modal,
-  FlatList,
-  Dimensions,
-  Animated,
-  Easing,
 } from "react-native";
-
-const { height } = Dimensions.get("window");
+import { LinearGradient } from "expo-linear-gradient";
 
 interface PickerComponentProps {
   label: string;
@@ -29,77 +24,66 @@ const PickerComponent: React.FC<PickerComponentProps> = ({
   icon,
 }) => {
   const [modalVisible, setModalVisible] = React.useState(false);
-  const slideAnim = React.useRef(new Animated.Value(height)).current;
-  const OPTION_HEIGHT = 60;
-  const MAX_VISIBLE_OPTIONS = Math.floor((height * 0.5) / OPTION_HEIGHT);
-  const targetHeight =
-    Math.min(options.length, MAX_VISIBLE_OPTIONS) * OPTION_HEIGHT + 100;
-
-  const openModal = () => {
-    setModalVisible(true);
-
-    Animated.timing(slideAnim, {
-      toValue: height - targetHeight,
-      duration: 300,
-      easing: Easing.out(Easing.exp),
-      useNativeDriver: false,
-    }).start();
-  };
-
-  const closeModal = () => {
-    Animated.timing(slideAnim, {
-      toValue: height,
-      duration: 200,
-      easing: Easing.in(Easing.linear),
-      useNativeDriver: false,
-    }).start(() => setModalVisible(false));
-  };
 
   const handleSelect = (value: string) => {
     onValueChange(value);
-    closeModal();
+    setModalVisible(false);
   };
 
   return (
-    <View>
-      <TouchableOpacity style={styles.pickerRow} onPress={openModal} activeOpacity={1}>
-        <View style={styles.labelContainer}>
+    <View style={{ marginBottom: 18 }}>
+      <TouchableOpacity
+        style={styles.pickerRow}
+        onPress={() => setModalVisible(true)}
+        activeOpacity={0.95}
+      >
+        <View style={styles.labelRow}>
           {icon && <View style={styles.iconContainer}>{icon}</View>}
           <Text style={styles.label}>{label}</Text>
         </View>
         <View style={styles.selectedValueBox}>
-          <Text style={styles.selectedValueText}>
-            {selectedValue || "Not Set"}
-          </Text>
-          {!modalVisible && <Text style={styles.arrow}>▼</Text>}
+          <Text style={styles.selectedValueText}>{selectedValue || "Not Set"}</Text>
+          <Text style={styles.arrow}>▼</Text>
         </View>
       </TouchableOpacity>
-
-      <Modal visible={modalVisible} transparent animationType="none">
-        <View style={styles.modalOverlay}>
-          <TouchableOpacity
-            style={styles.backgroundDismissArea}
-            activeOpacity={1}
-            onPress={closeModal}
-          />
-          <Animated.View style={[styles.bottomSheet, { top: slideAnim }]}>
-            <View style={styles.handleBar} />
-            <FlatList
-              style={{ maxHeight: MAX_VISIBLE_OPTIONS * OPTION_HEIGHT }}
-              showsVerticalScrollIndicator={false}
-              data={options}
-              keyExtractor={(item) => item}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={styles.optionBox}
-                  onPress={() => handleSelect(item)}
-                >
-                  <Text style={styles.optionText}>{item}</Text>
-                </TouchableOpacity>
-              )}
-            />
-          </Animated.View>
-        </View>
+      <Modal visible={modalVisible} transparent animationType="fade">
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setModalVisible(false)}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalLabel}>{label}</Text>
+            <View style={styles.bubbleContainer}>
+              {options.map((option) => {
+                const isSelected = selectedValue === option;
+                return (
+                  <TouchableOpacity
+                    key={option}
+                    style={styles.bubbleTouchable}
+                    onPress={() => handleSelect(option)}
+                    activeOpacity={0.85}
+                  >
+                    {isSelected ? (
+                      <LinearGradient
+                        colors={["#ff172e", "#de822c"]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.bubble}
+                      >
+                        <Text style={[styles.bubbleText, { color: "#fff" }]}>{option}</Text>
+                      </LinearGradient>
+                    ) : (
+                      <View style={[styles.bubble, styles.bubbleUnselected]}>
+                        <Text style={[styles.bubbleText, { color: "#B0B0B0" }]}>{option}</Text>
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        </TouchableOpacity>
       </Modal>
     </View>
   );
@@ -112,20 +96,27 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 15,
   },
+  labelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
   label: {
-    fontSize: 16,
+    fontSize: 14,
     color: "#A0A0A0",
+  },
+  iconContainer: {
+    marginRight: 8,
   },
   selectedValueBox: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#1f1f1f",
+    backgroundColor: "black",
     paddingVertical: 8,
     paddingHorizontal: 15,
     borderRadius: 10,
   },
   selectedValueText: {
-    fontSize: 16,
+    fontSize: 14,
     color: "#A0A0A0",
     marginRight: 10,
   },
@@ -133,53 +124,52 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: "#BBBBBB",
   },
-  labelContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-
-  iconContainer: {
-    marginRight: 8,
-  },
-
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.8)",
-    justifyContent: "flex-end",
+    justifyContent: "center",
+    alignItems: "center",
   },
-  bottomSheet: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    backgroundColor: "#2A2A2A",
-    borderTopLeftRadius: 25,
-    borderTopRightRadius: 25,
-    padding: 20,
-    paddingBottom: 40,
+  modalContent: {
+    backgroundColor: "#23262F",
+    borderRadius: 18,
+    padding: 24,
+    minWidth: 260,
+    maxWidth: 340,
+    alignItems: "center",
   },
-  backgroundDismissArea: {
-    flex: 1,
+  modalLabel: {
+    color: "#de822c",
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 18,
   },
-
-  handleBar: {
-    width: 50,
-    height: 6,
-    backgroundColor: "#666",
-    borderRadius: 3,
-    alignSelf: "center",
-    marginBottom: 20,
+  bubbleContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    justifyContent: "center",
   },
-  optionBox: {
-    backgroundColor: "#3A3A3A",
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 15,
+  bubbleTouchable: {
+    marginRight: 8,
+    marginBottom: 8,
   },
-  optionText: {
-    fontSize: 14,
-    color: "#FFFFFF",
-    textAlign: "center",
-    fontWeight: "600",
+  bubble: {
+    borderRadius: 20,
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+    minWidth: 60,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  bubbleUnselected: {
+    backgroundColor: "#111", // solid black
+    borderWidth: 1,
+    borderColor: "#444",
+  },
+  bubbleText: {
+    fontWeight: "bold",
+    fontSize: 15,
   },
 });
 

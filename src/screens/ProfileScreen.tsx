@@ -21,6 +21,8 @@ import { RefreshControl } from "react-native";
 import LoadingScreen from "./LoadingScreen";
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
+import { Animated as RNAnimated } from 'react-native';
+const AnimatedLinearGradient = RNAnimated.createAnimatedComponent(LinearGradient);
 const VerificationImage = require("../assets/icons/verified-logo.png");
 const PremiumImage = require("../assets/icons/premium.png");
 
@@ -62,6 +64,58 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   const [boostActiveUntil, setBoostActiveUntil] = useState<Date | null>(null);
   const [boostTimer, setBoostTimer] = useState<string | null>(null);
   const [showFullLoveLanguage, setShowFullLoveLanguage] = useState(false);
+
+  // Animated value for fog effect
+  const fogAnim = React.useRef(new Animated.Value(0)).current;
+
+  React.useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(fogAnim, {
+          toValue: 1,
+          duration: 6000,
+          useNativeDriver: false,
+        }),
+        Animated.timing(fogAnim, {
+          toValue: 0,
+          duration: 6000,
+          useNativeDriver: false,
+        }),
+      ])
+    ).start();
+  }, []);
+
+  // Interpolate colors for animated gradient
+  const fogColors = fogAnim.interpolate ? [
+    fogAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: ["#ff172e", "#de822c"]
+    }),
+    fogAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: ["#de822c", "#ffb347"]
+    })
+  ] : ["#ff172e", "#de822c"];
+
+  // Animated value for fog overlay drift
+  const fogDriftAnim = React.useRef(new Animated.Value(0)).current;
+
+  React.useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(fogDriftAnim, {
+          toValue: 1,
+          duration: 12000,
+          useNativeDriver: false,
+        }),
+        Animated.timing(fogDriftAnim, {
+          toValue: 0,
+          duration: 12000,
+          useNativeDriver: false,
+        }),
+      ])
+    ).start();
+  }, []);
 
   // Move fetchUser to before useEffect and useFocusEffect
   const fetchUser = async () => {
@@ -519,28 +573,46 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
         )}
       </View>
 
-      {/* Upgrade Section */}
-      <View style={styles.upgradeContainer}>
-        <LinearGradient
-          colors={["#de822c", "#ff172e"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.upgradeGradient}
-        >
-          <Text style={styles.upgradeTitle}>Kute-T</Text>
-          <Text style={styles.upgradeDescription}>
-            Unlock premium features, get 3x more matches, and boost your
-            visibility!
+      {/* Kute App Goal Card */}
+      <View style={styles.goalCardContainer}>
+        <View style={styles.goalCardGradient}>
+          <LinearGradient
+            colors={["#ff172e", "#de822c", "#ffb347"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+          {/* Animated fog overlay */}
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              StyleSheet.absoluteFill,
+              {
+                opacity: fogDriftAnim.interpolate({
+                  inputRange: [0, 0.5, 1],
+                  outputRange: [0.18, 0.32, 0.18]
+                }),
+                transform: [
+                  {
+                    translateX: fogDriftAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0, 60] // drift right
+                    })
+                  }
+                ],
+                backgroundColor: 'rgba(255,255,255,0.22)',
+                borderRadius: 22,
+              }
+            ]}
+          />
+          <View style={{ alignItems: 'center', marginBottom: 10, zIndex: 1 }}>
+            <Ionicons name="heart-circle" size={44} color="#fff" style={{ marginBottom: 6 }} />
+            <Text style={styles.goalCardTitle}>Our Mission</Text>
+          </View>
+          <Text style={[styles.goalCardText, { zIndex: 1 }]}>
+            Welcome to Kute! Here, dating is about real connections, good vibes, and a little bit of magic. Whether you're searching for your soulmate, a new best friend, or just someone to share memes with, Kute is your safe, friendly space to be yourself and meet awesome people. Let's make every swipe a story worth telling.
           </Text>
-
-          <TouchableOpacity
-            style={styles.upgradeButton}
-            onPress={handleUpgrade}
-            activeOpacity={0.95}
-          >
-            <Text style={styles.upgradeButtonText}>Become a Member</Text>
-          </TouchableOpacity>
-        </LinearGradient>
+        </View>
       </View>
 
       {/* Boosts Counter */}
@@ -564,24 +636,24 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
           <Text style={styles.featureDescription}>Increase your visibility by 3x and get more matches.</Text>
           <View style={styles.featureFooter}>
             <View style={styles.featureCounterBox}><Text style={styles.featureCounterText}>x{boosts}</Text></View>
-            <TouchableOpacity onPress={handleActivateBoost} style={styles.featureButton}>
+            <TouchableOpacity onPress={handleActivateBoost} style={[styles.featureButton, { minWidth: 80 }]}>
               <LinearGradient
                 colors={["#de822c", "#ff172e"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={styles.featureButtonGradient}
+                style={[styles.featureButtonGradient, { paddingVertical: 6, paddingHorizontal: 16 }]}
               >
-                <Text style={styles.featureButtonText}>Activate Now</Text>
+                <Text style={[styles.featureButtonText, { fontSize: 13 }]}>Activate Now</Text>
               </LinearGradient>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => navigation.navigate('BuyFeatures', { initialTab: 'boosts' })} style={[styles.featureButton, { minWidth: 110, paddingVertical: 6, paddingHorizontal: 0 }]}>
+            <TouchableOpacity onPress={() => navigation.navigate('BuyFeatures', { initialTab: 'boosts' })} style={[styles.featureButton, { minWidth: 80 }]}>
               <LinearGradient
                 colors={["#de822c", "#ff172e"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={styles.featureButtonGradient}
+                style={[styles.featureButtonGradient, { paddingVertical: 6, paddingHorizontal: 16 }]}
               >
-                <Text style={styles.featureButtonText}>Buy Boosts</Text>
+                <Text style={[styles.featureButtonText, { fontSize: 13 }]}>Buy Boosts</Text>
               </LinearGradient>
             </TouchableOpacity>
           </View>
@@ -607,45 +679,45 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
           <Text style={styles.featureDescription}>Send special likes to your crush and stand out!</Text>
           <View style={styles.featureFooter}>
             <View style={styles.featureCounterBox}><Text style={styles.featureCounterText}>x{superLikes}</Text></View>
-            <TouchableOpacity onPress={() => navigation.navigate('BuyFeatures', { initialTab: 'superlikes' })} style={[styles.featureButton, { minWidth: 110, paddingVertical: 6, paddingHorizontal: 0 }]}>
+            <TouchableOpacity onPress={() => navigation.navigate('BuyFeatures', { initialTab: 'superlikes' })} style={[styles.featureButton, { minWidth: 80 }]}>
               <LinearGradient
                 colors={["#de822c", "#ff172e"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
-                style={styles.featureButtonGradient}
+                style={[styles.featureButtonGradient, { paddingVertical: 6, paddingHorizontal: 16 }]}
               >
-                <Text style={styles.featureButtonText}>Buy Super Likes</Text>
+                <Text style={[styles.featureButtonText, { fontSize: 13 }]}>Buy Super Likes</Text>
               </LinearGradient>
             </TouchableOpacity>
           </View>
         </LinearGradient>
-
-        {/* Unlock All Features Card */}
-        <LinearGradient
-          colors={["#fffbe6", "#ffe0b2", "#ffd700"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[styles.featureCard, styles.premiumFeatureCard]}
-        >
-          <View style={styles.featureCardHeader}>
-            <Icon name="unlock" size={32} color="#de822c" style={{ marginRight: 12 }} />
-            <Text style={[styles.featureTitle, styles.premiumFeatureTitle]}>Unlock All Features</Text>
-          </View>
-          <Text style={[styles.featureDescription, styles.premiumFeatureDescription]}>Unlock all premium features and maximize your Kute experience.</Text>
-          <TouchableOpacity onPress={() => navigation.navigate("Premium")}
-            style={styles.featureButton}
-          >
-            <LinearGradient
-              colors={["#de822c", "#ff172e"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.featureButtonGradient}
-            >
-              <Text style={styles.featureButtonText}>Become Premium</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        </LinearGradient>
       </View>
+
+      {/* Unlock All Features Card (Premium) at the end */}
+      <LinearGradient
+        colors={["#fffbe6", "#ffe0b2", "#ffd700"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[styles.featureCard, styles.premiumFeatureCard, { marginBottom: 22, marginTop: 0 }]}
+      >
+        <View style={styles.featureCardHeader}>
+          <Icon name="unlock" size={32} color="#de822c" style={{ marginRight: 12 }} />
+          <Text style={[styles.featureTitle, styles.premiumFeatureTitle]}>Unlock All Features</Text>
+        </View>
+        <Text style={[styles.featureDescription, styles.premiumFeatureDescription]}>Unlock all premium features and maximize your Kute experience.</Text>
+        <TouchableOpacity onPress={() => navigation.navigate("Premium")}
+          style={styles.featureButton}
+        >
+          <LinearGradient
+            colors={["#de822c", "#ff172e"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.featureButtonGradient}
+          >
+            <Text style={styles.featureButtonText}>Become Premium</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+      </LinearGradient>
     </ScrollView>
   );
 };
@@ -1049,6 +1121,56 @@ const styles = StyleSheet.create({
   premiumFeatureDescription: {
     color: '#b8860b',
     fontWeight: '500',
+  },
+  featureList: {
+    marginTop: 18,
+    marginBottom: 6,
+  },
+  featureListItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    backgroundColor: 'rgba(0,0,0,0.10)',
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  featureListText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '500',
+    flex: 1,
+  },
+  goalCardContainer: {
+    marginBottom: 28,
+    marginTop: 0,
+    borderRadius: 22,
+    overflow: 'hidden',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+  },
+  goalCardGradient: {
+    padding: 28,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  goalCardTitle: {
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
+  goalCardText: {
+    color: '#fff',
+    fontSize: 15,
+    textAlign: 'center',
+    lineHeight: 22,
+    fontWeight: '400',
   },
 });
 

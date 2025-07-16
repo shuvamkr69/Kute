@@ -51,7 +51,7 @@ const interestOptions = [
   "Photography",
   "Cooking",
 ];
-const relationshipOptions = ["Long Term", "Casual", "Hookup", "Marriage", ""];
+const relationshipOptions = ["Long Term", "Casual", "Hookup", "Marriage", "Not Set"];
 const Options = ["Men", "Women", "Others"];
 const pronounsOptions = ["He/Him", "She/Her", "They/Them"];
 const genderOrientationOptions = [
@@ -560,7 +560,7 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
                 {bio.length}/500
               </Text>
 
-              <Text style={styles.label}>Height</Text>
+              <Text style={styles.sectionTitle}>Height</Text>
               <View>
                 <TextInput
                   style={styles.input}
@@ -576,7 +576,7 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
                 />
               </View>
 
-              <Text style={[styles.sectionTitle, {marginTop: 20, marginBottom: 10}]}>Important</Text>
+              <Text style={[styles.sectionTitle, {marginTop: 20, marginBottom: 10}]}>Essentials</Text>
 
               <PickerComponent
                 label="Occupation"
@@ -592,7 +592,7 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
                 onValueChange={setloveLanguage}
               />
 
-              <Text style={styles.label}>Working At / Student At</Text>
+              <Text style={styles.sectionTitle}>Working At / Student At</Text>
               <TextInput
                 style={styles.input}
                 placeholder="Where do you work or study?"
@@ -601,12 +601,15 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
                 onChangeText={setWorkingAt}
               />
 
-              <PickerComponent
-                label="Relationship Type"
-                selectedValue={relationshipType}
-                options={relationshipOptions}
-                onValueChange={setRelationshipType}
-              />
+              {/* Add margin top to Relationship Type picker */}
+              <View style={{ marginTop: 18 }}>
+                <PickerComponent
+                  label="Relationship Type"
+                  selectedValue={relationshipType}
+                  options={relationshipOptions}
+                  onValueChange={setRelationshipType}
+                />
+              </View>
 
               <PickerComponent
                 label="Pronouns"
