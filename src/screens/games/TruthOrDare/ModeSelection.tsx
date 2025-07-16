@@ -7,10 +7,10 @@ import { getUserId } from "../../../utils/constants";
 type RootStackParamList = {
   ModeSelection: undefined;
   SinglePlayerGame: undefined;
-  MultiplayerGame: undefined;
+  MultiplayerGame: { currentUserId: string };
 };
 
-type Props = NativeStackScreenProps<any, "TruthOrDareModeSelection">;
+type Props = NativeStackScreenProps<RootStackParamList, "ModeSelection">;
 
 const userId = getUserId();
 console.log("user id is: ", userId);
@@ -19,7 +19,7 @@ const ModeSelection: React.FC<Props> = ({ navigation }) => {
   const handleMultiplayerPress = async () => {
     const userId = await getUserId();
     if (userId) {
-      navigation.navigate("MultiPlayerGame", { currentUserId: userId });
+      navigation.navigate('MultiplayerGame', { currentUserId: userId });
     } else {
       console.warn("No user ID found");
     }
@@ -47,33 +47,34 @@ const ModeSelection: React.FC<Props> = ({ navigation }) => {
   );
 };
 
-
 export default ModeSelection;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#121212",
-    justifyContent: "center",
     alignItems: "center",
-    padding: 20,
+    justifyContent: "center",
+    padding: 24,
   },
   title: {
-    fontSize: 26,
-    color: "#FF6F61",
-    marginBottom: 30,
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#fff",
+    marginBottom: 32,
   },
   button: {
-    backgroundColor: "#FF6F61",
-    padding: 16,
-    marginVertical: 10,
-    borderRadius: 12,
-    width: "80%",
+    backgroundColor: "#de822c",
+    paddingVertical: 18,
+    paddingHorizontal: 40,
+    borderRadius: 18,
+    marginVertical: 16,
+    width: 260,
     alignItems: "center",
   },
   buttonText: {
-    color: "#FFF",
-    fontSize: 18,
+    color: "#fff",
+    fontSize: 20,
     fontWeight: "bold",
   },
-});
+}); 

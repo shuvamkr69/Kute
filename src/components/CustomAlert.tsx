@@ -7,7 +7,7 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 interface CustomAlertProps {
   visible: boolean;
   title: string;
-  message: React.ReactNode;
+  message: string;
   onClose: () => void;
   onConfirm?: () => void;
   confirmText?: string;

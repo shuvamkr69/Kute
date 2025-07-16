@@ -252,9 +252,7 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
     <View style={styles.container}>
       <View style={styles.headingContainer}>
         <Text style={styles.headingText}>Chats</Text>
-        {isOffline && <Text style={styles.noInternetBadge}>No Internet</Text>}
       </View>
-
       <FlatList
         data={chats}
         keyExtractor={(item) => item._id}
@@ -289,14 +287,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "black",
-    padding: 20,
+    padding: 0,
   },
   headingText: {
-    marginLeft: 2,
     color: "white",
     fontSize: 18,
     fontWeight: "bold",
-    marginBottom: 20,
+    marginBottom: 0,
+    marginLeft: 20,
   },
   chatTime: {
     color: "#B0B0B0",
@@ -354,10 +352,17 @@ const styles = StyleSheet.create({
     color: "#de822c",
   },
   headingContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 20,
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 10,
+    justifyContent: 'flex-start',
+    width: '100%',
+    paddingLeft: 10,
+    position: 'absolute',
+    top: 0,
+    zIndex: 10,
+    backgroundColor: 'transparent',
   },
 
   noInternetBadge: {

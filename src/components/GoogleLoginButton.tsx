@@ -11,10 +11,13 @@ WebBrowser.maybeCompleteAuthSession();
 const googleLogo = require("../assets/icons/googleLogoIcon.png");
 
 const GoogleLoginButton = ({ onLogin }: { onLogin: (token: string) => void }) => {
+  // Always use the Expo proxy for redirect URI
+  const redirectUri = AuthSession.makeRedirectUri({ useProxy: true } as any);
+  console.log('Expo Redirect URI:', redirectUri);
   // This ensures Expo uses its proxy (https://auth.expo.io/...) — required for Google OAuth
-  const redirectUri = AuthSession.makeRedirectUri({
-  native: "com.dating.kute:/oauthredirect",
-});
+  // const redirectUri = AuthSession.makeRedirectUri({
+  // native: "com.dating.kute:/oauthredirect",
+  // });
 
   const [request, response, promptAsync] = Google.useAuthRequest({
     expoClientId: Constants.expoConfig.extra.googleExpoClientId,

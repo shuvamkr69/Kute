@@ -25,13 +25,6 @@ import BoostsAndLikesScreen from "../screens/BoostsAndLikes";
 import AdvancedFilteringScreen from "../screens/AdvancedFiltering"; // Import your Advanced Filtering screen
 import OtherProfileScreen from "../screens/OtherProfileScreen";
 import PhotoVerificationScreen from "../screens/PhotoVerification";
-import ModeSelection from "../screens/games/TruthOrDare/ModeSelection";
-import SinglePlayerGame from "../screens/games/TruthOrDare/SinglePlayerGame";
-import MultiplayerGame from "../screens/games/TruthOrDare/MultiPlayerGame";
-import TruthAnswerScreen from "../screens/games/TruthOrDare/TruthAnswerScreen";
-import TruthSetScreen from "../screens/games/TruthOrDare/TruthSetScreen";
-import TruthReviewScreen from "../screens/games/TruthOrDare/TruthReviewScreen";
-import WaitingForAnswerScreen from "../screens/games/TruthOrDare/WaitingForAnswerScreen";
 import GroupSizeSelectorScreen from "../screens/games/NeverHaveIEver/GroupSizeSelectorScreen";
 import SubmitPromptScreen from "../screens/games/NeverHaveIEver/SubmitPromptScreen";
 import WaitingForPromptScreen from "../screens/games/NeverHaveIEver/WaitingForPromptScreen";
@@ -51,6 +44,13 @@ import ResetPasswordScreen from "../screens/ResetPasswordScreen";
 import ChangePasswordScreen from "../screens/ChangePasswordScreen";
 import HelpScreen from "../screens/HelpScreen";
 // import CallScreen from "../screens/CallScreen";
+import ModeSelection from "../screens/games/TruthOrDare/ModeSelection";
+import SinglePlayerGame from "../screens/games/TruthOrDare/SinglePlayerGame";
+import MultiplayerGame from "../screens/games/TruthOrDare/MultiPlayerGame";
+import TruthAnswerScreen from "../screens/games/TruthOrDare/TruthAnswerScreen";
+import TruthSetScreen from "../screens/games/TruthOrDare/TruthSetScreen";
+import TruthReviewScreen from "../screens/games/TruthOrDare/TruthReviewScreen";
+import WaitingForAnswerScreen from "../screens/games/TruthOrDare/WaitingForAnswerScreen";
 
 const Stack = createNativeStackNavigator(); // Standard Stack Navigator
 
@@ -93,7 +93,6 @@ export default function AppNavigation() {
             <Stack.Screen name="AdvancedFiltering" component={AdvancedFilteringScreen} />
             <Stack.Screen name="OtherProfile" component={OtherProfileScreen} />
             <Stack.Screen name="PhotoVerification" component={PhotoVerificationScreen} />
-            <Stack.Screen name="SinglePlayerGame" component={SinglePlayerGame} />
             <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
             <Stack.Screen name="HelpScreen" component={HelpScreen} />
             
@@ -101,12 +100,8 @@ export default function AppNavigation() {
             
             
             {/* truth and dare */}
-            <Stack.Screen name="TruthOrDareModeSelection" component={ModeSelection} />
-            <Stack.Screen name="MultiPlayerGame" component={MultiplayerGame} />
-            <Stack.Screen name="TruthAnswerScreen" component={TruthAnswerScreen} />
-            <Stack.Screen name="TruthSetScreen" component={TruthSetScreen} />
-            <Stack.Screen name="TruthReviewScreen" component={TruthReviewScreen} />
-            <Stack.Screen name="WaitingForAnswerScreen" component={WaitingForAnswerScreen} />
+            {/* <Stack.Screen name="GameCard" component={GameCard} /> */}
+            {/* <Stack.Screen name="GameImage" component={GameImage} /> */}
 
             {/* never have i ever */}
             <Stack.Screen name="GroupSizeSelectorScreen" component={GroupSizeSelectorScreen} />
@@ -124,9 +119,16 @@ export default function AppNavigation() {
             <Stack.Screen name="GameOverScreen" component={GameOverScreen} />
             <Stack.Screen name="RoundReviewScreen" component={RoundReviewScreen} />
             <Stack.Screen name="WaitingForFeedbackScreen" component={WaitingForFeedbackScreen} />
-            <Stack.Screen name="WYRWaitingForAnswerScreen" component={WaitingForAnswerScreen} />
-            <Stack.Screen name="WYRWaitingForPromptScreen" component={WaitingForPromptScreen} />
             <Stack.Screen name="WYRLobbyScreen" component={WYRLobbyScreen} />
+
+            {/* Truth or Dare */}
+            <Stack.Screen name="TruthOrDareModeSelection" component={ModeSelection} />
+            <Stack.Screen name="SinglePlayerGame" component={SinglePlayerGame} />
+            <Stack.Screen name="MultiPlayerGame" component={MultiplayerGame} />
+            <Stack.Screen name="TruthAnswerScreen" component={TruthAnswerScreen} />
+            <Stack.Screen name="TruthSetScreen" component={TruthSetScreen} />
+            <Stack.Screen name="TruthReviewScreen" component={TruthReviewScreen} />
+            <Stack.Screen name="WaitingForAnswerScreen" component={WaitingForAnswerScreen} />
 
 
 

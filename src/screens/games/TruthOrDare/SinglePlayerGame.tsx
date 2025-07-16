@@ -138,7 +138,7 @@ const SinglePlayerGame: React.FC<Props> = () => {
       )}
 
       {/* Buttons */}
-      <View style={styles.buttonRow}>
+      
         {!completed ? (
           <>
             <TouchableOpacity
@@ -183,14 +183,12 @@ const SinglePlayerGame: React.FC<Props> = () => {
         </BlurView>
       </Modal>
     </View>
-    </View>
   );
 };
 
 export default SinglePlayerGame;
 
 const styles = StyleSheet.create({
-
   backButtonContainer:{
     flex: 1,
     backgroundColor: "#121212",
@@ -318,5 +316,4 @@ typeButtonText: {
   fontSize: 16,
   fontWeight: "bold",
 },
-
-});
+}); 
