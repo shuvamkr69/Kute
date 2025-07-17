@@ -75,6 +75,7 @@ const MessageItem = memo(
     isLastMyMessage: boolean; // <-- new prop
     isRead: boolean | undefined; // <-- new prop
     otherUserAvatar?: string; // <-- new prop
+    style?: any;
   }) => {
     const {
       text,
@@ -89,6 +90,7 @@ const MessageItem = memo(
       isLastMyMessage, // <-- new
       isRead, // <-- new
       otherUserAvatar, // <-- new
+      style,
     } = props;
 
     const formatTime = (isoDate?: string) => {
@@ -110,6 +112,7 @@ const MessageItem = memo(
             ? styles.myMessageContainer
             : styles.otherMessageContainer,
           { position: "relative" },
+          style,
         ]}
       >
         {isSelected && <View style={styles.selectedMessageOverlay} />}
@@ -125,7 +128,7 @@ const MessageItem = memo(
             <Ionicons
               name="return-up-back-outline"
               size={20}
-              color="#de822c"
+              color={isMyMessage ? "#fff" : "#de822c"}
               style={{
                 transform: isMyMessage ? [] : [{ scaleX: -1 }], // ✅ Flip horizontally
               }}
@@ -175,7 +178,7 @@ const MessageItem = memo(
 
 const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
   const { likedUserId, userName, loggedInUserId, likedUserAvatar } = route.params;
-const [isBlockedByMe, setIsBlockedByMe] = useState<boolean>(false);
+  const [isBlockedByMe, setIsBlockedByMe] = useState<boolean>(false);
 
 
   const [conversationId, setConversationId] = useState<string | null>(null);
@@ -192,9 +195,30 @@ const [isBlockedByMe, setIsBlockedByMe] = useState<boolean>(false);
   );
   const [selectionMode, setSelectionMode] = useState<boolean>(false);
   const [customAlert, setCustomAlert] = useState({ visible: false, title: '', message: '' });
+  const [searchText, setSearchText] = useState("");
+  const [searchBarVisible, setSearchBarVisible] = useState(false);
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+  const [searchResultsModalVisible, setSearchResultsModalVisible] = useState(false);
+  const [searchSubmitted, setSearchSubmitted] = useState(false);
 
   const flatListRef = useRef<FlatList<Message>>(null);
-
+  const menuAnim = useRef(new Animated.Value(400)).current; // Start off-screen right
+  useEffect(() => {
+    if (menuVisible) {
+      menuAnim.setValue(400);
+      Animated.timing(menuAnim, {
+        toValue: 0,
+        duration: 350,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(menuAnim, {
+        toValue: 400,
+        duration: 350,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [menuVisible]);
 
 
   useEffect(() => {
@@ -614,6 +638,70 @@ navigation.goBack();
     );
   };
 
+  // Filter messages based on searchText
+  const filteredMessages = searchBarVisible && searchText.trim().length > 0
+    ? messages.filter((msg) => msg.text.toLowerCase().includes(searchText.toLowerCase()))
+    : messages;
+
+  // Scroll to first search result
+  useEffect(() => {
+    if (searchBarVisible && searchText.trim().length > 0 && filteredMessages.length > 0) {
+      const firstIndex = messages.findIndex((msg) => msg.text.toLowerCase().includes(searchText.toLowerCase()));
+      if (firstIndex !== -1 && flatListRef.current) {
+        flatListRef.current.scrollToIndex({ index: firstIndex, animated: true });
+      }
+    }
+  }, [searchText, searchBarVisible]);
+
+  // Show scroll-to-bottom button logic
+  const handleScroll = (event) => {
+    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+    const isAtBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - 20;
+    setShowScrollToBottom(!isAtBottom);
+  };
+
+  const scrollToBottom = () => {
+    if (flatListRef.current) {
+      flatListRef.current.scrollToEnd({ animated: true });
+    }
+  };
+
+  // Replace onPress for closing the menu with a function that animates out first
+  const closeMenuWithAnimation = () => {
+    Animated.timing(menuAnim, {
+      toValue: 400,
+      duration: 350,
+      useNativeDriver: true,
+    }).start(() => setMenuVisible(false));
+  };
+
+  // Show search results modal when searching
+  const matchingMessages = searchSubmitted && searchText.trim().length > 0
+    ? messages.filter((msg) => msg.text.toLowerCase().includes(searchText.toLowerCase()))
+    : [];
+
+  // Handler to jump to a message
+  const jumpToMessage = (msgId: string) => {
+    const idx = messages.findIndex((msg) => msg._id === msgId);
+    if (idx !== -1 && flatListRef.current) {
+      setSearchResultsModalVisible(false);
+      setSearchBarVisible(false);
+      setSearchText("");
+      setSearchSubmitted(false);
+      setTimeout(() => {
+        // Only scroll if index is valid for the FlatList data
+        if (idx < messages.length) {
+          try {
+            flatListRef.current.scrollToIndex({ index: idx, animated: true });
+          } catch (e) {
+            // fallback: scroll to end
+            flatListRef.current.scrollToEnd({ animated: true });
+          }
+        }
+      }, 350); // Wait for modal to close and FlatList to re-render
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
@@ -726,11 +814,70 @@ navigation.goBack();
           <LoadingScreen description="Cupid's syncing your chats... 🏹" />
         ) : (
           <>
+            {/* Search Bar */}
+            {/* Search Bar Overlay */}
+            {searchBarVisible && (
+              <View style={styles.inputContainer}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Search messages..."
+                  placeholderTextColor="#B0B0B0"
+                  value={searchText}
+                  onChangeText={setSearchText}
+                  returnKeyType="search"
+                  autoFocus
+                />
+                <TouchableOpacity
+                  onPress={() => {
+                    setSearchResultsModalVisible(true);
+                    setSearchSubmitted(true);
+                  }}
+                  style={{ marginLeft: 6, marginRight: 2 }}
+                >
+                  <Ionicons name="search" size={24} color="#de822c" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => { setSearchBarVisible(false); setSearchText(""); setSearchSubmitted(false); }}>
+                  <Ionicons name="close" size={24} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            )}
+            {/* Search Results Modal */}
+            <Modal
+              visible={searchResultsModalVisible && searchBarVisible && searchSubmitted && searchText.trim().length > 0}
+              transparent
+              animationType="fade"
+              onRequestClose={() => setSearchResultsModalVisible(false)}
+            >
+              <View style={styles.searchResultsModalBg}>
+                <View style={styles.searchResultsModalCard}>
+                  <Text style={styles.searchResultsTitle}>Search Results</Text>
+                  <FlatList
+                    data={matchingMessages}
+                    keyExtractor={item => item._id}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        style={styles.searchResultItem}
+                        onPress={() => jumpToMessage(item._id)}
+                      >
+                        <Text style={styles.searchResultText}>{item.text}</Text>
+                        <Text style={styles.searchResultTime}>{item.createdAt ? new Date(item.createdAt).toLocaleString() : ''}</Text>
+                      </TouchableOpacity>
+                    )}
+                    ListEmptyComponent={<Text style={styles.searchResultEmpty}>No results found.</Text>}
+                    style={{ maxHeight: 350 }}
+                  />
+                  <TouchableOpacity style={styles.searchResultsCloseBtn} onPress={() => setSearchResultsModalVisible(false)}>
+                    <Ionicons name="close" size={28} color="#fff" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </Modal>
+            {/* Messages List */}
             <FlatList
               showsVerticalScrollIndicator={false}
               ref={flatListRef}
-              data={isBlockedByMe ? [] : messages}
-              renderItem={({ item }) => (
+              data={filteredMessages}
+              renderItem={({ item, index }) => (
                 <MessageItem
                   text={item.text}
                   isMyMessage={item.senderId === loggedInUserId}
@@ -744,20 +891,40 @@ navigation.goBack();
                   isLastMyMessage={item.senderId === loggedInUserId && item._id === messages[messages.length - 1]?._id}
                   isRead={item.isRead ?? false}
                   otherUserAvatar={item.senderId === loggedInUserId ? profileImage : undefined}
+                  style={index === 0 ? { marginTop: 24 } : undefined}
                 />
               )}
               keyExtractor={(item) => item._id}
+              getItemLayout={(data, index) => ({ length: 70, offset: 70 * index, index })}
               ListEmptyComponent={<EmptyChatState userName={userName} />}
               ListFooterComponent={isBlockedByMe ? null : isTyping ? <TypingIndicator /> : null}
-              onContentSizeChange={() =>
-                flatListRef.current?.scrollToEnd({ animated: false })
-              }
+              onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
               onLayout={() => {
                 setTimeout(() => {
                   flatListRef.current?.scrollToEnd({ animated: false });
                 }, 100);
               }}
+              onScroll={handleScroll}
+              scrollEventThrottle={16}
             />
+            {/* Scroll to Bottom Button */}
+            {showScrollToBottom && (
+              <TouchableOpacity
+                onPress={scrollToBottom}
+                style={{
+                  position: 'absolute',
+                  right: 20,
+                  bottom: 90,
+                  backgroundColor: '#23242a',
+                  borderRadius: 22,
+                  padding: 10,
+                  elevation: 6,
+                  zIndex: 20,
+                }}
+              >
+                <Ionicons name="arrow-down" size={28} color="#de822c" />
+              </TouchableOpacity>
+            )}
           </>
         )}
 
@@ -828,31 +995,54 @@ navigation.goBack();
 
       </View>
 
-      <Modal transparent visible={menuVisible} animationType="fade">
+      <Modal transparent visible={menuVisible} animationType="none">
         <TouchableOpacity
-          style={styles.modalBackground}
-          onPress={() => setMenuVisible(false)}
+          style={[styles.modalBackground, { justifyContent: 'center', alignItems: 'flex-end' }]}
+          activeOpacity={1}
+          onPress={closeMenuWithAnimation}
         >
-          <View style={styles.menu}>
-            <Text
-              onPress={() => handleOptionPress("delete")}
-              style={styles.menuItem}
-            >
-              Delete All Chats
-            </Text>
-            <Text
-              onPress={() => handleOptionPress("mute")}
-              style={styles.menuItem}
-            >
-              Mute Notifications
-            </Text>
-            <Text
-              onPress={() => handleOptionPress("block")}
-              style={styles.menuItem}
-            >
-              Block User
-            </Text>
-          </View>
+          <Animated.View style={[styles.menuCard, { transform: [{ translateX: menuAnim }] }]}>
+            <View style={{ justifyContent: 'center' }}>
+              <TouchableOpacity
+                style={styles.menuItemRow}
+                activeOpacity={0.7}
+                onPress={() => handleOptionPress("mute")}
+              >
+                <Ionicons name="notifications-off-outline" size={20} color="#de822c" style={{ marginRight: 14 }} />
+                <Text style={styles.menuItemText}>Mute Notifications</Text>
+              </TouchableOpacity>
+              <View style={styles.menuDivider} />
+              <TouchableOpacity
+                style={styles.menuItemRow}
+                activeOpacity={0.7}
+                onPress={() => handleOptionPress("block")}
+              >
+                <Ionicons name="remove-circle-outline" size={20} color="#de822c" style={{ marginRight: 14 }} />
+                <Text style={styles.menuItemText}>Block User</Text>
+              </TouchableOpacity>
+              <View style={styles.menuDivider} />
+              <TouchableOpacity
+                style={styles.menuItemRow}
+                activeOpacity={0.7}
+                onPress={() => {
+                 closeMenuWithAnimation();
+                  setSearchBarVisible(true);
+                }}
+              >
+                <Ionicons name="search" size={20} color="#de822c" style={{ marginRight: 14 }} />
+                <Text style={styles.menuItemText}>Search</Text>
+              </TouchableOpacity>
+              <View style={styles.menuDivider} />
+              <TouchableOpacity
+                style={[styles.menuItemRow, { marginBottom: 0 }]}
+                activeOpacity={0.7}
+                onPress={() => handleOptionPress("delete")}
+              >
+                <Ionicons name="trash-outline" size={20} color="#ff4d4f" style={{ marginRight: 14 }} />
+                <Text style={[styles.menuItemText, { color: '#ff4d4f' }]}>Delete All Chats</Text>
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
         </TouchableOpacity>
       </Modal>
       <CustomAlert
@@ -909,7 +1099,8 @@ const styles = StyleSheet.create({
   replyButton: {
     position: "absolute",
     top: 5,
-    padding: 5,
+    paddingVertical: 5,
+    paddingHorizontal: 12,
     zIndex: 5,
   },
 
@@ -1049,18 +1240,46 @@ const styles = StyleSheet.create({
   modalBackground: {
     flex: 1,
     backgroundColor: "#000000aa",
-    justifyContent: "flex-end",
+    justifyContent: "center",
+    alignItems: "center",
   },
-  menu: {
-    backgroundColor: "#1E1E1E",
-    padding: 20,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+  menuCard: {
+    backgroundColor: '#181A20',
+    borderTopLeftRadius: 18,
+    borderBottomLeftRadius: 18,
+    borderTopRightRadius: 0,
+    borderBottomRightRadius: 0,
+    paddingVertical: 8,
+    paddingHorizontal: 0,
+    marginRight: 0,
+    marginLeft: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 24,
+    elevation: 16,
+    width: '80%',
+    maxWidth: 400,
   },
-  menuItem: {
-    color: "white",
-    fontSize: 16,
-    paddingVertical: 10,
+  menuItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 18,
+    paddingHorizontal: 28,
+    borderRadius: 12,
+    marginBottom: 2,
+  },
+  menuItemText: {
+    color: 'white',
+    fontSize: 17,
+    fontWeight: '500',
+    letterSpacing: 0.1,
+  },
+  menuDivider: {
+    height: 1,
+    backgroundColor: '#23242a',
+    marginHorizontal: 18,
+    opacity: 0.18,
   },
   // New styles for reply functionality
   replyContainer: {
@@ -1137,6 +1356,63 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 2,
     right: 2,
+  },
+  searchResultsModalBg: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 100,
+  },
+  searchResultsModalCard: {
+    backgroundColor: '#181A20',
+    borderRadius: 18,
+    padding: 18,
+    width: '90%',
+    maxWidth: 400,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 24,
+    elevation: 16,
+  },
+  searchResultsTitle: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 12,
+    letterSpacing: 0.2,
+  },
+  searchResultItem: {
+    width: '100%',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#23242a',
+    paddingHorizontal: 4,
+  },
+  searchResultText: {
+    color: '#fff',
+    fontSize: 15,
+    marginBottom: 2,
+  },
+  searchResultTime: {
+    color: '#de822c',
+    fontSize: 12,
+    opacity: 0.7,
+  },
+  searchResultEmpty: {
+    color: '#fff',
+    fontSize: 15,
+    textAlign: 'center',
+    marginTop: 20,
+  },
+  searchResultsCloseBtn: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    padding: 6,
+    zIndex: 10,
   },
 });
 

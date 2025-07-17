@@ -7,9 +7,9 @@ import {
   Image,
   TouchableOpacity,
   RefreshControl,
-  Alert,
   Modal,
 } from "react-native";
+import CustomAlert from "../components/CustomAlert";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import Icon from "react-native-vector-icons/FontAwesome";
 import api from "../utils/api";
@@ -42,6 +42,9 @@ const Likes: React.FC<Props> = ({ navigation }) => {
   const [viewedBy, setViewedBy] = useState<ViewedByUser[]>([]);
   const [premiumPlan, setPremiumPlan] = useState<string | null>(null);
   const [viewedLoading, setViewedLoading] = useState(false);
+  const [customAlert, setCustomAlert] = useState({ visible: false, title: '', message: '', onConfirm: undefined as undefined | (() => void), confirmText: '', cancelText: '' });
+  const [showUnmatchAlert, setShowUnmatchAlert] = useState(false);
+  const [pendingUnmatchUser, setPendingUnmatchUser] = useState<LikedUser | null>(null);
 
   const fetchLikedUsers = async (silent = false) => {
     try {
@@ -129,7 +132,7 @@ const Likes: React.FC<Props> = ({ navigation }) => {
       await fetchLikedUsers();
     } catch (error) {
       console.error("Error refreshing likes:", error);
-      Alert.alert("Error", "Failed to refresh likes.");
+      setCustomAlert({ visible: true, title: "Error", message: "Failed to refresh likes.", onConfirm: undefined, confirmText: '', cancelText: 'OK' });
     } finally {
       setRefreshing(false);
     }
@@ -147,7 +150,7 @@ const Likes: React.FC<Props> = ({ navigation }) => {
     >
       <Image source={{ uri: item.profileImage }} style={styles.viewedByImage} />
       <Text style={styles.viewedByName} numberOfLines={1} ellipsizeMode="tail">
-        {item.fullName}
+        {item.fullName.split(' ')[0]}
       </Text>
       <TouchableOpacity
         onPress={async () => {
@@ -155,12 +158,12 @@ const Likes: React.FC<Props> = ({ navigation }) => {
             const userId = await getUserId();
             navigation.navigate("Chat", {
               likedUserId: item._id,
-              userName: item.fullName,
+              userName: item.fullName.split(' ')[0],
               loggedInUserId: userId,
               likedUserAvatar: item.profileImage,
             });
           } catch (err) {
-            Alert.alert("Error", "Could not open chat. Please try again later.");
+            setCustomAlert({ visible: true, title: "Error", message: "Could not open chat. Please try again later.", onConfirm: undefined, confirmText: '', cancelText: 'OK' });
           }
         }}
         style={styles.chatButton}
@@ -175,7 +178,7 @@ const Likes: React.FC<Props> = ({ navigation }) => {
     <View style={styles.viewedByCard}>
       <Image source={{ uri: item.profileImage }} style={styles.viewedByImage} />
       <Text style={styles.viewedByName} numberOfLines={1} ellipsizeMode="tail">
-        {item.fullName}
+        {item.fullName.split(' ')[0]}
       </Text>
     </View>
   );
@@ -328,43 +331,16 @@ const Likes: React.FC<Props> = ({ navigation }) => {
           onPressOut={() => setShowOptions(false)}
         >
           <View style={styles.optionContainer}>
-            <Text style={styles.optionTitle}>{selectedUser?.fullName}</Text>
+            <Text style={styles.optionTitle}>{selectedUser?.fullName?.split(' ')[0]}</Text>
 
             <TouchableOpacity
               style={[styles.optionButton, { backgroundColor: "#400" }]}
               onPress={() => {
-                Alert.alert(
-                  "Unmatch?",
-                  `Are you sure you want to unmatch with ${selectedUser?.fullName}?`,
-                  [
-                    { text: "Cancel", style: "cancel" },
-                    {
-                      text: "Unmatch",
-                      style: "destructive",
-                      onPress: async () => {
-                        try {
-                          await api.delete(
-                            `/api/v1/users/unmatch/${selectedUser?._id}`
-                          );
-                          setLikedUsers((prev) =>
-                            prev.filter(
-                              (user) => user._id !== selectedUser?._id
-                            )
-                          );
-                        } catch (error) {
-                          Alert.alert("Error", "Failed to unmatch.");
-                        } finally {
-                          setShowOptions(false);
-                        }
-                      },
-                    },
-                  ]
-                );
+                setPendingUnmatchUser(selectedUser);
+                setShowUnmatchAlert(true);
               }}
             >
-              <Text style={[styles.optionText, { color: "#fff" }]}>
-                Unmatch
-              </Text>
+              <Text style={[styles.optionText, { color: "#fff" }]}>Unmatch</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -376,6 +352,35 @@ const Likes: React.FC<Props> = ({ navigation }) => {
           </View>
         </TouchableOpacity>
       </Modal>
+      {/* CustomAlert for errors */}
+      <CustomAlert
+        visible={customAlert.visible}
+        title={customAlert.title}
+        message={customAlert.message}
+        onClose={() => setCustomAlert((prev) => ({ ...prev, visible: false }))}
+        cancelText={customAlert.cancelText || 'OK'}
+      />
+      {/* CustomAlert for Unmatch confirmation */}
+      <CustomAlert
+        visible={showUnmatchAlert}
+        title="Unmatch?"
+        message={`Are you sure you want to unmatch with ${pendingUnmatchUser?.fullName?.split(' ')[0] || ''}?`}
+        onClose={() => setShowUnmatchAlert(false)}
+        onConfirm={async () => {
+          if (!pendingUnmatchUser) return;
+          try {
+            await api.delete(`/api/v1/users/unmatch/${pendingUnmatchUser._id}`);
+            setLikedUsers((prev) => prev.filter((user) => user._id !== pendingUnmatchUser._id));
+          } catch (error) {
+            setCustomAlert({ visible: true, title: "Error", message: "Failed to unmatch.", onConfirm: undefined, confirmText: '', cancelText: 'OK' });
+          } finally {
+            setShowUnmatchAlert(false);
+            setShowOptions(false);
+          }
+        }}
+        confirmText="Unmatch"
+        cancelText="Cancel"
+      />
     </View>
   );
 };

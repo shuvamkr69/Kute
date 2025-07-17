@@ -18,6 +18,7 @@ import { getUserId } from "../utils/constants";
 import { io } from "socket.io-client";
 import LoadingScreen from "./LoadingScreen";
 import { useFocusEffect } from "@react-navigation/native";
+import CustomAlert from "../components/CustomAlert";
 
 const socket = io("http://10.21.36.128:3000");
 
@@ -48,6 +49,7 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
   const [userId, setUserId] = useState<string | null>(null);
   const [isOffline, setIsOffline] = useState(false);
   const [blockedUsers, setBlockedUsers] = useState<string[]>([]);
+  const [customAlert, setCustomAlert] = useState({ visible: false, title: '', message: '', onConfirm: undefined, confirmText: '', cancelText: '', confirmTextStyle: undefined });
 
   useFocusEffect(
     React.useCallback(() => {
@@ -155,7 +157,15 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
       const { isBlockedByMe, hasBlockedMe } = response.data;
 
       if (hasBlockedMe) {
-        Alert.alert("Access Denied", "You cannot view this user's profile.");
+        setCustomAlert({
+          visible: true,
+          title: "Access Denied",
+          message: "You cannot view this user's profile.",
+          onConfirm: undefined,
+          confirmText: '',
+          cancelText: 'OK',
+          confirmTextStyle: undefined,
+        });
         return;
       }
 
@@ -168,7 +178,15 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
       });
     } catch (err) {
       console.error("Error checking block status", err);
-      Alert.alert("Error", "Something went wrong. Please try again.");
+      setCustomAlert({
+        visible: true,
+        title: "Error",
+        message: "Something went wrong. Please try again.",
+        onConfirm: undefined,
+        confirmText: '',
+        cancelText: 'OK',
+        confirmTextStyle: undefined,
+      });
     }
   };
 
@@ -202,17 +220,30 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
     return (
       <TouchableOpacity
         style={[styles.chatItem, isBlocked && { opacity: 0.4 }]}
-        onPress={() =>
-          isBlocked
-            ? Alert.alert("Blocked", "You have blocked this user.")
-            : navigation.navigate("Chat", {
-                likedUserId: otherParticipant._id,
-                userName: otherParticipant.fullName,
-                loggedInUserId: userId,
-                likedUserAvatar: otherParticipant.avatar1,
-                isBlockedByMe: true,
-              })
-        }
+        onPress={() => {
+          if (isBlocked) {
+            setCustomAlert({
+              visible: true,
+              title: "Blocked User",
+              message: "You have blocked this user. You won’t see their messages or profile in your chats. To manage your blocked users, tap below.",
+              confirmText: "Blocked Users",
+              cancelText: "OK",
+              onConfirm: () => {
+                setCustomAlert((prev) => ({ ...prev, visible: false }));
+                setTimeout(() => navigation.navigate("BlockedUsersScreen"), 250);
+              },
+              confirmTextStyle: { fontSize: 13, fontWeight: '600' },
+            });
+          } else {
+            navigation.navigate("Chat", {
+              likedUserId: otherParticipant._id,
+              userName: otherParticipant.fullName,
+              loggedInUserId: userId,
+              likedUserAvatar: otherParticipant.avatar1,
+              isBlockedByMe: true,
+            });
+          }
+        }}
       >
         {/* Instagram-style unread dot */}
         {lastMessage && lastMessage.isRead === false && lastMessage.senderId !== userId && (
@@ -232,7 +263,7 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
               alignItems: "center",
             }}
           >
-            <Text style={styles.chatName}>{otherParticipant?.fullName}</Text>
+            <Text style={styles.chatName}>{otherParticipant?.fullName?.split(' ')[0]}</Text>
             {!isBlocked && <Text style={styles.chatTime}>{formattedTime}</Text>}
           </View>
           <Text
@@ -280,6 +311,16 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
             </Text>
           </View>
         }
+      />
+      <CustomAlert
+        visible={customAlert.visible}
+        title={customAlert.title}
+        message={customAlert.message}
+        onClose={() => setCustomAlert((prev) => ({ ...prev, visible: false }))}
+        onConfirm={customAlert.onConfirm}
+        confirmText={customAlert.confirmText}
+        cancelText={customAlert.cancelText || 'Cancel'}
+        confirmTextStyle={customAlert.confirmTextStyle}
       />
     </View>
   );
