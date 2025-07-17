@@ -15,7 +15,6 @@ import {
   Platform,
   Dimensions,
   Button,
-  Alert,
   TextInput,
   Share,
 } from "react-native";
@@ -27,6 +26,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from '@expo/vector-icons';
 import { Easing } from 'react-native-reanimated';
 import { getUserId } from '../utils/constants';
+import CustomAlert from "../components/CustomAlert";
 
 const VerificationImage = require("../assets/icons/verified-logo.png");
 
@@ -308,10 +308,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         modalAnimatedValue.setValue(0);
       }, 500);
     });
-    Alert.alert(
-      "Out of Likes!",
-      "You've reached your daily free likes. Get unlimited likes with Premium!"
-    );
+    setCustomAlert({ visible: true, title: "Out of Likes!", message: "You've reached your daily free likes. Get unlimited likes with Premium!" });
   };
 
   const onRefresh = useCallback(() => {
@@ -349,13 +346,10 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     try {
       await api.post("/api/v1/users/block", { blockedUserId });
       setProfiles((prev) => prev.filter((p) => p._id !== blockedUserId));
-      Alert.alert(
-        "User Blocked",
-        "This user has been blocked and removed from suggestions."
-      );
+      setCustomAlert({ visible: true, title: "User Blocked", message: "This user has been blocked and removed from suggestions." });
     } catch (error) {
       console.error("Error blocking user:", error);
-      Alert.alert("Error", "Failed to block user.");
+      setCustomAlert({ visible: true, title: "Error", message: "Failed to block user." });
     }
   };
 
@@ -451,10 +445,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     } catch (error) {
       const message = error.response?.data?.message || error.message;
       if (message === "No Super Likes remaining") {
-        Alert.alert(
-          "You're out of Super Likes",
-          "Come back later or get more!"
-        );
+        setCustomAlert({ visible: true, title: "You're out of Super Likes", message: "Come back later or get more!" });
       } else {
         console.error("Super Like error:", message);
       }
@@ -498,6 +489,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const [menuVisible, setMenuVisible] = useState(false);
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const [reportReason, setReportReason] = useState("");
+  const [customAlert, setCustomAlert] = useState({ visible: false, title: '', message: '' });
 
   const handleShareProfile = async () => {
     if (!selectedProfile) return;
@@ -515,7 +507,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         message,
       });
     } catch (error) {
-      Alert.alert("Error", error.message || "Failed to share profile.");
+      setCustomAlert({ visible: true, title: "Error", message: error.message || "Failed to share profile." });
     }
   };
 
@@ -844,7 +836,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
                         style={styles.reportButton}
                         onPress={async () => {
                           if (!reportReason.trim()) {
-                            Alert.alert("Error", "Please enter a reason.");
+                            setCustomAlert({ visible: true, title: "Error", message: "Please enter a reason." });
                             return;
                           }
                           try {
@@ -852,11 +844,11 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
                               reportedUserId: selectedProfile?._id,
                               reason: reportReason,
                             });
-                            Alert.alert("Success", "User reported successfully.");
+                            setCustomAlert({ visible: true, title: "Success", message: "User reported successfully." });
                             setReportModalVisible(false);
                             setReportReason("");
                           } catch (err) {
-                            Alert.alert("Error", "Failed to report user. Please try again.");
+                            setCustomAlert({ visible: true, title: "Error", message: "Failed to report user. Please try again." });
                           }
                         }}
                       >
@@ -1006,6 +998,12 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </View>
       </Modal>
+      <CustomAlert
+        visible={customAlert.visible}
+        title={customAlert.title}
+        message={customAlert.message}
+        onClose={() => setCustomAlert((prev) => ({ ...prev, visible: false }))}
+      />
     </ScrollView>
   );
 };

@@ -5,12 +5,12 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import api from '../../utils/api';
+import CustomAlert from '../../components/CustomAlert';
 
 interface Product {
   id: string;
@@ -32,28 +32,26 @@ const BuyFeaturesScreen: React.FC = () => {
   const [boostProducts, setBoostProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [purchasing, setPurchasing] = useState<string | null>(null);
+  const [customAlert, setCustomAlert] = useState({ visible: false, title: '', message: '' });
 
   useEffect(() => {
     // Set initial tab from navigation params
     const params = (route.params || {}) as RouteParams;
     if (params.initialTab === 'boosts') setActiveTab('boosts');
     else setActiveTab('superlikes');
-    fetchProducts();
+    // Hardcoded INR offers to match ProfileScreen
+    setSuperLikeProducts([
+      { id: 'sl1', name: '1 Super Like', price: '₹9' },
+      { id: 'sl2', name: '5 Super Likes', price: '₹39' },
+      { id: 'sl3', name: '15 Super Likes', price: '₹99' },
+      { id: 'sl4', name: '30 Super Likes', price: '₹179' },
+    ]);
+    setBoostProducts([
+      { id: 'b1', name: '1 Boost', price: '₹15' },
+      { id: 'b2', name: '5 Boosts', price: '₹59' },
+      { id: 'b3', name: '10 Boosts', price: '₹109' },
+    ]);
   }, []);
-
-  const fetchProducts = async () => {
-    try {
-      setLoading(true);
-      const response = await api.get('/api/v1/payment/products');
-      setSuperLikeProducts(response.data.data.superLikes);
-      setBoostProducts(response.data.data.boosts);
-    } catch (error) {
-      console.error('Error fetching products:', error);
-      Alert.alert('Error', 'Failed to load products');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handlePurchase = async (product: Product, type: BuyTab) => {
     try {
@@ -64,19 +62,10 @@ const BuyFeaturesScreen: React.FC = () => {
         purchaseToken,
         productId: product.id,
       });
-      Alert.alert(
-        'Success!',
-        `Successfully purchased ${product.name}!`,
-        [
-          {
-            text: 'OK',
-            onPress: () => navigation.goBack(),
-          },
-        ]
-      );
+      setCustomAlert({ visible: true, title: 'Success!', message: `Successfully purchased ${product.name}!` });
     } catch (error) {
       console.error('Purchase error:', error);
-      Alert.alert('Error', 'Failed to complete purchase. Please try again.');
+      setCustomAlert({ visible: true, title: 'Error', message: 'Failed to complete purchase. Please try again.' });
     } finally {
       setPurchasing(null);
     }
@@ -138,7 +127,7 @@ const BuyFeaturesScreen: React.FC = () => {
         <Ionicons name="flash" size={48} color="#FF6B6B" />
         <Text style={styles.infoTitle}>Get More Matches!</Text>
         <Text style={styles.infoDescription}>
-          Boosts put your profile at the top of the stack for 30 minutes, increasing your chances of getting matches.
+          Boosts put your profile at the top of the stack for 6 hours, increasing your chances of getting matches.
         </Text>
       </View>
       <View style={styles.productsContainer}>
@@ -180,6 +169,12 @@ const BuyFeaturesScreen: React.FC = () => {
       {renderTabBar()}
       {/* Tab Content */}
       {activeTab === 'superlikes' ? renderSuperLikes() : renderBoosts()}
+      <CustomAlert
+        visible={customAlert.visible}
+        title={customAlert.title}
+        message={customAlert.message}
+        onClose={() => setCustomAlert((prev) => ({ ...prev, visible: false }))}
+      />
     </View>
   );
 };

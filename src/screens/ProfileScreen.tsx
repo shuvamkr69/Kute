@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Alert,
   ToastAndroid,
   Button,
 } from "react-native";
@@ -22,6 +21,7 @@ import LoadingScreen from "./LoadingScreen";
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { Animated as RNAnimated } from 'react-native';
+import CustomAlert from "../components/CustomAlert";
 const AnimatedLinearGradient = RNAnimated.createAnimatedComponent(LinearGradient);
 const VerificationImage = require("../assets/icons/verified-logo.png");
 const PremiumImage = require("../assets/icons/premium.png");
@@ -68,6 +68,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   const [smoking, setSmoking] = useState("Never");
   const [workout, setWorkout] = useState("Never");
 
+  const [customAlert, setCustomAlert] = useState({ visible: false, title: '', message: '' });
 
   // Animated value for fog effect
   const fogAnim = React.useRef(new Animated.Value(0)).current;
@@ -326,15 +327,17 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
       const diff = boostActiveUntil.getTime() - now.getTime();
 
       if (diff <= 0) {
-        clearInterval(interval);
-        setBoostTimer(null);
-        setBoostActiveUntil(null);
-        return;
+        // If boostActiveUntil is still in the future (from backend), but device time is ahead, show a warning or 'Boost active'
+        // We'll keep the boostTimer visible until the backend says boost is over (i.e., boostActiveUntil is not set on next fetch)
+        setBoostTimer('Boost active');
+        // Do NOT clear boostActiveUntil here; let backend control it
+        // Optionally, you could show a warning if you want
+        // setBoostTimer('Boost active (check device time)');
+      } else {
+        const minutes = Math.floor(diff / 1000 / 60);
+        const seconds = Math.floor((diff / 1000) % 60);
+        setBoostTimer(`${minutes}m ${seconds}s remaining`);
       }
-
-      const minutes = Math.floor(diff / 1000 / 60);
-      const seconds = Math.floor((diff / 1000) % 60);
-      setBoostTimer(`${minutes}m ${seconds}s remaining`);
     }, 1000);
 
     return () => clearInterval(interval);
@@ -345,9 +348,9 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
       const response = await api.post("/api/v1/users/activateBoost");
       const boostUntil = new Date(response.data.data.boostActiveUntil);
       setBoostActiveUntil(boostUntil);
-      ToastAndroid.show("Boost Activated for 30 minutes!", ToastAndroid.SHORT);
+      ToastAndroid.show("Boost Activated for 6 hours!", ToastAndroid.SHORT);
     } catch (error) {
-      Alert.alert("Boost Error", error.response.data.message || "Something went wrong");
+      setCustomAlert({ visible: true, title: "Boost Error", message: error.response.data.message || "Something went wrong" });
       console.error("Activate Boost Error:", error);
     }
   };
@@ -440,14 +443,15 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
 
   // 1. Add mock offers for preview (replace with API if needed)
   const superLikeOffers = [
-    { id: 'sl1', name: '5 Super Likes', price: '$2.99' },
-    { id: 'sl2', name: '15 Super Likes', price: '$6.99' },
-    { id: 'sl3', name: '30 Super Likes', price: '$12.99' },
+    { id: 'sl1', name: '1 Super Like', price: '₹9' },
+    { id: 'sl2', name: '5 Super Likes', price: '₹39' },
+    { id: 'sl3', name: '15 Super Likes', price: '₹99' },
+    { id: 'sl4', name: '30 Super Likes', price: '₹179' },
   ];
   const boostOffers = [
-    { id: 'b1', name: '1 Boost', price: '$1.99' },
-    { id: 'b2', name: '5 Boosts', price: '$7.99' },
-    { id: 'b3', name: '10 Boosts', price: '$14.99' },
+    { id: 'b1', name: '1 Boost', price: '₹15' },
+    { id: 'b2', name: '5 Boosts', price: '₹59' },
+    { id: 'b3', name: '10 Boosts', price: '₹109' },
   ];
 
   return (
@@ -512,7 +516,9 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
           />
         </Text>
 
-        <Text style={styles.bio}>{bio}</Text>
+        <View style={styles.bioContainer}>
+          <Text style={styles.bio}>{bio}</Text>
+        </View>
       </View>
 
       {/* Premium Image - Replaces the Premium Icon */}
@@ -586,7 +592,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
             {interests.map((interest, index) => (
               <LinearGradient
                 key={index}
-                colors={["#FFA500", "#FF4500"]}
+                colors={["#ff172e", "#de822c"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.interestBox}
@@ -659,8 +665,11 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
               style={styles.featureIcon}
             />
             <Text style={styles.featureTitle}>Boost</Text>
+            {boostTimer && (
+              <Text style={styles.featureTimerRight}>{boostTimer}</Text>
+            )}
           </View>
-          <Text style={styles.featureDescription}>Increase your visibility by 3x and get more matches.</Text>
+          <Text style={styles.featureDescription}>Increase your visibility by 3x and get more matches. Each boost lasts 6 hours.</Text>
           <View style={styles.featureFooter}>
             <View style={styles.featureCounterBox}><Text style={styles.featureCounterText}>x{boosts}</Text></View>
             <TouchableOpacity onPress={handleActivateBoost} style={[styles.featureButton, { minWidth: 80 }]}>
@@ -684,9 +693,6 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
               </LinearGradient>
             </TouchableOpacity>
           </View>
-          {boostTimer && (
-            <Text style={styles.featureTimer}>{boostTimer}</Text>
-          )}
         </LinearGradient>
 
         {/* Super Likes Card */}
@@ -728,7 +734,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
         style={[
           styles.featureCard,
           styles.premiumFeatureCard,
-          { marginBottom: 16, marginTop: 2, paddingTop: 12 }
+          { marginBottom: 40, marginTop: 2, paddingTop: 12 }
         ]}
       >
         <View style={styles.featureCardHeader}>
@@ -749,6 +755,13 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
           </LinearGradient>
         </TouchableOpacity>
       </LinearGradient>
+      <CustomAlert
+        visible={customAlert.visible}
+        title={customAlert.title}
+        message={customAlert.message}
+        onClose={() => setCustomAlert((prev) => ({ ...prev, visible: false }))}
+        cancelText="OK"
+      />
     </ScrollView>
   );
 };
@@ -829,6 +842,13 @@ const styles = StyleSheet.create({
     color: "#B0B0B0",
     textAlign: "center",
     marginTop: 5,
+  },
+  bioContainer: {
+    maxWidth: 320,
+    width: '90%',
+    alignSelf: 'center',
+    paddingHorizontal: 12,
+    marginVertical: 10,
   },
   upgradeContainer: {
     marginTop: 30,
@@ -918,7 +938,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   interestBox: {
-    backgroundColor: "#de822c",
     borderRadius: 15,
     paddingVertical: 6,
     paddingHorizontal: 12,
@@ -1140,6 +1159,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 15,
     textAlign: 'center',
+  },
+  featureTimerRight: {
+    color: '#de822c',
+    fontWeight: 'bold',
+    fontSize: 20,
+    marginLeft: 44,
+    alignSelf: 'center',
   },
   premiumFeatureCard: {
     borderWidth: 2,

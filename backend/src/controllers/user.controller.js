@@ -875,7 +875,7 @@ const activateBoost = asyncHandler(async (req, res) => {
 
   // ✅ Activate Boost
   user.boost -= 1;
-  user.boostActiveUntil = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
+  user.boostActiveUntil = new Date(Date.now() + 6 * 60 * 60 * 1000); // 6 hours
   await user.save();
 
   return res.status(200).json(

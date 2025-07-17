@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   Switch,
   ScrollView,
-  Alert,
   Button,
   Linking,
   Platform,
@@ -42,6 +41,7 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
   const DARK_MODE_KEY = 'darkMode';
   const [showMeme, setShowMeme] = useState(false);
   const [memeVideo, setMemeVideo] = useState<any>(null); // Use any for require()
+  const [customAlert, setCustomAlert] = useState({ visible: false, title: '', message: '' });
 
   const fetchUserStatus = async () => {
     try {
@@ -55,10 +55,7 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
 
   const handleToggleAnonymous = async () => {
     if (!isPremium) {
-      Alert.alert(
-        "Premium Required",
-        "Anonymous browsing is available only for premium users."
-      );
+      setCustomAlert({ visible: true, title: "Premium Required", message: "Anonymous browsing is available only for premium users." });
       return;
     }
 
@@ -68,7 +65,7 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
       setVisibility(response.data.data.anonymousBrowsing);
     } catch (err) {
       console.error(err);
-      Alert.alert("Error", "Failed to update anonymous browsing setting.");
+      setCustomAlert({ visible: true, title: "Error", message: "Failed to update anonymous browsing setting." });
     } finally {
       setLoadingAnon(false);
     }
@@ -83,7 +80,7 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
       navigation.navigate("Login");
     } catch (error) {
       console.error("Logout Error:", error);
-      Alert.alert("Error", "Failed to logout. Please try again.");
+      setCustomAlert({ visible: true, title: "Error", message: "Failed to logout. Please try again." });
     }
   };
 
@@ -91,16 +88,13 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
     try {
       const response = await api.post("/api/v1/users/deactivate");
       console.log("Account Deactivated:", response.data);
-      Alert.alert(
-        "Account Deactivated",
-        "Your account has been temporarily deactivated. You can reactivate it by logging in again."
-      );
+      setCustomAlert({ visible: true, title: "Account Deactivated", message: "Your account has been temporarily deactivated. You can reactivate it by logging in again." });
       await AsyncStorage.clear();
       signOut();
       navigation.navigate("Login");
     } catch (error) {
       console.error("Deactivation Error:", error);
-      Alert.alert("Error", "Failed to deactivate account.");
+      setCustomAlert({ visible: true, title: "Error", message: "Failed to deactivate account." });
     }
   };
 
@@ -115,14 +109,11 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
           IntentLauncher.ActivityAction.LOCATION_SOURCE_SETTINGS
         );
       } else {
-        Alert.alert(
-          "Unsupported",
-          "Please enable location from iOS settings manually."
-        );
+        setCustomAlert({ visible: true, title: "Unsupported", message: "Please enable location from iOS settings manually." });
       }
     } catch (error) {
       console.error("Error opening location settings:", error);
-      Alert.alert("Error", "Unable to open location settings.");
+      setCustomAlert({ visible: true, title: "Error", message: "Unable to open location settings." });
     }
   };
 
@@ -132,43 +123,15 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
         await Linking.openSettings(); // Opens your app's notification settings
       } catch (err) {
         console.error("Error opening settings:", err);
-        Alert.alert("Error", "Could not open settings. Please try manually.");
+        setCustomAlert({ visible: true, title: "Error", message: "Could not open settings. Please try manually." });
       }
     } else {
-      Alert.alert(
-        "Unsupported",
-        "Opening settings is only supported on Android."
-      );
+      setCustomAlert({ visible: true, title: "Unsupported", message: "Opening settings is only supported on Android." });
     }
   };
 
   const handleAccountOptions = async () => {
-    Alert.alert(
-      "Manage Account",
-      "Would you like to delete your account permanently or deactivate it temporarily? Deactivating will hide your profile until you reactivate it.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Deactivate Account",
-          onPress: handleDeactivateAccount,
-        },
-        {
-          text: "Delete Account",
-          onPress: async () => {
-            try {
-              const response = await api.delete("/api/v1/users/deleteAccount");
-              console.log("Account Deleted:", response.data);
-              await AsyncStorage.clear();
-              signOut();
-              navigation.navigate("Login");
-            } catch (error) {
-              console.error("Delete Error:", error);
-              Alert.alert("Error", "Failed to delete account.");
-            }
-          },
-        },
-      ]
-    );
+    setCustomAlert({ visible: true, title: "Manage Account", message: "Would you like to delete your account permanently or deactivate it temporarily? Deactivating will hide your profile until you reactivate it." });
   };
 
   React.useEffect(() => {
@@ -424,6 +387,12 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
           />
         </View>
       )}
+      <CustomAlert
+        visible={customAlert.visible}
+        title={customAlert.title}
+        message={customAlert.message}
+        onClose={() => setCustomAlert((prev) => ({ ...prev, visible: false }))}
+      />
     </View>
   );
 };

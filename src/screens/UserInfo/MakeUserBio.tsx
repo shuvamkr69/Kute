@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  Alert,
   StyleSheet,
   ActivityIndicator,
   SafeAreaView,
@@ -28,6 +27,7 @@ const MakeBio: React.FC<Props> = ({ navigation }) => {
   const [pushToken, setPushToken] = useState<string | null>(null);
   const [showUserExistsAlert, setShowUserExistsAlert] = useState(false);
   const [existingEmail, setExistingEmail] = useState("");
+  const [customAlert, setCustomAlert] = useState({ visible: false, title: '', message: '' });
 
   useEffect(() => {
     const fetchPushToken = async () => {
@@ -46,7 +46,7 @@ const MakeBio: React.FC<Props> = ({ navigation }) => {
   const submitData = async () => {
     let attemptedEmail = "";
     if (!bio.trim()) {
-      Alert.alert("Error", "Bio cannot be empty.");
+      setCustomAlert({ visible: true, title: "Error", message: "Bio cannot be empty." });
       return;
     }
 
@@ -141,7 +141,7 @@ const MakeBio: React.FC<Props> = ({ navigation }) => {
           }
         } catch (loginError: any) {
           console.error("Auto-login error after registration:", loginError.message);
-          Alert.alert("Registration Complete", "Account created, but automatic login failed. Please login manually.");
+          setCustomAlert({ visible: true, title: "Registration Complete", message: "Account created, but automatic login failed. Please login manually." });
           navigation.reset({ index: 0, routes: [{ name: "Login" }] });
         }
       } else {
@@ -154,7 +154,7 @@ const MakeBio: React.FC<Props> = ({ navigation }) => {
         setExistingEmail(attemptedEmail);
         setShowUserExistsAlert(true);
       } else {
-        Alert.alert("Error", errorMsg);
+        setCustomAlert({ visible: true, title: "Error", message: errorMsg });
       }
     } finally {
       setIsUploading(false);
@@ -224,6 +224,12 @@ const MakeBio: React.FC<Props> = ({ navigation }) => {
           )}
         </LinearGradient>
       </TouchableOpacity>
+      <CustomAlert
+        visible={customAlert.visible}
+        title={customAlert.title}
+        message={customAlert.message}
+        onClose={() => setCustomAlert((prev) => ({ ...prev, visible: false }))}
+      />
       <CustomAlert
         visible={showUserExistsAlert}
         title="User already exists"

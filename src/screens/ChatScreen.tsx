@@ -12,7 +12,6 @@ import {
   Image,
   TouchableOpacity,
   Modal,
-  Alert,
   Animated,
   Keyboard,
   Pressable,
@@ -29,6 +28,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation } from "@react-navigation/native";
 import LoadingScreen from "./LoadingScreen";
 import AiChatbot from "../components/AiChatbot";
+import CustomAlert from "../components/CustomAlert";
 
 type RootStackParamList = {
   Chat: {
@@ -191,6 +191,7 @@ const [isBlockedByMe, setIsBlockedByMe] = useState<boolean>(false);
     new Set()
   );
   const [selectionMode, setSelectionMode] = useState<boolean>(false);
+  const [customAlert, setCustomAlert] = useState({ visible: false, title: '', message: '' });
 
   const flatListRef = useRef<FlatList<Message>>(null);
 
@@ -442,70 +443,21 @@ const [isBlockedByMe, setIsBlockedByMe] = useState<boolean>(false);
   blockedUserId: likedUserId,
 });
 setIsBlockedByMe(true); // ⬅️ Update state here
-Alert.alert("Blocked", "This user has been blocked.");
+setCustomAlert({ visible: true, title: "Blocked", message: "This user has been blocked." });
 navigation.goBack();
 
 
     switch (option) {
       case "delete":
-        Alert.alert(
-          "Delete All Chats",
-          "All chats will only be deleated for you. The other user will still be able to view your conversations.",
-          [
-            { text: "Cancel", style: "cancel" },
-            {
-              text: "Delete",
-              style: "destructive",
-              onPress: async () => {
-                if (!conversationId) return;
-
-                try {
-                  await api.delete(`/api/v1/users/messages/${conversationId}`);
-
-                  setMessages([]);
-                  Alert.alert("Deleted", "All chats have been deleted.");
-                } catch (err) {
-                  console.error("Error deleting chats:", err);
-                  Alert.alert("Error", "Failed to delete chats.");
-                }
-              },
-            },
-          ]
-        );
+        setCustomAlert({ visible: true, title: "Delete All Chats", message: "All chats will only be deleted for you. The other user will still be able to view your conversations." });
         break;
 
       case "mute":
-        Alert.alert(
-          "Mute Notifications",
-          "You will not receive notifications for this chat.",
-          [{ text: "OK" }]
-        );
+        setCustomAlert({ visible: true, title: "Mute Notifications", message: "You will not receive notifications for this chat." });
         break;
 
       case "block":
-        Alert.alert(
-          "Block User",
-          "Are you sure you want to block this user? You will no longer see their messages.",
-          [
-            { text: "Cancel", style: "cancel" },
-            {
-              text: "Block",
-              style: "destructive",
-              onPress: async () => {
-                try {
-                  await api.post("/api/v1/users/block", {
-                    blockedUserId: likedUserId,
-                  });
-                  Alert.alert("Blocked", "This user has been blocked.");
-                  navigation.goBack(); // Optional: go back to ChatsScreen
-                } catch (error) {
-                  console.error("Error blocking user:", error);
-                  Alert.alert("Error", "Failed to block the user.");
-                }
-              },
-            },
-          ]
-        );
+        setCustomAlert({ visible: true, title: "Block User", message: "Are you sure you want to block this user? You will no longer see their messages." });
         break;
     }
   };
@@ -563,13 +515,7 @@ navigation.goBack();
       });
     }
 
-    Alert.alert(
-      "Delete Message",
-      hasOthersMessages && !hasOwnMessages
-        ? "You can only delete these messages for yourself."
-        : "Do you want to delete for yourself or everyone?",
-      options
-    );
+    setCustomAlert({ visible: true, title: "Delete Message", message: hasOthersMessages && !hasOwnMessages ? "You can only delete these messages for yourself." : "Do you want to delete for yourself or everyone?" });
   };
 
   const deleteForMe = async () => {
@@ -582,7 +528,7 @@ navigation.goBack();
       );
     } catch (err) {
       console.error(err);
-      Alert.alert("Error", "Failed to delete message.");
+      setCustomAlert({ visible: true, title: "Error", message: "Failed to delete message." });
     } finally {
       setSelectedMessages(new Set());
       setSelectionMode(false);
@@ -600,7 +546,7 @@ navigation.goBack();
       );
     } catch (err) {
       console.error(err);
-      Alert.alert("Error", "Failed to delete message.");
+      setCustomAlert({ visible: true, title: "Error", message: "Failed to delete message." });
     } finally {
       setSelectedMessages(new Set());
       setSelectionMode(false);
@@ -842,7 +788,7 @@ navigation.goBack();
       { backgroundColor: "#1c1c1c", opacity: 0.5 },
     ]}
     onPress={() =>
-      Alert.alert("Blocked", "Unblock this user to send messages.")
+      setCustomAlert({ visible: true, title: "Blocked", message: "Unblock this user to send messages." })
     }
     activeOpacity={1}
   >
@@ -909,6 +855,12 @@ navigation.goBack();
           </View>
         </TouchableOpacity>
       </Modal>
+      <CustomAlert
+        visible={customAlert.visible}
+        title={customAlert.title}
+        message={customAlert.message}
+        onClose={() => setCustomAlert((prev) => ({ ...prev, visible: false }))}
+      />
     </KeyboardAvoidingView>
   );
 };

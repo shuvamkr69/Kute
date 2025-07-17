@@ -5,7 +5,6 @@ import {
   Button,
   Image,
   ActivityIndicator,
-  Alert,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
@@ -18,6 +17,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { LinearGradient } from "expo-linear-gradient";
 import Icon from "react-native-vector-icons/FontAwesome";
 import BackButton from "../components/BackButton";
+import CustomAlert from "../components/CustomAlert";
 
 type Props = NativeStackScreenProps<any, "PhotoVerification">;
 
@@ -31,6 +31,7 @@ const PhotoVerificationScreen: React.FC<Props> = ({ navigation }) => {
   const [verified, setVerified] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(false);
   const [processingImage, setProcessingImage] = useState(false);
+  const [customAlert, setCustomAlert] = useState({ visible: false, title: '', message: '' });
 
   const FACE_API_KEY = Constants?.expoConfig?.extra?.FACE_API_KEY;
   const FACE_API_SECRET = Constants?.expoConfig?.extra?.FACE_API_SECRET;
@@ -71,10 +72,7 @@ const PhotoVerificationScreen: React.FC<Props> = ({ navigation }) => {
               const estimatedSize =
                 (manipResult.base64.length * 3) / 4 / 1024 / 1024; // MB
               if (estimatedSize > 2) {
-                Alert.alert(
-                  "Error",
-                  "Image is still too large even after compression."
-                );
+                setCustomAlert({ visible: true, title: "Error", message: "Image is still too large even after compression." });
               } else {
                 setImage1({
                   uri: manipResult.uri,
@@ -86,17 +84,17 @@ const PhotoVerificationScreen: React.FC<Props> = ({ navigation }) => {
             reader.readAsDataURL(blob);
           } catch (error) {
             console.error("Image processing error:", error);
-            Alert.alert("Error", "Failed to process profile photo");
+            setCustomAlert({ visible: true, title: "Error", message: "Failed to process profile photo" });
           } finally {
             setProcessingImage(false);
           }
         } else {
-          Alert.alert("Error", "No profile photo found.");
+          setCustomAlert({ visible: true, title: "Error", message: "No profile photo found." });
         }
       }
     } catch (error) {
       console.error(error);
-      Alert.alert("Error", "Failed to fetch profile photo.");
+      setCustomAlert({ visible: true, title: "Error", message: "Failed to fetch profile photo." });
       setProcessingImage(false);
     }
   };
@@ -104,7 +102,7 @@ const PhotoVerificationScreen: React.FC<Props> = ({ navigation }) => {
   const takeSelfieWithCamera = async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (permission.status !== "granted") {
-      Alert.alert("Camera permission is required!");
+      setCustomAlert({ visible: true, title: "Error", message: "Camera permission is required!" });
       return;
     }
 
@@ -141,7 +139,7 @@ const PhotoVerificationScreen: React.FC<Props> = ({ navigation }) => {
         setVerified(null);
       } catch (error) {
         console.error("Image processing error:", error);
-        Alert.alert("Error", "Failed to process image");
+        setCustomAlert({ visible: true, title: "Error", message: "Failed to process image" });
       } finally {
         setProcessingImage(false);
       }
@@ -150,7 +148,7 @@ const PhotoVerificationScreen: React.FC<Props> = ({ navigation }) => {
 
   const compareFaces = async () => {
     if (!image1?.base64 || !image2?.base64) {
-      Alert.alert("Error", "Both images are required for verification.");
+      setCustomAlert({ visible: true, title: "Error", message: "Both images are required for verification." });
       return;
     }
 
@@ -174,13 +172,13 @@ const PhotoVerificationScreen: React.FC<Props> = ({ navigation }) => {
       console.log("Face++ response:", data);
 
       if (data.error_message) {
-        Alert.alert("API Error", data.error_message);
+        setCustomAlert({ visible: true, title: "API Error", message: data.error_message });
         setVerified(false);
         return;
       }
 
       if (!data.faces2) {
-        Alert.alert("Error", "Both images must contain visible faces.");
+        setCustomAlert({ visible: true, title: "Error", message: "Both images must contain visible faces." });
         setVerified(false);
         return;
       }
@@ -201,7 +199,7 @@ const PhotoVerificationScreen: React.FC<Props> = ({ navigation }) => {
       }
     } catch (error) {
       console.error(error);
-      Alert.alert("Error", "Failed to verify face.");
+      setCustomAlert({ visible: true, title: "Error", message: "Failed to verify face." });
       setVerified(false);
     } finally {
       setLoading(false);
@@ -227,7 +225,7 @@ const PhotoVerificationScreen: React.FC<Props> = ({ navigation }) => {
       console.log("Gesture verification response:", data.hands[0]);
 
       if (data.error_message) {
-        Alert.alert("Gesture API Error", data.error_message);
+        setCustomAlert({ visible: true, title: "Gesture API Error", message: data.error_message });
         return false;
       }
 
@@ -235,15 +233,12 @@ const PhotoVerificationScreen: React.FC<Props> = ({ navigation }) => {
       if (data.hands[0].gesture && data.hands[0].gesture.victory > 75) {
         return true;
       } else {
-        Alert.alert(
-          "Gesture Verification Failed",
-          "Please show a victory sign."
-        );
+        setCustomAlert({ visible: true, title: "Gesture Verification Failed", message: "Please show a victory sign." });
         return false;
       }
     } catch (error) {
       console.error("Gesture verification error:", error);
-      Alert.alert("Error", "Failed to verify hand gesture.");
+      setCustomAlert({ visible: true, title: "Error", message: "Failed to verify hand gesture." });
       return false;
     }
   };
@@ -343,6 +338,12 @@ const PhotoVerificationScreen: React.FC<Props> = ({ navigation }) => {
           </LinearGradient>
         </TouchableOpacity>
       </ScrollView>
+      <CustomAlert
+        visible={customAlert.visible}
+        title={customAlert.title}
+        message={customAlert.message}
+        onClose={() => setCustomAlert((prev) => ({ ...prev, visible: false }))}
+      />
     </View>
   );
 };

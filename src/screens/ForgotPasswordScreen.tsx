@@ -8,11 +8,11 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
-  Alert,
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import api from "../utils/api";
+import CustomAlert from "../components/CustomAlert";
 
 type Props = NativeStackScreenProps<any, "ForgotPassword">;
 
@@ -23,33 +23,40 @@ const ForgotPasswordScreen: React.FC<Props> = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [otpStage, setOtpStage] = useState(false); // false = send, true = verify
+  const [customAlert, setCustomAlert] = useState({ visible: false, title: '', message: '' });
 
   // ① send / resend
   const handleSendOtp = async () => {
-    if (!email) return Alert.alert("Error", "Please enter your email");
+    if (!email) {
+      setCustomAlert({ visible: true, title: "Error", message: "Please enter your email" });
+      return;
+    }
     try {
       await api.post("/api/v1/users/forgot-password-otp", { email });
-      Alert.alert("Success", "OTP sent to your email");
+      setCustomAlert({ visible: true, title: "Success", message: "OTP sent to your email" });
       setOtpStage(true); // show OTP field
     } catch (err: any) {
-      Alert.alert("Error", err?.response?.data?.message || "Server error");
+      setCustomAlert({ visible: true, title: "Error", message: err?.response?.data?.message || "Server error" });
     }
   };
 
   // ② verify
   const handleVerifyOtp = async () => {
-    if (otp.length !== 6) return Alert.alert("Error", "Enter 6‑digit OTP");
+    if (otp.length !== 6) {
+      setCustomAlert({ visible: true, title: "Error", message: "Enter 6‑digit OTP" });
+      return;
+    }
     try {
       // verify & change screen
       navigation.navigate("ResetPassword", { email, otp });
     } catch (err) {
-      Alert.alert("Error", "Invalid OTP");
+      setCustomAlert({ visible: true, title: "Error", message: "Invalid OTP" });
     }
   };
 
   const handleForgotPassword = async () => {
     if (!email) {
-      Alert.alert("Error", "Please enter your email");
+      setCustomAlert({ visible: true, title: "Error", message: "Please enter your email" });
       return;
     }
 
@@ -58,7 +65,7 @@ const ForgotPasswordScreen: React.FC<Props> = ({ navigation }) => {
         email: email,
       });
 
-      Alert.alert("Success", "Password reset link sent to your email");
+      setCustomAlert({ visible: true, title: "Success", message: "Password reset link sent to your email" });
 
       const devToken = response.data?.data?.token;
       if (devToken) {
@@ -68,7 +75,7 @@ const ForgotPasswordScreen: React.FC<Props> = ({ navigation }) => {
       console.log(error);
       const message =
         error?.response?.data?.message || "There is a problem with the server";
-      Alert.alert("Error", message);
+      setCustomAlert({ visible: true, title: "Error", message });
     }
   };
 
@@ -135,6 +142,12 @@ const ForgotPasswordScreen: React.FC<Props> = ({ navigation }) => {
           Login
         </Text>
       </Text>
+      <CustomAlert
+        visible={customAlert.visible}
+        title={customAlert.title}
+        message={customAlert.message}
+        onClose={() => setCustomAlert((prev) => ({ ...prev, visible: false }))}
+      />
     </SafeAreaView>
   );
 };

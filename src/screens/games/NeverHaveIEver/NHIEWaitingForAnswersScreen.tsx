@@ -4,9 +4,9 @@ import {
   Text,
   ActivityIndicator,
   StyleSheet,
-  Alert,
   BackHandler,
 } from "react-native";
+import CustomAlert from "../../../components/CustomAlert";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import api from "../../../utils/api";
 import { useFocusEffect } from "@react-navigation/native";
@@ -16,31 +16,27 @@ type Props = NativeStackScreenProps<any, "NHIEWaitingForAnswersScreen">;
 const NHIEWaitingForAnswersScreen: React.FC<Props> = ({ navigation }) => {
   const [prompt, setPrompt] = useState("");
   const [hasNavigated, setHasNavigated] = useState(false);
+  const [customAlert, setCustomAlert] = useState({ visible: false, title: '', message: '', onConfirm: null });
 
   useFocusEffect(
     //leave waiing room if back button clicked
     React.useCallback(() => {
       const onBackPress = () => {
-        Alert.alert(
-          "Leave Waiting Room?",
-          "Do you want to leave the waiting room?",
-          [
-            { text: "Cancel", style: "cancel" },
-            {
-              text: "Leave",
-              style: "destructive",
-              onPress: async () => {
-                try {
-                  await api.post("/api/v1/users/neverhaveiever/leave");
-                } catch (err) {
-                  console.error("Failed to leave waiting room:", err);
-                }
-                navigation.navigate("HomeTabs");
-              },
-            },
-          ]
-        );
-        return true; // Block default behavior
+        setCustomAlert({
+          visible: true,
+          title: "Leave Waiting Room?",
+          message: "Do you want to leave the waiting room?",
+          onConfirm: async () => {
+            try {
+              await api.post("/api/v1/users/neverhaveiever/leave");
+            } catch (err) {
+              console.error("Failed to leave waiting room:", err);
+            }
+            setCustomAlert((prev) => ({ ...prev, visible: false }));
+            navigation.navigate("HomeTabs");
+          }
+        });
+        return true;
       };
 
       BackHandler.addEventListener("hardwareBackPress", onBackPress);
@@ -112,6 +108,15 @@ const NHIEWaitingForAnswersScreen: React.FC<Props> = ({ navigation }) => {
       ) : (
         <Text style={styles.loading}>Loading prompt...</Text>
       )}
+      <CustomAlert
+        visible={customAlert.visible}
+        title={customAlert.title}
+        message={customAlert.message}
+        onClose={() => setCustomAlert((prev) => ({ ...prev, visible: false }))}
+        onConfirm={customAlert.onConfirm}
+        confirmText="Leave"
+        cancelText="Cancel"
+      />
     </View>
   );
 };

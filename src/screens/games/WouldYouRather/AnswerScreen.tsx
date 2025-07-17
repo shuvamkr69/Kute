@@ -5,8 +5,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
 } from "react-native";
+import CustomAlert from "../../../components/CustomAlert";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import api from "../../../utils/api";
 
@@ -16,6 +16,7 @@ const AnswerScreen: React.FC<Props> = ({ navigation, route }) => {
   const { gameId, currentUserId } = route.params;
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(true);
+  const [customAlert, setCustomAlert] = useState({ visible: false, title: '', message: '' });
 
   useEffect(() => {
     const fetchPrompt = async () => {
@@ -27,12 +28,12 @@ const AnswerScreen: React.FC<Props> = ({ navigation, route }) => {
         if (currentRound?.prompt) {
           setPrompt(currentRound.prompt);
         } else {
-          Alert.alert("Error", "Prompt not available.");
+          setCustomAlert({ visible: true, title: "Error", message: "Prompt not available." });
           navigation.goBack();
         }
       } catch (err) {
         console.error("Error fetching prompt:", err);
-        Alert.alert("Error", "Failed to load prompt.");
+        setCustomAlert({ visible: true, title: "Error", message: "Failed to load prompt." });
         navigation.goBack();
       } finally {
         setLoading(false);
@@ -51,7 +52,7 @@ const AnswerScreen: React.FC<Props> = ({ navigation, route }) => {
       });
     } catch (err) {
       console.error("Failed to submit answer:", err);
-      Alert.alert("Error", "Could not submit answer.");
+      setCustomAlert({ visible: true, title: "Error", message: "Could not submit answer." });
     }
   };
 
@@ -81,6 +82,12 @@ const AnswerScreen: React.FC<Props> = ({ navigation, route }) => {
       >
         <Text style={styles.buttonText}>Option B</Text>
       </TouchableOpacity>
+      <CustomAlert
+        visible={customAlert.visible}
+        title={customAlert.title}
+        message={customAlert.message}
+        onClose={() => setCustomAlert((prev) => ({ ...prev, visible: false }))}
+      />
     </View>
   );
 };

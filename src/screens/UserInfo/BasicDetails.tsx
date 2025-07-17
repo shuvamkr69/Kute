@@ -10,8 +10,8 @@ import {
   SafeAreaView,
   Modal,
   FlatList,
-  Alert,
 } from "react-native";
+import CustomAlert from "../../components/CustomAlert";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import PickerComponent from "../../components/PickerComponent";
@@ -32,6 +32,7 @@ const BasicDetails: React.FC<Props> = ({ navigation }) => {
   const [religion, setReligion] = useState("");
   const [occupation, setOccupation] = useState("");
   const [loveLanguage, setloveLanguage] = useState("");
+  const [customAlert, setCustomAlert] = useState({ visible: false, title: '', message: '' });
 
   const genderOptions = ["Male", "Female", "Other"];
   const personalityType = ["Introvert", "Ambivert", "Extrovert"];
@@ -116,36 +117,36 @@ const BasicDetails: React.FC<Props> = ({ navigation }) => {
     try {
       const tempUserData = await AsyncStorage.getItem("tempUserData");
       if (!tempUserData) {
-        Alert.alert("Error", "No temporary data found");
+        setCustomAlert({ visible: true, title: "Error", message: "No temporary data found" });
         return;
       }
 
       if (!age.trim()) {
-        Alert.alert("Error", "Age is required");
+        setCustomAlert({ visible: true, title: "Error", message: "Age is required" });
         return;
       }
       if (!gender.trim()) {
-        Alert.alert("Error", "Gender is required");
+        setCustomAlert({ visible: true, title: "Error", message: "Gender is required" });
         return;
       }
       if (!personality.trim()) {
-        Alert.alert("Error", "Personality type is required");
+        setCustomAlert({ visible: true, title: "Error", message: "Personality type is required" });
         return;
       }
       if (selectedInterests.length === 0) {
-        Alert.alert("Error", "At least one interest is required");
+        setCustomAlert({ visible: true, title: "Error", message: "At least one interest is required" });
         return;
       }
       if (!relationshipType.trim()) {
-        Alert.alert("Error", "Relationship type is required");
+        setCustomAlert({ visible: true, title: "Error", message: "Relationship type is required" });
         return;
       }
       if (!genderOrientation.trim()) {
-        Alert.alert("Error", "Gender orientation is required");
+        setCustomAlert({ visible: true, title: "Error", message: "Gender orientation is required" });
         return;
       }
       if (!religion.trim()) {
-        Alert.alert("Error", "Religion is required");
+        setCustomAlert({ visible: true, title: "Error", message: "Religion is required" });
         return;
       }
 
@@ -164,7 +165,7 @@ const BasicDetails: React.FC<Props> = ({ navigation }) => {
 
       navigation.navigate("Location");
     } catch (error) {
-      Alert.alert("Error", "There is a problem with the server");
+      setCustomAlert({ visible: true, title: "Error", message: "There is a problem with the server" });
     }
   };
 
@@ -355,6 +356,12 @@ const BasicDetails: React.FC<Props> = ({ navigation }) => {
           <Text style={styles.buttonText}>Update Profile</Text>
         </TouchableOpacity>
       </ScrollView>
+      <CustomAlert
+        visible={customAlert.visible}
+        title={customAlert.title}
+        message={customAlert.message}
+        onClose={() => setCustomAlert((prev) => ({ ...prev, visible: false }))}
+      />
     </SafeAreaView>
   );
 };

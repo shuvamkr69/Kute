@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   ActivityIndicator,
-  Alert,
   BackHandler,
   Dimensions,
 } from "react-native";
@@ -12,6 +11,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useFocusEffect } from "@react-navigation/native";
 import api from "../../../utils/api";
 import { LinearGradient } from "expo-linear-gradient";
+import CustomAlert from "../../../components/CustomAlert";
 
 type Props = NativeStackScreenProps<any, "WaitingRoomScreen">;
 
@@ -20,29 +20,25 @@ const { width } = Dimensions.get("window");
 const WaitingRoomScreen: React.FC<Props> = ({ navigation }) => {
   const [playersJoined, setPlayersJoined] = useState<number>(1);
   const [requiredPlayers, setRequiredPlayers] = useState<number>(2);
+  const [customAlert, setCustomAlert] = useState({ visible: false, title: '', message: '', onConfirm: null });
 
   useFocusEffect(
     React.useCallback(() => {
       const onBackPress = () => {
-        Alert.alert(
-          "Leave Waiting Room?",
-          "Do you want to leave the waiting room?",
-          [
-            { text: "Cancel", style: "cancel" },
-            {
-              text: "Leave",
-              style: "destructive",
-              onPress: async () => {
-                try {
-                  await api.post("/api/v1/users/neverhaveiever/leave");
-                } catch (err) {
-                  console.error("Failed to leave waiting room:", err);
-                }
-                navigation.navigate("HomeTabs");
-              },
-            },
-          ]
-        );
+        setCustomAlert({
+          visible: true,
+          title: "Leave Waiting Room?",
+          message: "Do you want to leave the waiting room?",
+          onConfirm: async () => {
+            try {
+              await api.post("/api/v1/users/neverhaveiever/leave");
+            } catch (err) {
+              console.error("Failed to leave waiting room:", err);
+            }
+            setCustomAlert((prev) => ({ ...prev, visible: false }));
+            navigation.navigate("HomeTabs");
+          }
+        });
         return true;
       };
 
@@ -115,6 +111,15 @@ console.log("📥 /current-turn result:", res.data);
           <Text style={styles.footerText}>Make sure everyone is ready to play 🎮</Text>
         </View>
       </View>
+      <CustomAlert
+        visible={customAlert.visible}
+        title={customAlert.title}
+        message={customAlert.message}
+        onClose={() => setCustomAlert((prev) => ({ ...prev, visible: false }))}
+        onConfirm={customAlert.onConfirm}
+        confirmText="Leave"
+        cancelText="Cancel"
+      />
     </LinearGradient>
   );
 };

@@ -5,12 +5,12 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Alert,
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import api from '../../utils/api';
+import CustomAlert from '../../components/CustomAlert';
 
 interface Product {
   id: string;
@@ -23,6 +23,7 @@ const BuyPremium: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [purchasing, setPurchasing] = useState<string | null>(null);
+  const [customAlert, setCustomAlert] = useState({ visible: false, title: '', message: '' });
 
   useEffect(() => {
     fetchProducts();
@@ -35,7 +36,7 @@ const BuyPremium: React.FC = () => {
       setProducts(response.data.data.premium);
     } catch (error) {
       console.error('Error fetching products:', error);
-      Alert.alert('Error', 'Failed to load products');
+      setCustomAlert({ visible: true, title: 'Error', message: 'Failed to load products' });
     } finally {
       setLoading(false);
     }
@@ -54,19 +55,11 @@ const BuyPremium: React.FC = () => {
         productId: product.id,
       });
 
-      Alert.alert(
-        'Success!',
-        `Successfully activated ${product.name}!`,
-        [
-          {
-            text: 'OK',
-            onPress: () => navigation.goBack(),
-          },
-        ]
-      );
+      setCustomAlert({ visible: true, title: 'Success!', message: `Successfully activated ${product.name}!` });
+      navigation.goBack();
     } catch (error) {
       console.error('Purchase error:', error);
-      Alert.alert('Error', 'Failed to complete purchase. Please try again.');
+      setCustomAlert({ visible: true, title: 'Error', message: 'Failed to complete purchase. Please try again.' });
     } finally {
       setPurchasing(null);
     }
@@ -162,6 +155,12 @@ const BuyPremium: React.FC = () => {
           </Text>
         </View>
       </ScrollView>
+      <CustomAlert
+        visible={customAlert.visible}
+        title={customAlert.title}
+        message={customAlert.message}
+        onClose={() => setCustomAlert((prev) => ({ ...prev, visible: false }))}
+      />
     </View>
   );
 };

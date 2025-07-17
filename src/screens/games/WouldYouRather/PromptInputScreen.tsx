@@ -7,8 +7,8 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  Alert,
 } from "react-native";
+import CustomAlert from "../../../components/CustomAlert";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import api from "../../../utils/api";
 
@@ -17,10 +17,11 @@ type Props = NativeStackScreenProps<any, "PromptInputScreen">;
 const PromptInputScreen: React.FC<Props> = ({ navigation, route }) => {
   const { gameId, currentUserId } = route.params;
   const [prompt, setPrompt] = useState("");
+  const [customAlert, setCustomAlert] = useState({ visible: false, title: '', message: '' });
 
   const handleSubmit = async () => {
     if (!prompt.trim()) {
-      Alert.alert("Prompt cannot be empty");
+      setCustomAlert({ visible: true, title: "Error", message: "Prompt cannot be empty" });
       return;
     }
 
@@ -35,7 +36,7 @@ const PromptInputScreen: React.FC<Props> = ({ navigation, route }) => {
       });
     } catch (err) {
       console.error("Failed to submit prompt:", err);
-      Alert.alert("Error", "Could not submit prompt");
+      setCustomAlert({ visible: true, title: "Error", message: "Could not submit prompt" });
     }
   };
 
@@ -58,6 +59,12 @@ const PromptInputScreen: React.FC<Props> = ({ navigation, route }) => {
       <TouchableOpacity style={styles.button} onPress={handleSubmit}>
         <Text style={styles.buttonText}>Submit Prompt</Text>
       </TouchableOpacity>
+      <CustomAlert
+        visible={customAlert.visible}
+        title={customAlert.title}
+        message={customAlert.message}
+        onClose={() => setCustomAlert((prev) => ({ ...prev, visible: false }))}
+      />
     </KeyboardAvoidingView>
   );
 };

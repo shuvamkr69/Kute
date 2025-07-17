@@ -8,13 +8,11 @@ import { BlurView } from 'expo-blur';
 
 // Import screens
 import HomeScreen from "../screens/HomeScreen";
-import ChatScreen from "../screens/ChatScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import LikesScreen from "../screens/Likes";
 import GamesScreen from "../screens/GameScreens";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import ChatsScreen from "../screens/AllChats";
-import { LinearGradient } from "expo-linear-gradient";
 import api from "../utils/api";
 
 type Props = NativeStackScreenProps<any, "HomeTabs">;
@@ -29,6 +27,7 @@ const HomeTabs: React.FC<Props> = ({ navigation }) => {
   const [boostTimeLeft, setBoostTimeLeft] = useState('');
   const [showBoostModal, setShowBoostModal] = useState(false);
   const [boostActiveUntil, setBoostActiveUntil] = useState(null);
+  const [premiumActive, setPremiumActive] = useState(false);
 
   useEffect(() => {
     const fetchCounters = async () => {
@@ -41,6 +40,19 @@ const HomeTabs: React.FC<Props> = ({ navigation }) => {
       }
     };
     fetchCounters();
+  }, []);
+
+  useEffect(() => {
+    const fetchPremium = async () => {
+      try {
+        const res = await api.get('/api/v1/users/me');
+        const active = res.data.ActivePremiumPlan && res.data.ActivePremiumPlan !== 'null' && res.data.ActivePremiumPlan !== '';
+        setPremiumActive(!!active);
+      } catch (e) {
+        setPremiumActive(false);
+      }
+    };
+    fetchPremium();
   }, []);
 
   useEffect(() => {
@@ -105,12 +117,23 @@ const HomeTabs: React.FC<Props> = ({ navigation }) => {
             <Image source={require('../assets/icons/logo.webp')} style={{ width: 56, height: 56, left: -15 }}/>
           </View>
           <View style={{ flexDirection: "row" }}>
+            <Image
+              source={require("../assets/icons/premium.png")}
+              style={{
+                width: 22,
+                height: 22,
+                marginRight: 18,
+                tintColor: premiumActive ? undefined : '#888',
+                opacity: premiumActive ? 1 : 0.6,
+              }}
+              resizeMode="contain"
+            />
             <View>
               <Image
                 source={require("../assets/icons/popularity.png")}
                 style={{
-                  width: 22,
-                  height: 22,
+                  width: 19,
+                  height: 19,
                   marginRight: 18,
                   tintColor: boostActive ? undefined : '#888',
                   opacity: boostActive ? 1 : 0.6,

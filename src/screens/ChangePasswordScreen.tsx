@@ -6,11 +6,11 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
-  Alert,
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import api from "../utils/api";
+import CustomAlert from "../components/CustomAlert";
 
 type Props = NativeStackScreenProps<any, "ChangePassword">;
 
@@ -18,18 +18,22 @@ const ChangePasswordScreen: React.FC<Props> = ({ navigation }) => {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [customAlert, setCustomAlert] = useState({ visible: false, title: '', message: '' });
 
   const handleChangePassword = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
-      return Alert.alert("Error", "All fields are required");
+      setCustomAlert({ visible: true, title: "Error", message: "All fields are required" });
+      return;
     }
 
     if (newPassword.length < 6) {
-      return Alert.alert("Error", "Password must be at least 6 characters");
+      setCustomAlert({ visible: true, title: "Error", message: "Password must be at least 6 characters" });
+      return;
     }
 
     if (newPassword !== confirmPassword) {
-      return Alert.alert("Error", "New passwords do not match");
+      setCustomAlert({ visible: true, title: "Error", message: "New passwords do not match" });
+      return;
     }
 
     try {
@@ -38,12 +42,12 @@ const ChangePasswordScreen: React.FC<Props> = ({ navigation }) => {
         newPassword,
       });
 
-      Alert.alert("Success", "Password changed successfully");
+      setCustomAlert({ visible: true, title: "Success", message: "Password changed successfully" });
       navigation.goBack();
     } catch (error: any) {
       const message =
         error?.response?.data?.message || "Something went wrong";
-      Alert.alert("Error", message);
+      setCustomAlert({ visible: true, title: "Error", message });
     }
   };
 
@@ -95,6 +99,13 @@ const ChangePasswordScreen: React.FC<Props> = ({ navigation }) => {
       <TouchableOpacity style={styles.button} onPress={handleChangePassword}>
         <Text style={styles.buttonText}>Update Password</Text>
       </TouchableOpacity>
+
+      <CustomAlert
+        visible={customAlert.visible}
+        title={customAlert.title}
+        message={customAlert.message}
+        onClose={() => setCustomAlert((prev) => ({ ...prev, visible: false }))}
+      />
     </SafeAreaView>
   );
 };
