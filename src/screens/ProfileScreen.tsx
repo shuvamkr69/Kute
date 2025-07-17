@@ -64,6 +64,10 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   const [boostActiveUntil, setBoostActiveUntil] = useState<Date | null>(null);
   const [boostTimer, setBoostTimer] = useState<string | null>(null);
   const [showFullLoveLanguage, setShowFullLoveLanguage] = useState(false);
+  const [drinking, setDrinking] = useState("Never");
+  const [smoking, setSmoking] = useState("Never");
+  const [workout, setWorkout] = useState("Never");
+
 
   // Animated value for fog effect
   const fogAnim = React.useRef(new Animated.Value(0)).current;
@@ -148,6 +152,10 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
       setBoostActiveUntil(
         user.boostActiveUntil ? new Date(user.boostActiveUntil) : null
       );
+      setDrinking(user.drinking || "Never");
+      setSmoking(user.smoking || "Never");
+      setWorkout(user.workout || "Never");
+
       // ✅ Save API response for offline access
       await AsyncStorage.setItem("user", JSON.stringify(user));
     } catch (error) {
@@ -218,6 +226,10 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
       );
       setSuperLikes(response.data.superLike);
       setBoosts(response.data.boost);
+      setDrinking(user.drinking);
+      setSmoking(user.smoking);
+      setWorkout(user.workout);
+
       ToastAndroid.show("Profile Refreshed!", ToastAndroid.SHORT);
     } catch (error) {
       console.log("Refresh Error:", error);
@@ -251,10 +263,10 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
       profilePhoto !==
       "https://www.shutterstock.com/image-photo/very-random-pose-asian-men-260nw-2423213779.jpg"
     )
-      progress += 7;
-    if (name) progress += 7;
-    if (bio) progress += 7;
-    if (age) progress += 7;
+      progress += 10;
+    if (name) progress += 6;
+    if (bio) progress += 6;
+    if (age) progress += 6;
     if (isVerified) progress += 6;
     if (workingAt) progress += 6;
     if (bodyType) progress += 6;
@@ -286,6 +298,9 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
     pronouns,
     religion,
     familyPlanning,
+    drinking,
+    smoking,
+    workout,
   ]);
 
   useEffect(() => {
@@ -386,9 +401,18 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
             case 'Body Type:':
               iconName = 'people-outline'; // Use people-outline for body type
               break;
-            case 'Personality':
-              iconName = 'happy-outline';
+              case 'Personality':
+                iconName = 'happy-outline';
+                break;
+            case 'Drinking:':
+              iconName = 'wine-outline';
               break;
+            case 'Smoking:':
+              iconName = 'logo-no-smoking';
+              break;
+            case 'Workout:':
+                iconName = 'barbell-outline';
+            break;
             default:
               iconName = 'ellipse-outline';
           }
@@ -547,6 +571,9 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
           { label: "Family Planning:", value: familyPlanning },
           { label: "Body Type:", value: bodyType },
           { label: "Personality", value: personality },
+          { label: "Drinking:", value: drinking },
+          { label: "Smoking:", value: smoking },
+          { label: "Workout:", value: workout },
         ]}
       />
 
@@ -698,7 +725,11 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
         colors={["#fffbe6", "#ffe0b2", "#ffd700"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={[styles.featureCard, styles.premiumFeatureCard, { marginBottom: 22, marginTop: 0 }]}
+        style={[
+          styles.featureCard,
+          styles.premiumFeatureCard,
+          { marginBottom: 16, marginTop: 2, paddingTop: 12 }
+        ]}
       >
         <View style={styles.featureCardHeader}>
           <Icon name="unlock" size={32} color="#de822c" style={{ marginRight: 12 }} />
@@ -714,7 +745,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
             end={{ x: 1, y: 1 }}
             style={styles.featureButtonGradient}
           >
-            <Text style={styles.featureButtonText}>Become Premium</Text>
+            <Text style={styles.featureButtonText}>Become A Member</Text>
           </LinearGradient>
         </TouchableOpacity>
       </LinearGradient>
@@ -1045,7 +1076,7 @@ const styles = StyleSheet.create({
   featureCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 20,
   },
   featureIcon: {
     width: 38,
@@ -1114,6 +1145,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#ffd700',
     backgroundColor: 'rgba(255, 223, 0, 0.08)',
+    marginBottom: 30,
   },
   premiumFeatureTitle: {
     color: '#de822c',
@@ -1143,7 +1175,7 @@ const styles = StyleSheet.create({
   },
   goalCardContainer: {
     marginBottom: 28,
-    marginTop: 0,
+    marginTop: 28,
     borderRadius: 22,
     overflow: 'hidden',
     elevation: 8,

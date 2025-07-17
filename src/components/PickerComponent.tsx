@@ -14,6 +14,7 @@ interface PickerComponentProps {
   options: string[];
   onValueChange: (value: string) => void;
   icon?: React.ReactNode;
+  defaultToAny?: boolean;
 }
 
 const PickerComponent: React.FC<PickerComponentProps> = ({
@@ -22,6 +23,7 @@ const PickerComponent: React.FC<PickerComponentProps> = ({
   options,
   onValueChange,
   icon,
+  defaultToAny = false,
 }) => {
   const [modalVisible, setModalVisible] = React.useState(false);
 
@@ -42,7 +44,9 @@ const PickerComponent: React.FC<PickerComponentProps> = ({
           <Text style={styles.label}>{label}</Text>
         </View>
         <View style={styles.selectedValueBox}>
-          <Text style={styles.selectedValueText}>{selectedValue || "Not Set"}</Text>
+          <Text style={styles.selectedValueText}>
+            {selectedValue || (defaultToAny ? "Any" : "Not Set")}
+          </Text>
           <Text style={styles.arrow}>▼</Text>
         </View>
       </TouchableOpacity>

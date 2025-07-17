@@ -33,6 +33,8 @@ import Animated, {
   withSpring,
   runOnJS,
 } from "react-native-reanimated";
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 
 const screenWidth = Dimensions.get("window").width;
 const itemSize = (screenWidth - 60) / 3; // 20 padding on both sides + 10 gap between items
@@ -474,30 +476,32 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
             </View>
 
             <View style={styles.section}>
-              <TouchableOpacity onPress={() => setShowInterestModal(true)}>
-                <Icon name="pencil" size={20} color="#de822c" />
-                <View style={styles.tagsContainer}>
-                  {selectedInterests.map((item, index) => {
-                    // Split comma-separated string if needed (as fallback)
-                    const interests =
-                      typeof item === "string" ? item.split(",") : [item];
-                    return interests.map((interest, idx) => (
-                      <TouchableOpacity
-                        key={`${index}-${idx}`}
-                        style={styles.tag}
-                        onPress={() => selectInterest(interest.trim())}
-                      >
-                        <Text style={styles.tagText}>{interest.trim()}</Text>
-                      </TouchableOpacity>
-                    ));
-                  })}
-                  {selectedInterests.length === 0 && (
-                    <Text style={{ color: "#B0B0B0", paddingLeft: 10 }}>
-                      Your interests
-                    </Text>
-                  )}
-                </View>
-              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5, justifyContent: 'space-between' }}>
+                <Text style={styles.sectionTitle}>Interests</Text>
+                <TouchableOpacity onPress={() => setShowInterestModal(true)}>
+                  <Icon name="pencil" size={20} color="#de822c" />
+                </TouchableOpacity>
+              </View>
+              <View style={styles.tagsContainer}>
+                {selectedInterests.map((item, index) => {
+                  // Split comma-separated string if needed (as fallback)
+                  const interests =
+                    typeof item === "string" ? item.split(",") : [item];
+                  return interests.map((interest, idx) => (
+                    <View
+                      key={`${index}-${idx}`}
+                      style={styles.tag}
+                    >
+                      <Text style={styles.tagText}>{interest.trim()}</Text>
+                    </View>
+                  ));
+                })}
+                {selectedInterests.length === 0 && (
+                  <Text style={{ color: "#B0B0B0", paddingLeft: 10 }}>
+                    Your interests
+                  </Text>
+                )}
+              </View>
 
               <Modal
                 visible={showInterestModal}
@@ -505,27 +509,36 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
                 animationType="fade"
               >
                 <View style={styles.modalContainer}>
-                  <View style={styles.modalContent}>
-                    <FlatList
-                      data={interestOptions}
-                      keyExtractor={(item) => item}
-                      renderItem={({ item }) => (
-                        <TouchableOpacity
-                          onPress={() => selectInterest(item)}
-                          style={styles.interestOption}
-                        >
-                          <Text
-                            style={[
-                              styles.interestText,
-                              selectedInterests.includes(item) &&
-                                styles.selectedInterest,
-                            ]}
+                  <View style={styles.pickerModalContent}>
+                    <Text style={styles.pickerModalLabel}>Select Interests</Text>
+                    <View style={styles.bubbleContainer}>
+                      {interestOptions.map((item) => {
+                        const isSelected = selectedInterests.includes(item);
+                        return (
+                          <TouchableOpacity
+                            key={item}
+                            style={styles.bubbleTouchable}
+                            onPress={() => selectInterest(item)}
+                            activeOpacity={0.85}
                           >
-                            {item}
-                          </Text>
-                        </TouchableOpacity>
-                      )}
-                    />
+                            {isSelected ? (
+                              <LinearGradient
+                                colors={["#ff172e", "#de822c"]}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 1 }}
+                                style={styles.bubble}
+                              >
+                                <Text style={[styles.bubbleText, { color: "#fff" }]}>{item}</Text>
+                              </LinearGradient>
+                            ) : (
+                              <View style={[styles.bubble, styles.bubbleUnselected]}>
+                                <Text style={[styles.bubbleText, { color: "#B0B0B0" }]}>{item}</Text>
+                              </View>
+                            )}
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
                     <TouchableOpacity
                       onPress={() => setShowInterestModal(false)}
                       style={styles.confirmButton}
@@ -560,7 +573,7 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
                 {bio.length}/500
               </Text>
 
-              <Text style={styles.sectionTitle}>Height</Text>
+              <Text style={styles.sectionTitle}>Height in cm</Text>
               <View>
                 <TextInput
                   style={styles.input}
@@ -583,6 +596,7 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
                 selectedValue={occupation}
                 options={occupationOptions}
                 onValueChange={setOccupation}
+                icon={<Ionicons name="briefcase-outline" size={20} color="#de822c" />}
               />
 
               <PickerComponent
@@ -590,6 +604,7 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
                 selectedValue={loveLanguage}
                 options={loveLanguageOptions}
                 onValueChange={setloveLanguage}
+                icon={<Ionicons name="heart-circle-outline" size={20} color="#de822c" />}
               />
 
               <Text style={styles.sectionTitle}>Working At / Student At</Text>
@@ -608,6 +623,7 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
                   selectedValue={relationshipType}
                   options={relationshipOptions}
                   onValueChange={setRelationshipType}
+                  icon={<Ionicons name="heart-outline" size={20} color="#de822c" />}
                 />
               </View>
 
@@ -616,6 +632,7 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
                 selectedValue={pronouns}
                 options={pronounsOptions}
                 onValueChange={setPronouns}
+                icon={<Ionicons name="person-outline" size={20} color="#de822c" />}
               />
 
               <PickerComponent
@@ -623,6 +640,7 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
                 selectedValue={genderOrientation}
                 options={genderOrientationOptions}
                 onValueChange={setGenderOrientation}
+                icon={<Ionicons name="male-female-outline" size={20} color="#de822c" />}
               />
 
               <PickerComponent
@@ -630,12 +648,14 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
                 selectedValue={zodiac}
                 options={zodiacOptions}
                 onValueChange={setzodiac}
+                icon={<Ionicons name="star-outline" size={20} color="#de822c" />}
               />
               <PickerComponent
                 label="Religion"
                 selectedValue={religion}
                 options={religionOptions}
                 onValueChange={setReligion}
+                icon={<Ionicons name="leaf-outline" size={20} color="#de822c" />}
               />
 
               <PickerComponent
@@ -643,6 +663,7 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
                 selectedValue={familyPlanning}
                 options={familyPlanningOptions}
                 onValueChange={setFamilyPlanning}
+                icon={<Ionicons name="people-outline" size={20} color="#de822c" />}
               />
 
               <PickerComponent
@@ -650,6 +671,7 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
                 selectedValue={bodyType}
                 options={bodyTypeOptions}
                 onValueChange={setBodyType}
+                icon={<Ionicons name="people-outline" size={20} color="#de822c" />}
               />
 
               <PickerComponent
@@ -657,6 +679,7 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
                 selectedValue={workout}
                 options={workoutOptions}
                 onValueChange={setWorkout}
+                icon={<Ionicons name="barbell-outline" size={20} color="#de822c" />}
               />
 
               <PickerComponent
@@ -664,12 +687,14 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
                 selectedValue={smoking}
                 options={smokingOptions}
                 onValueChange={setSmoking}
+                icon={<Ionicons name="logo-no-smoking" size={20} color="#de822c" />}
               />
               <PickerComponent
                 label="Drinking"
                 selectedValue={drinking}
                 options={drinkingOptions}
                 onValueChange={setDrinking}
+                icon={<Ionicons name="wine-outline" size={20} color="#de822c" />}
               />
             </View>
 
@@ -863,12 +888,55 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 10,
     marginTop: 30,
+    fontWeight: "bold",
   },
   sectionTitle: {
     color: "#de822c",
     fontSize: 18,
     fontWeight: "bold",
     marginBottom: 10,
+  },
+  pickerModalContent: {
+    backgroundColor: "#23262F",
+    borderRadius: 18,
+    padding: 24,
+    minWidth: 260,
+    maxWidth: 340,
+    alignItems: "center",
+  },
+  pickerModalLabel: {
+    color: "#de822c",
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 18,
+  },
+  bubbleContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    justifyContent: "center",
+    marginBottom: 18,
+  },
+  bubbleTouchable: {
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  bubble: {
+    borderRadius: 20,
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+    minWidth: 60,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  bubbleUnselected: {
+    backgroundColor: "#111",
+    borderWidth: 1,
+    borderColor: "#444",
+  },
+  bubbleText: {
+    fontWeight: "bold",
+    fontSize: 15,
   },
 });
 
