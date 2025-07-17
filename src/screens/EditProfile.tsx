@@ -478,7 +478,7 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
             <View style={styles.section}>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5, justifyContent: 'space-between' }}>
                 <Text style={styles.sectionTitle}>Interests</Text>
-                <TouchableOpacity onPress={() => setShowInterestModal(true)}>
+                <TouchableOpacity onPress={() => setShowInterestModal(true)} activeOpacity={0.9}>
                   <Icon name="pencil" size={20} color="#de822c" />
                 </TouchableOpacity>
               </View>
@@ -519,7 +519,7 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
                             key={item}
                             style={styles.bubbleTouchable}
                             onPress={() => selectInterest(item)}
-                            activeOpacity={0.85}
+                            activeOpacity={0.9}
                           >
                             {isSelected ? (
                               <LinearGradient
@@ -542,6 +542,7 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
                     <TouchableOpacity
                       onPress={() => setShowInterestModal(false)}
                       style={styles.confirmButton}
+                      activeOpacity={0.9}
                     >
                       <Text style={styles.confirmButtonText}>Confirm</Text>
                     </TouchableOpacity>

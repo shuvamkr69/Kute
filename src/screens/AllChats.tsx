@@ -427,6 +427,15 @@ const styles = StyleSheet.create({
     marginRight: 10,
     alignSelf: 'center',
   },
+  seenCircle: {
+    width: 13,
+    height: 13,
+    borderRadius: 6.5,
+    borderWidth: 1.5,
+    borderColor: '#fff',
+    marginLeft: 7,
+    zIndex: 10,
+  },
 });
 
 export default ChatsScreen;

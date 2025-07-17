@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import api from '../../utils/api';
 import CustomAlert from '../../components/CustomAlert';
+import BackButton from '../../components/BackButton';
 
 interface Product {
   id: string;
@@ -76,20 +77,9 @@ const BuyPremium: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-          activeOpacity={0.9}
-        >
-          <Ionicons name="arrow-back" size={24} color="#FF6B6B" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Premium Plans</Text>
-        <View style={styles.placeholder} />
+      <View style={styles.backButtonContainer}>
+        <BackButton title="Premium Plans" />
       </View>
-
-      {/* Content */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.infoSection}>
           <Ionicons name="star" size={48} color="#FF6B6B" />
@@ -278,6 +268,12 @@ const styles = StyleSheet.create({
     color: '#888',
     textAlign: 'center',
     marginBottom: 4,
+  },
+  backButtonContainer: {
+    paddingTop: 40,
+    paddingHorizontal: 10,
+    backgroundColor: 'transparent',
+    zIndex: 10,
   },
 });
 

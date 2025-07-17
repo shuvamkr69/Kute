@@ -104,7 +104,7 @@ const HomeTabs: React.FC<Props> = ({ navigation }) => {
         <View
           style={{
             height: 55,
-            backgroundColor: "#0a0000",
+            backgroundColor: "#000",
             flexDirection: "row",
             justifyContent: "space-between",
             alignItems: "center",
@@ -203,7 +203,7 @@ const HomeTabs: React.FC<Props> = ({ navigation }) => {
             );
           },
           tabBarStyle: {
-            backgroundColor: "#0a0000",
+            backgroundColor: "#000",
             height: Platform.OS === "ios" ? 70 : 55,
             borderTopWidth: 0,
             shadowOpacity: 0.1,

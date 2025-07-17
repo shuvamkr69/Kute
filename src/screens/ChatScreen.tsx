@@ -76,6 +76,7 @@ const MessageItem = memo(
     isRead: boolean | undefined; // <-- new prop
     otherUserAvatar?: string; // <-- new prop
     style?: any;
+    selectionMode: boolean;
   }) => {
     const {
       text,
@@ -91,6 +92,7 @@ const MessageItem = memo(
       isRead, // <-- new
       otherUserAvatar, // <-- new
       style,
+      selectionMode,
     } = props;
 
     const formatTime = (isoDate?: string) => {
@@ -104,74 +106,77 @@ const MessageItem = memo(
     };
 
     return (
-      <Pressable
-        onLongPress={onLongPress}
-        onPress={onPress}
-        style={[
-          isMyMessage
-            ? styles.myMessageContainer
-            : styles.otherMessageContainer,
-          { position: "relative" },
-          style,
-        ]}
-      >
+      <View style={{ position: 'relative' }}>
         {isSelected && <View style={styles.selectedMessageOverlay} />}
+        <Pressable
+          onLongPress={() => {
+            if (!selectionMode) {
+              onLongPress();
+            }
+          }}
+          onPress={() => {
+            if (selectionMode) {
+              onPress();
+            }
+          }}
+          delayLongPress={selectionMode ? undefined : 150}
+          style={[
+            isMyMessage
+              ? styles.myMessageContainer
+              : styles.otherMessageContainer,
+            style,
+          ]}
+        >
+          {!isSelected && (
+            <TouchableOpacity
+              onPress={onReply}
+              style={[
+                styles.replyButton,
+                isMyMessage ? { right: -25 } : { left: -25 },
+              ]}
+            >
+              <Ionicons
+                name="return-up-back-outline"
+                size={20}
+                color={isMyMessage ? "#fff" : "#de822c"}
+                style={{
+                  transform: isMyMessage ? [] : [{ scaleX: -1 }], // ✅ Flip horizontally
+                }}
+              />
+            </TouchableOpacity>
+          )}
 
-        {!isSelected && (
-          <TouchableOpacity
-            onPress={onReply}
-            style={[
-              styles.replyButton,
-              isMyMessage ? { right: -25 } : { left: -25 },
-            ]}
-          >
-            <Ionicons
-              name="return-up-back-outline"
-              size={20}
-              color={isMyMessage ? "#fff" : "#de822c"}
-              style={{
-                transform: isMyMessage ? [] : [{ scaleX: -1 }], // ✅ Flip horizontally
-              }}
-            />
-          </TouchableOpacity>
-        )}
-
-        {replyTo && (
-          <View
-            style={[
-              styles.replyContainer,
-              isMyMessage
-                ? styles.myReplyContainer
-                : styles.otherReplyContainer,
-            ]}
-          >
-            <View style={styles.replyLine} />
-            <View style={styles.replyContent}>
-              <Text style={styles.replyToText}>
-                {replyTo.senderId === loggedInUserId ? "You" : "Them"}
-              </Text>
-              <Text style={styles.replyText}>{replyTo.text}</Text>
+          {replyTo && (
+            <View
+              style={[
+                styles.replyContainer,
+                isMyMessage
+                  ? styles.myReplyContainer
+                  : styles.otherReplyContainer,
+              ]}
+            >
+              <View style={styles.replyLine} />
+              <View style={styles.replyContent}>
+                <Text style={styles.replyToText}>
+                  {replyTo.senderId === loggedInUserId ? "You" : "Them"}
+                </Text>
+                <Text style={styles.replyText}>{replyTo.text}</Text>
+              </View>
             </View>
-          </View>
-        )}
+          )}
 
-        <View style={isMyMessage ? styles.myMessage : styles.otherMessage}>
-          <Text style={styles.messageText}>{text}</Text>
-          {createdAt && (
-            <Text style={styles.timeText}>{formatTime(createdAt)}</Text>
+          <View style={isMyMessage ? styles.myMessage : styles.otherMessage}>
+            <Text style={styles.messageText}>{text}</Text>
+            {createdAt && (
+              <Text style={styles.timeText}>{formatTime(createdAt)}</Text>
+            )}
+          </View>
+          {/* Move Seen indicator below the bubble */}
+          {isMyMessage && isLastMyMessage && isRead && (
+            <Text style={styles.seenTextBelow}>Seen</Text>
           )}
-          {/* Instagram-style read receipt for my last message */}
-          {isMyMessage && isLastMyMessage && (
-            isRead ? (
-              otherUserAvatar ? (
-                <Image source={{ uri: otherUserAvatar }} style={styles.readAvatar} />
-              ) : (
-                <Ionicons name="checkmark-done" size={16} color="#3797f0" style={styles.readCheck} />
-              )
-            ) : null
-          )}
-        </View>
-      </Pressable>
+        </Pressable>
+      </View>
     );
   }
 );
@@ -309,6 +314,50 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
     };
   }, [conversationId]);
 
+  useEffect(() => {
+    // Emit messageRead when chat is opened or new messages arrive
+    if (conversationId && messages.length > 0) {
+      // Find the last message not sent by the current user and not read
+      const unreadMessages = messages.filter(
+        (msg) => msg.senderId !== loggedInUserId && !msg.isRead
+      );
+      if (unreadMessages.length > 0) {
+        socket.emit("messageRead", {
+          conversationId,
+          receiverId: loggedInUserId,
+        });
+      }
+    }
+  }, [conversationId, messages.length, loggedInUserId]);
+
+  useEffect(() => {
+    // Listen for messageRead event from socket
+    const handleMessageRead = ({ conversationId: seenConvId, seenBy }) => {
+      if (conversationId !== seenConvId) return;
+      setMessages((prevMessages) =>
+        prevMessages.map((msg, idx, arr) => {
+          // Mark all messages from the other user as read
+          if (msg.senderId !== loggedInUserId && !msg.isRead) {
+            return { ...msg, isRead: true };
+          }
+          // Optionally, mark the last message as read for the sender
+          if (
+            msg.senderId === loggedInUserId &&
+            idx === arr.length - 1 &&
+            arr[idx].isRead !== true
+          ) {
+            return { ...msg, isRead: true };
+          }
+          return msg;
+        })
+      );
+    };
+    socket.on("messageRead", handleMessageRead);
+    return () => {
+      socket.off("messageRead", handleMessageRead);
+    };
+  }, [conversationId, loggedInUserId]);
+
   const EmptyChatState = ({ userName }: { userName: string }) => (
     <View
       style={{
@@ -358,15 +407,6 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
       socket.off("newMessage", handleNewMessage);
     };
   }, [conversationId, loggedInUserId]);
-
-  useEffect(() => {
-    if (messages.length > 0) {
-      setTimeout(
-        () => flatListRef.current?.scrollToEnd({ animated: false }),
-        200
-      );
-    }
-  }, [messages.length]);
 
   const handleMessageLongPress = (message: Message) => {
     setReplyingTo(message);
@@ -656,13 +696,23 @@ navigation.goBack();
   // Show scroll-to-bottom button logic
   const handleScroll = (event) => {
     const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
+    // Show button if user is more than 100px away from the bottom
     const isAtBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - 20;
-    setShowScrollToBottom(!isAtBottom);
+    setShowScrollToBottom(contentSize.height - (layoutMeasurement.height + contentOffset.y) > 100);
   };
 
   const scrollToBottom = () => {
-    if (flatListRef.current) {
+    if (flatListRef.current && messages.length > 0) {
+      // Try scrollToEnd first
       flatListRef.current.scrollToEnd({ animated: true });
+      // Fallback: ensure scroll to last index after a short delay
+      setTimeout(() => {
+        try {
+          flatListRef.current?.scrollToIndex({ index: messages.length - 1, animated: true });
+        } catch (e) {
+          // ignore out of range
+        }
+      }, 100);
     }
   };
 
@@ -754,12 +804,29 @@ navigation.goBack();
         <View style={styles.iconGroup}>
           {selectionMode ? (
             <>
+              {/* Reply button when only one message is selected */}
+              {selectedMessages.size === 1 && (
+                <TouchableOpacity
+                  onPress={() => {
+                    const selectedId = Array.from(selectedMessages)[0];
+                    const msg = messages.find((m) => m._id === selectedId);
+                    if (msg) {
+                      setReplyingTo(msg);
+                    }
+                    setSelectedMessages(new Set());
+                    setSelectionMode(false);
+                  }}
+                  style={{ marginRight: 2 }}
+                >
+                  <Ionicons name="return-up-back-outline" size={22} color="#fff" />
+                </TouchableOpacity>
+              )}
               <TouchableOpacity onPress={confirmDelete}>
                 <Ionicons
                   name="trash-outline"
-                  size={24}
+                  size={22}
                   color="white"
-                  style={styles.icon}
+                  style={{ marginLeft: 2, marginRight: 2 }}
                 />
               </TouchableOpacity>
               <TouchableOpacity
@@ -770,9 +837,9 @@ navigation.goBack();
               >
                 <Ionicons
                   name="close-outline"
-                  size={24}
+                  size={22}
                   color="white"
-                  style={styles.icon}
+                  style={{ marginLeft: 2 }}
                 />
               </TouchableOpacity>
             </>
@@ -892,18 +959,14 @@ navigation.goBack();
                   isRead={item.isRead ?? false}
                   otherUserAvatar={item.senderId === loggedInUserId ? profileImage : undefined}
                   style={index === 0 ? { marginTop: 24 } : undefined}
+                  selectionMode={selectionMode}
                 />
               )}
               keyExtractor={(item) => item._id}
               getItemLayout={(data, index) => ({ length: 70, offset: 70 * index, index })}
               ListEmptyComponent={<EmptyChatState userName={userName} />}
               ListFooterComponent={isBlockedByMe ? null : isTyping ? <TypingIndicator /> : null}
-              onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
-              onLayout={() => {
-                setTimeout(() => {
-                  flatListRef.current?.scrollToEnd({ animated: false });
-                }, 100);
-              }}
+              initialScrollIndex={messages.length > 0 ? messages.length - 1 : 0}
               onScroll={handleScroll}
               scrollEventThrottle={16}
             />
@@ -922,7 +985,7 @@ navigation.goBack();
                   zIndex: 20,
                 }}
               >
-                <Ionicons name="arrow-down" size={28} color="#de822c" />
+                <Ionicons name="arrow-down" size={20} color="#de822c" />
               </TouchableOpacity>
             )}
           </>
@@ -984,7 +1047,7 @@ navigation.goBack();
       placeholderTextColor="#B0B0B0"
     />
     <AiChatbot messages={messages} loggedInUserId={loggedInUserId} />
-    <TouchableOpacity onPress={sendMessage}>
+    <TouchableOpacity onPress={sendMessage} style={{ marginLeft: 18 }}>
       <Image
         source={require("../assets/icons/send-message.png")}
         style={styles.sendIcon}
@@ -1086,15 +1149,9 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   selectedMessageOverlay: {
-    position: "absolute",
-    top: -5,
-    bottom: -5,
-    left: -10,
-    right: -10,
-    width: "100%",
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(222, 130, 44, 0.25)", // Orange with low opacity
-    borderRadius: 16,
-    zIndex: -1, // Keep it behind the message bubble
+    zIndex: 0, // Keep it behind the message bubble
   },
   replyButton: {
     position: "absolute",
@@ -1413,6 +1470,24 @@ const styles = StyleSheet.create({
     right: 10,
     padding: 6,
     zIndex: 10,
+  },
+  seenText: {
+    color: '#de2222',
+    fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'right',
+    marginTop: 2,
+    marginRight: 2,
+  },
+  // Add new style for below bubble
+  seenTextBelow: {
+    color: '#fff',
+    fontSize: 11, // smaller
+    fontWeight: '400', // less bold
+    textAlign: 'right',
+    marginTop: 2,
+    marginRight: 2,
+    marginBottom: 4,
   },
 });
 

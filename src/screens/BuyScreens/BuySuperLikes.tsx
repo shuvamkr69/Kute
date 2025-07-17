@@ -6,11 +6,13 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import api from '../../utils/api';
 import CustomAlert from '../../components/CustomAlert';
+import BackButton from '../../components/BackButton';
 
 interface Product {
   id: string;
@@ -101,7 +103,16 @@ const BuyFeaturesScreen: React.FC = () => {
         {superLikeProducts.map((product) => (
           <View key={product.id} style={styles.productCard}>
             <View style={styles.productInfo}>
-              <Text style={styles.productName}>{product.name}</Text>
+              <View style={styles.productInfoRow}>
+                <Text style={styles.productName}>{product.name}</Text>
+                {product.id === 'sl3' && (
+                  <Image
+                    source={require('../../assets/icons/most-popular.png')}
+                    style={{ width: 28, height: 28, marginLeft: 8 }}
+                    resizeMode="contain"
+                  />
+                )}
+              </View>
               <Text style={styles.productPrice}>{product.price}</Text>
             </View>
             <TouchableOpacity
@@ -134,7 +145,16 @@ const BuyFeaturesScreen: React.FC = () => {
         {boostProducts.map((product) => (
           <View key={product.id} style={styles.productCard}>
             <View style={styles.productInfo}>
-              <Text style={styles.productName}>{product.name}</Text>
+              <View style={styles.productInfoRow}>
+                <Text style={styles.productName}>{product.name}</Text>
+                {product.id === 'b3' && (
+                  <Image
+                    source={require('../../assets/icons/most-popular.png')}
+                    style={{ width: 28, height: 28, marginLeft: 8 }}
+                    resizeMode="contain"
+                  />
+                )}
+              </View>
               <Text style={styles.productPrice}>{product.price}</Text>
             </View>
             <TouchableOpacity
@@ -164,17 +184,19 @@ const BuyFeaturesScreen: React.FC = () => {
   }
 
   return (
-    <View style={styles.container}>
-      {/* Tab Bar */}
-      {renderTabBar()}
-      {/* Tab Content */}
-      {activeTab === 'superlikes' ? renderSuperLikes() : renderBoosts()}
-      <CustomAlert
-        visible={customAlert.visible}
-        title={customAlert.title}
-        message={customAlert.message}
-        onClose={() => setCustomAlert((prev) => ({ ...prev, visible: false }))}
-      />
+    <View style={styles.backButtonContainer}>
+      <BackButton title="Buy Superlikes and Boosts" />
+      <View style={styles.container}>
+
+        {renderTabBar()}
+        {activeTab === 'superlikes' ? renderSuperLikes() : renderBoosts()}
+        <CustomAlert
+          visible={customAlert.visible}
+          title={customAlert.title}
+          message={customAlert.message}
+          onClose={() => setCustomAlert((prev) => ({ ...prev, visible: false }))}
+        />
+      </View>
     </View>
   );
 };
@@ -182,11 +204,11 @@ const BuyFeaturesScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#000',
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#000',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -198,7 +220,7 @@ const styles = StyleSheet.create({
   tabContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    backgroundColor: '#1E1E1E',
+    backgroundColor: '#000',
   },
   tab: {
     flex: 1,
@@ -221,10 +243,12 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: 20,
+    backgroundColor: '#000',
   },
   infoSection: {
     alignItems: 'center',
     paddingVertical: 30,
+    backgroundColor: '#000',
   },
   infoTitle: {
     fontSize: 24,
@@ -242,51 +266,46 @@ const styles = StyleSheet.create({
   },
   productsContainer: {
     marginTop: 20,
+    backgroundColor: '#000',
   },
   productCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#2a2a2a',
-    padding: 20,
+    backgroundColor: '#181818',
     borderRadius: 12,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
+    padding: 18,
+    marginBottom: 16,
   },
   productInfo: {
     flex: 1,
   },
   productName: {
-    fontSize: 18,
-    fontWeight: '600',
     color: '#fff',
-    marginBottom: 4,
+    fontSize: 16,
+    fontWeight: 'bold',
   },
   productPrice: {
+    color: '#de822c',
     fontSize: 16,
-    color: '#FF6B6B',
-    fontWeight: '500',
+    fontWeight: 'bold',
   },
   footer: {
-    paddingVertical: 30,
+    marginTop: 30,
     alignItems: 'center',
+    backgroundColor: '#000',
   },
   footerText: {
-    fontSize: 14,
     color: '#888',
+    fontSize: 13,
     textAlign: 'center',
+    marginBottom: 4,
   },
   buyButton: {
     backgroundColor: '#de822c',
     borderRadius: 8,
-    paddingVertical: 6, // smaller height
-    paddingHorizontal: 12, // smaller width
-    alignItems: 'center',
-    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 22,
   },
   buyButtonText: {
     color: '#fff',
@@ -312,6 +331,15 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  backButtonContainer: {
+     flex:1,
+     backgroundColor: '#000',
+  },
+  productInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 2,
   },
 });
 

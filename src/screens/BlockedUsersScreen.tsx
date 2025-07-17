@@ -13,6 +13,7 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import api from "../utils/api";
 import BackButton from "../components/BackButton";
 import { LinearGradient } from 'expo-linear-gradient';
+import CustomAlert from '../components/CustomAlert';
 
 type Props = NativeStackScreenProps<any, "BlockedUsersScreen">;
 
@@ -25,6 +26,7 @@ interface BlockedUser {
 const BlockedUsersScreen: React.FC<Props> = ({ navigation }) => {
   const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [customAlert, setCustomAlert] = useState({ visible: false, title: '', message: '', onConfirm: undefined, confirmText: '', cancelText: '' });
 
   const fetchBlockedUsers = async () => {
     try {
@@ -41,10 +43,27 @@ const BlockedUsersScreen: React.FC<Props> = ({ navigation }) => {
     try {
       await api.post("/api/v1/users/unblock", { userId });
       setBlockedUsers((prev) => prev.filter((user) => user._id !== userId));
-      Alert.alert("Unblocked", "User has been unblocked.");
+      setCustomAlert({
+        visible: true,
+        title: 'Unblocked',
+        message: 'User has been unblocked. You can now chat with them again. Go to My Chats to start a conversation.',
+        confirmText: 'My Chats',
+        cancelText: 'OK',
+        onConfirm: () => {
+          setCustomAlert((prev) => ({ ...prev, visible: false }));
+          setTimeout(() => navigation.navigate('HomeTabs', { screen: 'AllChatScreen' }), 250);
+        }
+      });
     } catch (err) {
       console.error("Unblock failed:", err);
-      Alert.alert("Error", "Could not unblock user.");
+      setCustomAlert({
+        visible: true,
+        title: 'Error',
+        message: 'Could not unblock user. Please try again later.',
+        confirmText: '',
+        cancelText: 'OK',
+        onConfirm: undefined,
+      });
     }
   };
 
@@ -96,6 +115,15 @@ const BlockedUsersScreen: React.FC<Props> = ({ navigation }) => {
             contentContainerStyle={styles.list}
           />
         )}
+        <CustomAlert
+          visible={customAlert.visible}
+          title={customAlert.title}
+          message={customAlert.message}
+          onClose={() => setCustomAlert((prev) => ({ ...prev, visible: false }))}
+          onConfirm={customAlert.onConfirm}
+          confirmText={customAlert.confirmText}
+          cancelText={customAlert.cancelText || 'Cancel'}
+        />
       </View>
     </View>
   );

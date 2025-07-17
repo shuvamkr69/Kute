@@ -47,6 +47,13 @@ export const initializeSocket = (server) => {
           { isRead: true }
         );
 
+        // Also update Conversation's lastMessage.isRead if the last message is from the other user
+        const conversation = await (await import("../models/conversation.model.js")).Conversation.findById(conversationId);
+        if (conversation && conversation.lastMessage && conversation.lastMessage.senderId.toString() !== receiverId.toString()) {
+          conversation.lastMessage.isRead = true;
+          await conversation.save();
+        }
+
         io.to(conversationId).emit("messageRead", {
           conversationId,
           seenBy: receiverId,

@@ -492,7 +492,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
             end={{ x: 1, y: 1 }}
             style={styles.editIconGradient}
           >
-            <TouchableOpacity
+            <TouchableOpacity activeOpacity={0.9}
               style={styles.editIconButton}
               onPress={() => navigation.navigate("EditProfile")}
             >
@@ -672,7 +672,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
           <Text style={styles.featureDescription}>Increase your visibility by 3x and get more matches. Each boost lasts 6 hours.</Text>
           <View style={styles.featureFooter}>
             <View style={styles.featureCounterBox}><Text style={styles.featureCounterText}>x{boosts}</Text></View>
-            <TouchableOpacity onPress={handleActivateBoost} style={[styles.featureButton, { minWidth: 80 }]}>
+            <TouchableOpacity activeOpacity={0.9} onPress={handleActivateBoost} style={[styles.featureButton, { minWidth: 80 }]}>
               <LinearGradient
                 colors={["#de822c", "#ff172e"]}
                 start={{ x: 0, y: 0 }}
@@ -682,7 +682,8 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
                 <Text style={[styles.featureButtonText, { fontSize: 13 }]}>Activate Now</Text>
               </LinearGradient>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => navigation.navigate('BuyFeatures', { initialTab: 'boosts' })} style={[styles.featureButton, { minWidth: 80 }]}>
+            <View style={{ width: screenWidth < 370 ? 14 : 24 }} />
+            <TouchableOpacity activeOpacity={0.9} onPress={() => navigation.navigate('BuyFeatures', { initialTab: 'boosts' })} style={[styles.featureButton, { minWidth: 80 }]}>
               <LinearGradient
                 colors={["#de822c", "#ff172e"]}
                 start={{ x: 0, y: 0 }}
@@ -712,7 +713,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
           <Text style={styles.featureDescription}>Send special likes to your crush and stand out!</Text>
           <View style={styles.featureFooter}>
             <View style={styles.featureCounterBox}><Text style={styles.featureCounterText}>x{superLikes}</Text></View>
-            <TouchableOpacity onPress={() => navigation.navigate('BuyFeatures', { initialTab: 'superlikes' })} style={[styles.featureButton, { minWidth: 80 }]}>
+            <TouchableOpacity activeOpacity={0.9} onPress={() => navigation.navigate('BuyFeatures', { initialTab: 'superlikes' })} style={[styles.featureButton, { minWidth: 80 }]}>
               <LinearGradient
                 colors={["#de822c", "#ff172e"]}
                 start={{ x: 0, y: 0 }}
@@ -734,7 +735,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
         style={[
           styles.featureCard,
           styles.premiumFeatureCard,
-          { marginBottom: 40, marginTop: 2, paddingTop: 12 }
+          { borderRadius: 22, marginBottom: 40, marginTop: 2, paddingTop: 12 }
         ]}
       >
         <View style={styles.featureCardHeader}>
@@ -742,7 +743,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
           <Text style={[styles.featureTitle, styles.premiumFeatureTitle]}>Unlock All Features</Text>
         </View>
         <Text style={[styles.featureDescription, styles.premiumFeatureDescription]}>Unlock all premium features and maximize your Kute experience.</Text>
-        <TouchableOpacity onPress={() => navigation.navigate("Premium")}
+        <TouchableOpacity activeOpacity={0.9} onPress={() => navigation.navigate("Premium")}
           style={styles.featureButton}
         >
           <LinearGradient
@@ -1171,7 +1172,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#ffd700',
     backgroundColor: 'rgba(255, 223, 0, 0.08)',
-    marginBottom: 30,
+    borderRadius: 22,
   },
   premiumFeatureTitle: {
     color: '#de822c',

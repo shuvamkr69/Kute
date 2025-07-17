@@ -22,6 +22,10 @@ const conversationSchema = new Schema(
       createdAt: {
         type: Date,
       },
+      isRead: {
+        type: Boolean,
+        default: false,
+      },
     },
   },
   { timestamps: true }
