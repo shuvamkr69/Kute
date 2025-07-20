@@ -43,19 +43,11 @@ import BlockedUsersScreen from "../screens/BlockedUsersScreen";
 import ResetPasswordScreen from "../screens/ResetPasswordScreen";
 import ChangePasswordScreen from "../screens/ChangePasswordScreen";
 import HelpScreen from "../screens/HelpScreen";
+import TruthOrDareGame from "../screens/games/TruthOrDare/TruthOrDareGame";
 // import CallScreen from "../screens/CallScreen";
 
 import BuyFeaturesScreen from '../screens/BuyScreens/BuySuperLikes';
 import Agreements from "../screens/Agreements";
-import TDWaitingForChoiceScreen from "../screens/games/TruthOrDare/TDWaitingForChoiceScreen";
-import TDChoiceScreen from "../screens/games/TruthOrDare/TDChoiceScreen";
-import TDWaitingScreen from "../screens/games/TruthOrDare/TDWaitingScreen";
-import TDWaitingForQuestionScreen from "../screens/games/TruthOrDare/TDWaitingForQuestionScreen";
-import TDAnswerScreen from "../screens/games/TruthOrDare/TDAnswerScreen";
-import TDWaitingForAnswerScreen from "../screens/games/TruthOrDare/TDWaitingForAnswerScreen";
-import TDReviewScreen from "../screens/games/TruthOrDare/TDReviewScreen";
-import TDGameOverScreen from "../screens/games/TruthOrDare/TDGameOverScreen";
-import TDAskQuestionScreen from "../screens/games/TruthOrDare/TDAskQuestionScreen";
 
 const Stack = createNativeStackNavigator(); // Standard Stack Navigator
 
@@ -104,17 +96,11 @@ export default function AppNavigation() {
             <Stack.Screen name="Agreements" component={Agreements} />
             {/* User Info Screens */}
 
-
             {/* truth and dare */}
-            <Stack.Screen name="TDWaitingScreen" component={TDWaitingScreen} />
-            <Stack.Screen name="TDChoiceScreen" component={TDChoiceScreen} />
-            <Stack.Screen name="TDWaitingForChoiceScreen" component={TDWaitingForChoiceScreen} />
-            <Stack.Screen name="TDWaitingForQuestionScreen" component={TDWaitingForQuestionScreen} />
-            <Stack.Screen name="TDAskQuestionScreen" component={TDAskQuestionScreen} />
-            <Stack.Screen name="TDAnswerScreen" component={TDAnswerScreen} />
-            <Stack.Screen name="TDWaitingForAnswerScreen" component={TDWaitingForAnswerScreen} />
-            <Stack.Screen name="TDReviewScreen" component={TDReviewScreen} />
-            <Stack.Screen name="TDGameOverScreen" component={TDGameOverScreen} />
+            <Stack.Screen name="TruthOrDareGame" component={TruthOrDareGame} />
+
+
+
 
 
 

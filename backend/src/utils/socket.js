@@ -62,13 +62,13 @@ export const initializeSocket = (server) => {
       }
     });
 
-    // Join a room named after the userId for targeted emits
-    socket.on('td_register_user', ({ userId }) => {
-      if (userId) {
-        socket.join(userId);
-        console.log(`Socket ${socket.id} joined room for user ${userId}`);
-      }
-    });
+    // // Join a room named after the userId for targeted emits
+    // socket.on('td_register_user', ({ userId }) => {
+    //   if (userId) {
+    //     socket.join(userId);
+    //     console.log(`Socket ${socket.id} joined room for user ${userId}`);
+    //   }
+    // });
 
    
     // Add inside io.on("connection", (socket) => { ... });
@@ -99,3 +99,97 @@ export const getIO = () => {
   if (!io) throw new Error("❌ Socket.io not initialized!");
   return io;
 };
+
+// Truth or Dare Socket.io Logic
+const waitingPlayers = [];
+const gameRooms = {};
+
+function setupTruthOrDare(io) {
+  io.on('connection', (socket) => {
+    socket.on('td:joinQueue', ({ userId }) => {
+      if (!waitingPlayers.find(p => p.userId === userId)) {
+        waitingPlayers.push({ userId, socketId: socket.id });
+      }
+      if (waitingPlayers.length >= 2) {
+        const [p1, p2] = waitingPlayers.splice(0, 2);
+        const roomId = `td_${p1.userId}_${p2.userId}_${Date.now()}`;
+        const chanceHolder = Math.random() < 0.5 ? p1.userId : p2.userId;
+        gameRooms[roomId] = {
+          players: [p1, p2],
+          chanceHolder,
+          state: 'waitingForChoice',
+          currentChoice: null,
+          truthQuestion: '',
+          truthAnswer: '',
+          round: 1,
+        };
+        io.to(p1.socketId).emit('td:matched', { roomId, chanceHolder });
+        io.to(p2.socketId).emit('td:matched', { roomId, chanceHolder });
+      }
+    });
+
+    socket.on('td:makeChoice', ({ roomId, userId, choice }) => {
+      const game = gameRooms[roomId];
+      if (!game || game.chanceHolder !== userId) return;
+      game.currentChoice = choice;
+      game.state = 'waitingForQuestion';
+      game.players.forEach(p => io.to(p.socketId).emit('td:stateUpdate', game));
+    });
+
+    socket.on('td:submitQuestion', ({ roomId, question }) => {
+      const game = gameRooms[roomId];
+      if (!game) return;
+      game.truthQuestion = question;
+      game.state = 'waitingForAnswer';
+      game.players.forEach(p => io.to(p.socketId).emit('td:stateUpdate', game));
+    });
+
+    socket.on('td:submitAnswer', ({ roomId, answer }) => {
+      const game = gameRooms[roomId];
+      if (!game) return;
+      game.truthAnswer = answer;
+      game.state = 'review';
+      game.players.forEach(p => io.to(p.socketId).emit('td:stateUpdate', game));
+    });
+
+    socket.on('td:nextRound', ({ roomId }) => {
+      const game = gameRooms[roomId];
+      if (!game) return;
+      game.round += 1;
+      const [p1, p2] = game.players;
+      game.chanceHolder = game.chanceHolder === p1.userId ? p2.userId : p1.userId;
+      game.currentChoice = null;
+      game.truthQuestion = '';
+      game.truthAnswer = '';
+      game.state = 'waitingForChoice';
+      game.players.forEach(p => io.to(p.socketId).emit('td:stateUpdate', game));
+    });
+
+    socket.on('td:leave', ({ roomId, userId }) => {
+      const idx = waitingPlayers.findIndex(p => p.userId === userId);
+      if (idx !== -1) waitingPlayers.splice(idx, 1);
+      if (roomId && gameRooms[roomId]) {
+        const game = gameRooms[roomId];
+        game.players.forEach(p => {
+          if (p.userId !== userId) io.to(p.socketId).emit('td:opponentLeft');
+        });
+        delete gameRooms[roomId];
+      }
+    });
+
+    socket.on('disconnect', () => {
+      const idx = waitingPlayers.findIndex(p => p.socketId === socket.id);
+      if (idx !== -1) waitingPlayers.splice(idx, 1);
+      Object.entries(gameRooms).forEach(([roomId, game]) => {
+        if (game.players.some(p => p.socketId === socket.id)) {
+          game.players.forEach(p => {
+            if (p.socketId !== socket.id) io.to(p.socketId).emit('td:opponentLeft');
+          });
+          delete gameRooms[roomId];
+        }
+      });
+    });
+  });
+}
+
+export default setupTruthOrDare ;

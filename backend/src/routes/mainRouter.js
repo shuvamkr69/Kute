@@ -9,8 +9,6 @@ import AiChatbotRouter from "./AiChatbot.route.js";
 import NeverHaveIEverRouter from "./NeverHaveIEver/neverHaveIEver.routes.js";
 import WYRRouter from "./WouldYouRather/WouldYouRather.route.js";
 import PaymentRouter from "./payment.routes.js";
-import TDRouter from "./TruthOrDare/TD.route.js";
-
 const router = Router()
 
 router.use(UserRouter)
@@ -25,6 +23,5 @@ router.use(WYRRouter)
 router.use(PaymentRouter)
 
 //Game screen routes
-router.use(TDRouter)
 
 export default router
