@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  Alert,
   ToastAndroid,
   Button,
 } from "react-native";
@@ -21,6 +20,9 @@ import { RefreshControl } from "react-native";
 import LoadingScreen from "./LoadingScreen";
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
+import { Animated as RNAnimated } from 'react-native';
+import CustomAlert from "../components/CustomAlert";
+const AnimatedLinearGradient = RNAnimated.createAnimatedComponent(LinearGradient);
 const VerificationImage = require("../assets/icons/verified-logo.png");
 const PremiumImage = require("../assets/icons/premium.png");
 
@@ -62,6 +64,63 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
   const [boostActiveUntil, setBoostActiveUntil] = useState<Date | null>(null);
   const [boostTimer, setBoostTimer] = useState<string | null>(null);
   const [showFullLoveLanguage, setShowFullLoveLanguage] = useState(false);
+  const [drinking, setDrinking] = useState("Never");
+  const [smoking, setSmoking] = useState("Never");
+  const [workout, setWorkout] = useState("Never");
+
+  const [customAlert, setCustomAlert] = useState({ visible: false, title: '', message: '' });
+
+  // Animated value for fog effect
+  const fogAnim = React.useRef(new Animated.Value(0)).current;
+
+  React.useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(fogAnim, {
+          toValue: 1,
+          duration: 6000,
+          useNativeDriver: false,
+        }),
+        Animated.timing(fogAnim, {
+          toValue: 0,
+          duration: 6000,
+          useNativeDriver: false,
+        }),
+      ])
+    ).start();
+  }, []);
+
+  // Interpolate colors for animated gradient
+  const fogColors = fogAnim.interpolate ? [
+    fogAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: ["#ff172e", "#de822c"]
+    }),
+    fogAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: ["#de822c", "#ffb347"]
+    })
+  ] : ["#ff172e", "#de822c"];
+
+  // Animated value for fog overlay drift
+  const fogDriftAnim = React.useRef(new Animated.Value(0)).current;
+
+  React.useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(fogDriftAnim, {
+          toValue: 1,
+          duration: 12000,
+          useNativeDriver: false,
+        }),
+        Animated.timing(fogDriftAnim, {
+          toValue: 0,
+          duration: 12000,
+          useNativeDriver: false,
+        }),
+      ])
+    ).start();
+  }, []);
 
   // Move fetchUser to before useEffect and useFocusEffect
   const fetchUser = async () => {
@@ -94,6 +153,10 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
       setBoostActiveUntil(
         user.boostActiveUntil ? new Date(user.boostActiveUntil) : null
       );
+      setDrinking(user.drinking || "Never");
+      setSmoking(user.smoking || "Never");
+      setWorkout(user.workout || "Never");
+
       // ✅ Save API response for offline access
       await AsyncStorage.setItem("user", JSON.stringify(user));
     } catch (error) {
@@ -164,6 +227,10 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
       );
       setSuperLikes(response.data.superLike);
       setBoosts(response.data.boost);
+      setDrinking(user.drinking);
+      setSmoking(user.smoking);
+      setWorkout(user.workout);
+
       ToastAndroid.show("Profile Refreshed!", ToastAndroid.SHORT);
     } catch (error) {
       console.log("Refresh Error:", error);
@@ -197,10 +264,10 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
       profilePhoto !==
       "https://www.shutterstock.com/image-photo/very-random-pose-asian-men-260nw-2423213779.jpg"
     )
-      progress += 7;
-    if (name) progress += 7;
-    if (bio) progress += 7;
-    if (age) progress += 7;
+      progress += 10;
+    if (name) progress += 6;
+    if (bio) progress += 6;
+    if (age) progress += 6;
     if (isVerified) progress += 6;
     if (workingAt) progress += 6;
     if (bodyType) progress += 6;
@@ -232,6 +299,9 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
     pronouns,
     religion,
     familyPlanning,
+    drinking,
+    smoking,
+    workout,
   ]);
 
   useEffect(() => {
@@ -257,15 +327,17 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
       const diff = boostActiveUntil.getTime() - now.getTime();
 
       if (diff <= 0) {
-        clearInterval(interval);
-        setBoostTimer(null);
-        setBoostActiveUntil(null);
-        return;
+        // If boostActiveUntil is still in the future (from backend), but device time is ahead, show a warning or 'Boost active'
+        // We'll keep the boostTimer visible until the backend says boost is over (i.e., boostActiveUntil is not set on next fetch)
+        setBoostTimer('Boost active');
+        // Do NOT clear boostActiveUntil here; let backend control it
+        // Optionally, you could show a warning if you want
+        // setBoostTimer('Boost active (check device time)');
+      } else {
+        const minutes = Math.floor(diff / 1000 / 60);
+        const seconds = Math.floor((diff / 1000) % 60);
+        setBoostTimer(`${minutes}m ${seconds}s remaining`);
       }
-
-      const minutes = Math.floor(diff / 1000 / 60);
-      const seconds = Math.floor((diff / 1000) % 60);
-      setBoostTimer(`${minutes}m ${seconds}s remaining`);
     }, 1000);
 
     return () => clearInterval(interval);
@@ -276,9 +348,9 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
       const response = await api.post("/api/v1/users/activateBoost");
       const boostUntil = new Date(response.data.data.boostActiveUntil);
       setBoostActiveUntil(boostUntil);
-      ToastAndroid.show("Boost Activated for 30 minutes!", ToastAndroid.SHORT);
+      ToastAndroid.show("Boost Activated for 6 hours!", ToastAndroid.SHORT);
     } catch (error) {
-      Alert.alert("Boost Error", error.response.data.message || "Something went wrong");
+      setCustomAlert({ visible: true, title: "Boost Error", message: error.response.data.message || "Something went wrong" });
       console.error("Activate Boost Error:", error);
     }
   };
@@ -332,9 +404,18 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
             case 'Body Type:':
               iconName = 'people-outline'; // Use people-outline for body type
               break;
-            case 'Personality':
-              iconName = 'happy-outline';
+              case 'Personality':
+                iconName = 'happy-outline';
+                break;
+            case 'Drinking:':
+              iconName = 'wine-outline';
               break;
+            case 'Smoking:':
+              iconName = 'logo-no-smoking';
+              break;
+            case 'Workout:':
+                iconName = 'barbell-outline';
+            break;
             default:
               iconName = 'ellipse-outline';
           }
@@ -359,6 +440,19 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
     return <LoadingScreen description="Fetching your Profile" />;
     // (If you prefer the plain container, keep the same JSX you deleted.)
   }
+
+  // 1. Add mock offers for preview (replace with API if needed)
+  const superLikeOffers = [
+    { id: 'sl1', name: '1 Super Like', price: '₹9' },
+    { id: 'sl2', name: '5 Super Likes', price: '₹39' },
+    { id: 'sl3', name: '15 Super Likes', price: '₹99' },
+    { id: 'sl4', name: '30 Super Likes', price: '₹179' },
+  ];
+  const boostOffers = [
+    { id: 'b1', name: '1 Boost', price: '₹15' },
+    { id: 'b2', name: '5 Boosts', price: '₹59' },
+    { id: 'b3', name: '10 Boosts', price: '₹109' },
+  ];
 
   return (
     <ScrollView
@@ -398,7 +492,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
             end={{ x: 1, y: 1 }}
             style={styles.editIconGradient}
           >
-            <TouchableOpacity
+            <TouchableOpacity activeOpacity={0.9}
               style={styles.editIconButton}
               onPress={() => navigation.navigate("EditProfile")}
             >
@@ -422,7 +516,9 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
           />
         </Text>
 
-        <Text style={styles.bio}>{bio}</Text>
+        <View style={styles.bioContainer}>
+          <Text style={styles.bio}>{bio}</Text>
+        </View>
       </View>
 
       {/* Premium Image - Replaces the Premium Icon */}
@@ -431,8 +527,8 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
         style={[
           styles.premiumImage,
           {
-            tintColor: ActivePremiumPlan ? null : "#B0B0B0",
-            opacity: ActivePremiumPlan ? 1 : 0.5,
+            tintColor: ActivePremiumPlan && ActivePremiumPlan !== 'null' && ActivePremiumPlan !== '' ? null : '#B0B0B0',
+            opacity: ActivePremiumPlan && ActivePremiumPlan !== 'null' && ActivePremiumPlan !== '' ? 1 : 0.5,
           },
         ]}
       />
@@ -481,6 +577,9 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
           { label: "Family Planning:", value: familyPlanning },
           { label: "Body Type:", value: bodyType },
           { label: "Personality", value: personality },
+          { label: "Drinking:", value: drinking },
+          { label: "Smoking:", value: smoking },
+          { label: "Workout:", value: workout },
         ]}
       />
 
@@ -493,7 +592,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
             {interests.map((interest, index) => (
               <LinearGradient
                 key={index}
-                colors={["#FFA500", "#FF4500"]}
+                colors={["#ff172e", "#de822c"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.interestBox}
@@ -507,90 +606,163 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
         )}
       </View>
 
-      {/* Upgrade Section */}
-      <View style={styles.upgradeContainer}>
-        <LinearGradient
-          colors={["#de822c", "#ff172e"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.upgradeGradient}
-        >
-          <Text style={styles.upgradeTitle}>Kute-T</Text>
-          <Text style={styles.upgradeDescription}>
-            Unlock premium features, get 3x more matches, and boost your
-            visibility!
+      {/* Kute App Goal Card */}
+      <View style={styles.goalCardContainer}>
+        <View style={styles.goalCardGradient}>
+          <LinearGradient
+            colors={["#ff172e", "#de822c", "#ffb347"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+          {/* Animated fog overlay */}
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              StyleSheet.absoluteFill,
+              {
+                opacity: fogDriftAnim.interpolate({
+                  inputRange: [0, 0.5, 1],
+                  outputRange: [0.18, 0.32, 0.18]
+                }),
+                transform: [
+                  {
+                    translateX: fogDriftAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0, 60] // drift right
+                    })
+                  }
+                ],
+                backgroundColor: 'rgba(255,255,255,0.22)',
+                borderRadius: 22,
+              }
+            ]}
+          />
+          <View style={{ alignItems: 'center', marginBottom: 10, zIndex: 1 }}>
+            <Ionicons name="heart-circle" size={44} color="#fff" style={{ marginBottom: 6 }} />
+            <Text style={styles.goalCardTitle}>Our Mission</Text>
+          </View>
+          <Text style={[styles.goalCardText, { zIndex: 1 }]}>
+            Welcome to Kute! Here, dating is about real connections, good vibes, and a little bit of magic. Whether you're searching for your soulmate, a new best friend, or just someone to share memes with, Kute is your safe, friendly space to be yourself and meet awesome people. Let's make every swipe a story worth telling.
           </Text>
-
-          <TouchableOpacity
-            style={styles.upgradeButton}
-            onPress={handleUpgrade}
-            activeOpacity={0.95}
-          >
-            <Text style={styles.upgradeButtonText}>Become a Member</Text>
-          </TouchableOpacity>
-        </LinearGradient>
+        </View>
       </View>
 
       {/* Boosts Counter */}
 
       {/* Boost & Roses Section */}
       <View style={styles.cardsContainer}>
-        <TouchableOpacity
-          activeOpacity={1}
-          style={styles.card}
-          onPress={() => navigation.navigate("BoostsAndLikes")}
+        {/* Boost Card */}
+        <LinearGradient
+          colors={["#232526", "#414345"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.featureCard}
         >
-          <Image
-            source={require("../assets/icons/popularity.png")}
-            style={{ width: 34, height: 34 }}
-          />
-          <Text style={styles.cardTitle}>Boost</Text>
-          <Text style={styles.cardText}>Increase your visibility by 11%</Text>
-
-          <View style={styles.counterContainer}>
-            <Text style={styles.counterText}>x{boosts}</Text>
+          <View style={styles.featureCardHeader}>
+            <Image
+              source={require("../assets/icons/popularity.png")}
+              style={styles.featureIcon}
+            />
+            <Text style={styles.featureTitle}>Boost</Text>
+            {boostTimer && (
+              <Text style={styles.featureTimerRight}>{boostTimer}</Text>
+            )}
           </View>
-          <TouchableOpacity onPress={handleActivateBoost}>
-            <LinearGradient
-              colors={["#de822c", "#ff172e"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.activateNowButton}
-            >
-              <Text style={styles.activateNowButtonText}>Activate Now</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-          {boostTimer && (
-            <Text style={{ color: "#de822c", marginTop: 6 }}>{boostTimer}</Text>
-          )}
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          activeOpacity={1}
-          style={styles.card}
-          onPress={() => navigation.navigate("BoostsAndLikes")}
-        >
-          <Image
-            source={require("../assets/icons/super-like.png")}
-            style={{ width: 34, height: 34 }}
-          />
-          <Text style={styles.cardTitle}>Super Likes</Text>
-          <Text style={styles.cardText}>Send special likes to your crush!</Text>
-          <View style={styles.counterContainer}>
-            <Text style={styles.counterText}>x{superLikes}</Text>
+          <Text style={styles.featureDescription}>Increase your visibility by 3x and get more matches. Each boost lasts 6 hours.</Text>
+          <View style={styles.featureFooter}>
+            <View style={styles.featureCounterBox}><Text style={styles.featureCounterText}>x{boosts}</Text></View>
+            <TouchableOpacity activeOpacity={0.9} onPress={handleActivateBoost} style={[styles.featureButton, { minWidth: 80 }]}>
+              <LinearGradient
+                colors={["#de822c", "#ff172e"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={[styles.featureButtonGradient, { paddingVertical: 6, paddingHorizontal: 16 }]}
+              >
+                <Text style={[styles.featureButtonText, { fontSize: 13 }]}>Activate Now</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+            <View style={{ width: screenWidth < 370 ? 14 : 24 }} />
+            <TouchableOpacity activeOpacity={0.9} onPress={() => navigation.navigate('BuyFeatures', { initialTab: 'boosts' })} style={[styles.featureButton, { minWidth: 80 }]}>
+              <LinearGradient
+                colors={["#de822c", "#ff172e"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={[styles.featureButtonGradient, { paddingVertical: 6, paddingHorizontal: 16 }]}
+              >
+                <Text style={[styles.featureButtonText, { fontSize: 13 }]}>Buy Boosts</Text>
+              </LinearGradient>
+            </TouchableOpacity>
           </View>
-        </TouchableOpacity>
+        </LinearGradient>
 
-        <TouchableOpacity
-          activeOpacity={1}
-          style={styles.card}
-          onPress={() => navigation.navigate("Premium")}
+        {/* Super Likes Card */}
+        <LinearGradient
+          colors={["#232526", "#414345"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.featureCard}
         >
-          <Icon name="unlock" size={34} color="pink" />
-          <Text style={styles.cardTitle}>Unlock all features</Text>
-          <Text style={styles.cardText}>Unlock all the premium features</Text>
-        </TouchableOpacity>
+          <View style={styles.featureCardHeader}>
+            <Image
+              source={require("../assets/icons/super-like.png")}
+              style={styles.featureIcon}
+            />
+            <Text style={styles.featureTitle}>Super Likes</Text>
+          </View>
+          <Text style={styles.featureDescription}>Send special likes to your crush and stand out!</Text>
+          <View style={styles.featureFooter}>
+            <View style={styles.featureCounterBox}><Text style={styles.featureCounterText}>x{superLikes}</Text></View>
+            <TouchableOpacity activeOpacity={0.9} onPress={() => navigation.navigate('BuyFeatures', { initialTab: 'superlikes' })} style={[styles.featureButton, { minWidth: 80 }]}>
+              <LinearGradient
+                colors={["#de822c", "#ff172e"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={[styles.featureButtonGradient, { paddingVertical: 6, paddingHorizontal: 16 }]}
+              >
+                <Text style={[styles.featureButtonText, { fontSize: 13 }]}>Buy Super Likes</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </LinearGradient>
       </View>
+
+      {/* Unlock All Features Card (Premium) at the end */}
+      <LinearGradient
+        colors={["#fffbe6", "#ffe0b2", "#ffd700"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={[
+          styles.featureCard,
+          styles.premiumFeatureCard,
+          { borderRadius: 22, marginBottom: 40, marginTop: 2, paddingTop: 12 }
+        ]}
+      >
+        <View style={styles.featureCardHeader}>
+          <Icon name="unlock" size={32} color="#de822c" style={{ marginRight: 12 }} />
+          <Text style={[styles.featureTitle, styles.premiumFeatureTitle]}>Unlock All Features</Text>
+        </View>
+        <Text style={[styles.featureDescription, styles.premiumFeatureDescription]}>Unlock all premium features and maximize your Kute experience.</Text>
+        <TouchableOpacity activeOpacity={0.9} onPress={() => navigation.navigate("Premium")}
+          style={styles.featureButton}
+        >
+          <LinearGradient
+            colors={["#de822c", "#ff172e"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.featureButtonGradient}
+          >
+            <Text style={styles.featureButtonText}>Become A Member</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+      </LinearGradient>
+      <CustomAlert
+        visible={customAlert.visible}
+        title={customAlert.title}
+        message={customAlert.message}
+        onClose={() => setCustomAlert((prev) => ({ ...prev, visible: false }))}
+        cancelText="OK"
+      />
     </ScrollView>
   );
 };
@@ -671,6 +843,13 @@ const styles = StyleSheet.create({
     color: "#B0B0B0",
     textAlign: "center",
     marginTop: 5,
+  },
+  bioContainer: {
+    maxWidth: 320,
+    width: '90%',
+    alignSelf: 'center',
+    paddingHorizontal: 12,
+    marginVertical: 10,
   },
   upgradeContainer: {
     marginTop: 30,
@@ -760,7 +939,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   interestBox: {
-    backgroundColor: "#de822c",
     borderRadius: 15,
     paddingVertical: 6,
     paddingHorizontal: 12,
@@ -903,6 +1081,155 @@ const styles = StyleSheet.create({
   },
   activateNowButtonText: {
     color: "white",
+  },
+  featureCard: {
+    borderRadius: 18,
+    marginBottom: 22,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 6,
+    backgroundColor: 'transparent',
+  },
+  featureCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  featureIcon: {
+    width: 38,
+    height: 38,
+    marginRight: 14,
+    backgroundColor: 'transparent',
+    padding: 4,
+    resizeMode: 'contain',
+  },
+  featureTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#fff',
+    letterSpacing: 0.5,
+  },
+  featureDescription: {
+    color: '#B0B0B0',
+    fontSize: 15,
+    marginBottom: 16,
+    marginLeft: 2,
+    marginRight: 2,
+  },
+  featureFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 8,
+  },
+  featureCounterBox: {
+    backgroundColor: '#23262F',
+    borderRadius: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 18,
+    marginRight: 10,
+  },
+  featureCounterText: {
+    color: '#de822c',
+    fontWeight: 'bold',
+    fontSize: 18,
+  },
+  featureButton: {
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  featureButtonGradient: {
+    paddingVertical: 10,
+    paddingHorizontal: 28,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  featureButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+    letterSpacing: 0.2,
+  },
+  featureTimer: {
+    color: '#de822c',
+    marginTop: 10,
+    fontWeight: 'bold',
+    fontSize: 15,
+    textAlign: 'center',
+  },
+  featureTimerRight: {
+    color: '#de822c',
+    fontWeight: 'bold',
+    fontSize: 20,
+    marginLeft: 44,
+    alignSelf: 'center',
+  },
+  premiumFeatureCard: {
+    borderWidth: 2,
+    borderColor: '#ffd700',
+    backgroundColor: 'rgba(255, 223, 0, 0.08)',
+    borderRadius: 22,
+  },
+  premiumFeatureTitle: {
+    color: '#de822c',
+  },
+  premiumFeatureDescription: {
+    color: '#b8860b',
+    fontWeight: '500',
+  },
+  featureList: {
+    marginTop: 18,
+    marginBottom: 6,
+  },
+  featureListItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    backgroundColor: 'rgba(0,0,0,0.10)',
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  featureListText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '500',
+    flex: 1,
+  },
+  goalCardContainer: {
+    marginBottom: 28,
+    marginTop: 28,
+    borderRadius: 22,
+    overflow: 'hidden',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+  },
+  goalCardGradient: {
+    padding: 28,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  goalCardTitle: {
+    color: '#fff',
+    fontSize: 22,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
+  goalCardText: {
+    color: '#fff',
+    fontSize: 15,
+    textAlign: 'center',
+    lineHeight: 22,
+    fontWeight: '400',
   },
 });
 

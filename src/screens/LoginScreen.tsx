@@ -5,7 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Alert,
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
@@ -21,6 +20,7 @@ import { useAuth } from "../navigation/AuthContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { registerForPushNotifications } from "../utils/notifications";
 import GoogleLoginButton from "../components/GoogleLoginButton";
+import CustomAlert from "../components/CustomAlert";
 const googleLogo = require('../assets/icons/googleLogoIcon.png');
 
 const logo = require("../assets/icons/logo.webp");
@@ -32,10 +32,11 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
   const [password, setPassword] = useState("");
   const { signIn } = useAuth();
   const [buttonPressed, setButtonPressed] = useState(false);
+  const [customAlert, setCustomAlert] = useState({ visible: false, title: '', message: '' });
 
   const loginHandler = async () => {
     if (!email || !password) {
-      Alert.alert("Error", "Please fill in all fields");
+      setCustomAlert({ visible: true, title: "Error", message: "Please fill in all fields" });
       return;
     }
     try {
@@ -43,7 +44,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
       if (loginResponse.status === 200) {
         const { accessToken, refreshToken, user } = loginResponse.data.data;
         if (!accessToken || !refreshToken) {
-          Alert.alert("Error", "Authentication failed: Missing tokens");
+          setCustomAlert({ visible: true, title: "Error", message: "Authentication failed: Missing tokens" });
           return;
         }
         await AsyncStorage.setItem("user", JSON.stringify(user));
@@ -64,27 +65,27 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
         await signIn();
         navigation.reset({ index: 0, routes: [{ name: "HomeTabs" }] });
       } else {
-        Alert.alert("Error", "Unexpected response from server");
+        setCustomAlert({ visible: true, title: "Error", message: "Unexpected response from server" });
       }
     } catch (error: any) {
       if (error.response) {
         switch (error.response.status) {
           case 404:
-            Alert.alert("Error", "User not found");
+            setCustomAlert({ visible: true, title: "Error", message: "User not found" });
             break;
           case 401:
-            Alert.alert("Error", "Invalid email or password");
+            setCustomAlert({ visible: true, title: "Error", message: "Invalid email or password" });
             break;
           case 500:
-            Alert.alert("Error", "Invalid email or password");
+            setCustomAlert({ visible: true, title: "Error", message: "Invalid email or password" });
             break;
           default:
-            Alert.alert("Error", "Something went wrong");
+            setCustomAlert({ visible: true, title: "Error", message: "Something went wrong" });
         }
       } else if (error.request) {
-        Alert.alert("Error", "No response from server. Check your connection.");
+        setCustomAlert({ visible: true, title: "Error", message: "No response from server. Check your connection." });
       } else {
-        Alert.alert("Error", "An unexpected error occurred");
+        setCustomAlert({ visible: true, title: "Error", message: "An unexpected error occurred" });
       }
     }
   };
@@ -114,7 +115,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
       if (response.status === 200) {
         const { accessToken: jwt, refreshToken, user: backendUser } = response.data.data;
         if (!jwt || !refreshToken) {
-          Alert.alert("Error", "Authentication failed: Missing tokens");
+          setCustomAlert({ visible: true, title: "Error", message: "Authentication failed: Missing tokens" });
           return;
         }
         await AsyncStorage.setItem("user", JSON.stringify(backendUser));
@@ -135,11 +136,11 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
         await signIn();
         navigation.reset({ index: 0, routes: [{ name: "HomeTabs" }] });
       } else {
-        Alert.alert("Error", "Unexpected response from server");
+        setCustomAlert({ visible: true, title: "Error", message: "Unexpected response from server" });
       }
     } catch (error: any) {
       console.error("Google login error:", error);
-      Alert.alert("Login Failed", error.message || "Could not complete Google login.");
+      setCustomAlert({ visible: true, title: "Login Failed", message: error.message || "Could not complete Google login." });
     }
   };
 
@@ -218,6 +219,12 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
+      <CustomAlert
+        visible={customAlert.visible}
+        title={customAlert.title}
+        message={customAlert.message}
+        onClose={() => setCustomAlert((prev) => ({ ...prev, visible: false }))}
+      />
     </View>
   );
 };

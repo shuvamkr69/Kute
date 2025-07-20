@@ -19,11 +19,13 @@ app.use(cookieParser())
 //routes
 
 import router from "./routes/mainRouter.js"
+import PaymentRouter from "./routes/payment.routes.js"
 
 
 //routes decleartaion
 
 app.use("/api/v1/users", router)
+app.use("/api/v1/payment", PaymentRouter)
 
 
 

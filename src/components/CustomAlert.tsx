@@ -12,6 +12,7 @@ interface CustomAlertProps {
   onConfirm?: () => void;
   confirmText?: string;
   cancelText?: string;
+  confirmTextStyle?: any;
 }
 
 const CustomAlert: React.FC<CustomAlertProps> = ({
@@ -22,6 +23,7 @@ const CustomAlert: React.FC<CustomAlertProps> = ({
   onConfirm,
   confirmText = 'Confirm',
   cancelText = 'Cancel',
+  confirmTextStyle,
 }) => {
   return (
     <Modal transparent visible={visible} animationType="fade">
@@ -42,7 +44,7 @@ const CustomAlert: React.FC<CustomAlertProps> = ({
                   end={{ x: 1, y: 1 }}
                   style={styles.confirmButtonGradient}
                 >
-                  <Text style={styles.confirmButtonText}>{confirmText}</Text>
+                  <Text style={[styles.confirmButtonText, confirmTextStyle]}>{confirmText}</Text>
                 </LinearGradient>
               </TouchableOpacity>
             )}

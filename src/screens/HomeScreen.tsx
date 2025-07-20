@@ -15,7 +15,10 @@ import {
   Platform,
   Dimensions,
   Button,
+<<<<<<< HEAD
   Alert,
+=======
+>>>>>>> main
   TextInput,
   Share,
 } from "react-native";
@@ -26,6 +29,11 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from '@expo/vector-icons';
 import { Easing } from 'react-native-reanimated';
+<<<<<<< HEAD
+=======
+import { getUserId } from '../utils/constants';
+import CustomAlert from "../components/CustomAlert";
+>>>>>>> main
 
 const VerificationImage = require("../assets/icons/verified-logo.png");
 
@@ -307,10 +315,14 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         modalAnimatedValue.setValue(0);
       }, 500);
     });
+<<<<<<< HEAD
     Alert.alert(
       "Out of Likes!",
       "You've reached your daily free likes. Get unlimited likes with Premium!"
     );
+=======
+    setCustomAlert({ visible: true, title: "Out of Likes!", message: "You've reached your daily free likes. Get unlimited likes with Premium!" });
+>>>>>>> main
   };
 
   const onRefresh = useCallback(() => {
@@ -348,6 +360,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     try {
       await api.post("/api/v1/users/block", { blockedUserId });
       setProfiles((prev) => prev.filter((p) => p._id !== blockedUserId));
+<<<<<<< HEAD
       Alert.alert(
         "User Blocked",
         "This user has been blocked and removed from suggestions."
@@ -355,6 +368,12 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     } catch (error) {
       console.error("Error blocking user:", error);
       Alert.alert("Error", "Failed to block user.");
+=======
+      setCustomAlert({ visible: true, title: "User Blocked", message: "This user has been blocked and removed from suggestions." });
+    } catch (error) {
+      console.error("Error blocking user:", error);
+      setCustomAlert({ visible: true, title: "Error", message: "Failed to block user." });
+>>>>>>> main
     }
   };
 
@@ -450,10 +469,14 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     } catch (error) {
       const message = error.response?.data?.message || error.message;
       if (message === "No Super Likes remaining") {
+<<<<<<< HEAD
         Alert.alert(
           "You're out of Super Likes",
           "Come back later or get more!"
         );
+=======
+        setCustomAlert({ visible: true, title: "You're out of Super Likes", message: "Come back later or get more!" });
+>>>>>>> main
       } else {
         console.error("Super Like error:", message);
       }
@@ -497,6 +520,10 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const [menuVisible, setMenuVisible] = useState(false);
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const [reportReason, setReportReason] = useState("");
+<<<<<<< HEAD
+=======
+  const [customAlert, setCustomAlert] = useState({ visible: false, title: '', message: '' });
+>>>>>>> main
 
   const handleShareProfile = async () => {
     if (!selectedProfile) return;
@@ -514,7 +541,11 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         message,
       });
     } catch (error) {
+<<<<<<< HEAD
       Alert.alert("Error", error.message || "Failed to share profile.");
+=======
+      setCustomAlert({ visible: true, title: "Error", message: error.message || "Failed to share profile." });
+>>>>>>> main
     }
   };
 
@@ -625,12 +656,24 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
               return (
                 <View style={styles.card} key={profile._id}>
                   <TouchableOpacity
+<<<<<<< HEAD
                     onPress={() => {
+=======
+                    onPress={async () => {
+>>>>>>> main
                       LayoutAnimation.configureNext(
                         LayoutAnimation.Presets.easeInEaseOut
                       );
                       setSelectedProfile(profile);
                       setCurrentImageIndex(0);
+<<<<<<< HEAD
+=======
+                      // Record profile view if not self
+                      const myId = await getUserId();
+                      if (profile._id !== myId) {
+                        api.post('/api/v1/users/profileViewed', { userId: profile._id }).catch(() => {});
+                      }
+>>>>>>> main
                     }}
                     activeOpacity={1}
                   >
@@ -838,7 +881,11 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
                         style={styles.reportButton}
                         onPress={async () => {
                           if (!reportReason.trim()) {
+<<<<<<< HEAD
                             Alert.alert("Error", "Please enter a reason.");
+=======
+                            setCustomAlert({ visible: true, title: "Error", message: "Please enter a reason." });
+>>>>>>> main
                             return;
                           }
                           try {
@@ -846,11 +893,19 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
                               reportedUserId: selectedProfile?._id,
                               reason: reportReason,
                             });
+<<<<<<< HEAD
                             Alert.alert("Success", "User reported successfully.");
                             setReportModalVisible(false);
                             setReportReason("");
                           } catch (err) {
                             Alert.alert("Error", "Failed to report user. Please try again.");
+=======
+                            setCustomAlert({ visible: true, title: "Success", message: "User reported successfully." });
+                            setReportModalVisible(false);
+                            setReportReason("");
+                          } catch (err) {
+                            setCustomAlert({ visible: true, title: "Error", message: "Failed to report user. Please try again." });
+>>>>>>> main
                           }
                         }}
                       >
@@ -1000,6 +1055,15 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </View>
       </Modal>
+<<<<<<< HEAD
+=======
+      <CustomAlert
+        visible={customAlert.visible}
+        title={customAlert.title}
+        message={customAlert.message}
+        onClose={() => setCustomAlert((prev) => ({ ...prev, visible: false }))}
+      />
+>>>>>>> main
     </ScrollView>
   );
 };

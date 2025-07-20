@@ -65,6 +65,7 @@ export const getUserChats = async (req, res) => {
               senderId: conversation.lastMessage.senderId,
               message: conversation.lastMessage.message,
               createdAt: conversation.lastMessage.createdAt,
+              isRead: conversation.lastMessage.isRead,
             }
           : null,
         updatedAt: conversation.updatedAt,
@@ -110,6 +111,7 @@ export const sendMessage = async (req, res) => {
         senderId,
         message: text,
         createdAt: newMessage.createdAt,
+        isRead: false,
       },
       updatedAt: Date.now(),
     });
@@ -173,6 +175,7 @@ export const getMessages = async (req, res) => {
       text: msg.message, // This is correct since your model uses 'message'
       senderId: msg.senderId,
       createdAt: msg.createdAt,
+      isRead: msg.isRead,
       replyTo: msg.replyTo
         ? {
             _id: msg.replyTo._id,

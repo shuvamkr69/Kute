@@ -6,11 +6,11 @@ import {
   StyleSheet,
   TextInput,
   ScrollView,
-  Alert,
 } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import BackButton from "../components/BackButton";
 import api from "../utils/api";
+import CustomAlert from "../components/CustomAlert";
 
 type RootStackParamList = {
   HelpScreen: { initialTab?: "help" | "report" };
@@ -22,6 +22,7 @@ const HelpScreen: React.FC<Props> = ({ route, navigation }) => {
   const [activeTab, setActiveTab] = useState<"help" | "report">("help");
   const [reportMessage, setReportMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [customAlert, setCustomAlert] = useState({ visible: false, title: '', message: '' });
 
   useEffect(() => {
     if (route.params?.initialTab === "report") {
@@ -112,7 +113,7 @@ const HelpScreen: React.FC<Props> = ({ route, navigation }) => {
 
   const submitReport = async () => {
     if (!reportMessage.trim()) {
-      Alert.alert("Error", "Please describe the problem.");
+      setCustomAlert({ visible: true, title: "Error", message: "Please describe the problem." });
       return;
     }
 
@@ -121,11 +122,11 @@ const HelpScreen: React.FC<Props> = ({ route, navigation }) => {
       await api.post("/api/v1/users/report-problem", {
         message: reportMessage,
       });
-      Alert.alert("Success", "Your report has been sent. Thank you!");
+      setCustomAlert({ visible: true, title: "Success", message: "Your report has been sent. Thank you!" });
       setReportMessage("");
     } catch (err) {
       console.error("Report error", err);
-      Alert.alert("Error", "Failed to send your report. Please try again.");
+      setCustomAlert({ visible: true, title: "Error", message: "Failed to send your report. Please try again." });
     } finally {
       setIsSubmitting(false);
     }
@@ -199,6 +200,12 @@ const HelpScreen: React.FC<Props> = ({ route, navigation }) => {
         {/* Content */}
         {activeTab === "help" ? renderHelpCenter() : renderReportProblem()}
       </View>
+      <CustomAlert
+        visible={customAlert.visible}
+        title={customAlert.title}
+        message={customAlert.message}
+        onClose={() => setCustomAlert((prev) => ({ ...prev, visible: false }))}
+      />
     </View>
   );
 };

@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
+<<<<<<< HEAD
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, KeyboardAvoidingView, Platform, Animated, Image, Pressable } from 'react-native';
+=======
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Animated, Image, Pressable } from 'react-native';
+>>>>>>> main
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -7,6 +11,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../utils/api';
 import GoogleLoginButton from '../components/GoogleLoginButton';
 import Constants from 'expo-constants';
+<<<<<<< HEAD
+=======
+import CustomAlert from '../components/CustomAlert';
+>>>>>>> main
 const googleLogo = require('../assets/icons/googleLogoIcon.png');
 
 const logo = require('../assets/icons/logo.webp');
@@ -19,6 +27,10 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const logoAnim = React.useRef(new Animated.Value(0)).current;
   const [buttonPressed, setButtonPressed] = useState(false);
+<<<<<<< HEAD
+=======
+  const [customAlert, setCustomAlert] = useState({ visible: false, title: '', message: '' });
+>>>>>>> main
   React.useEffect(() => {
     Animated.timing(logoAnim, {
       toValue: 1,
@@ -31,11 +43,19 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
 
   const handleRegister = async () => {
     if (!name || !email || !password) {
+<<<<<<< HEAD
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
     if (password.length < 6) {
       Alert.alert('Error', 'Password must be at least 6 characters');
+=======
+      setCustomAlert({ visible: true, title: 'Error', message: 'Please fill in all fields' });
+      return;
+    }
+    if (password.length < 6) {
+      setCustomAlert({ visible: true, title: 'Error', message: 'Password must be at least 6 characters' });
+>>>>>>> main
       return;
     }
     try {
@@ -43,7 +63,11 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
       navigation.navigate('BasicDetails');
     } catch (error) {
       console.log(error);
+<<<<<<< HEAD
       Alert.alert('Error', 'Data not stored');
+=======
+      setCustomAlert({ visible: true, title: 'Error', message: 'Data not stored' });
+>>>>>>> main
     }
   };
 
@@ -74,11 +98,19 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
         await AsyncStorage.setItem('location', JSON.stringify(backendUser.location));
         navigation.reset({ index: 0, routes: [{ name: 'HomeTabs' }] });
       } else {
+<<<<<<< HEAD
         Alert.alert('Error', 'Unexpected response from server');
       }
     } catch (error: any) {
       console.error('Google login error:', error);
       Alert.alert('Login Failed', 'Could not complete Google login.');
+=======
+        setCustomAlert({ visible: true, title: 'Error', message: 'Unexpected response from server' });
+      }
+    } catch (error: any) {
+      console.error('Google login error:', error);
+      setCustomAlert({ visible: true, title: 'Login Failed', message: 'Could not complete Google login.' });
+>>>>>>> main
     }
   };
 
@@ -161,6 +193,15 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
               </Text>
             </Text>
           </View>
+<<<<<<< HEAD
+=======
+          <CustomAlert
+            visible={customAlert.visible}
+            title={customAlert.title}
+            message={customAlert.message}
+            onClose={() => setCustomAlert((prev) => ({ ...prev, visible: false }))}
+          />
+>>>>>>> main
         </KeyboardAvoidingView>
       </SafeAreaView>
     </View>

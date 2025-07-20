@@ -245,6 +245,19 @@ const userSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    profileViews: [
+      {
+        viewerId: {
+          type: Schema.Types.ObjectId,
+          ref: 'User',
+          required: true,
+        },
+        viewedAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
   },
   { timestamps: true }
 );

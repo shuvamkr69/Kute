@@ -4,9 +4,9 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
 } from "react-native";
+import CustomAlert from "../../../components/CustomAlert";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import api from "../../../utils/api";
 
@@ -17,6 +17,7 @@ const FeedbackScreen: React.FC<Props> = ({ navigation, route }) => {
   const [prompt, setPrompt] = useState("");
   const [answer, setAnswer] = useState("");
   const [loading, setLoading] = useState(true);
+  const [customAlert, setCustomAlert] = useState({ visible: false, title: '', message: '' });
 
   useEffect(() => {
     const fetchRound = async () => {
@@ -26,7 +27,7 @@ const FeedbackScreen: React.FC<Props> = ({ navigation, route }) => {
         const round = game.rounds?.[game.currentRound - 1];
 
         if (!round?.prompt || !round?.answer) {
-          Alert.alert("Error", "Prompt or answer missing.");
+          setCustomAlert({ visible: true, title: "Error", message: "Prompt or answer missing." });
           navigation.goBack();
           return;
         }
@@ -35,7 +36,7 @@ const FeedbackScreen: React.FC<Props> = ({ navigation, route }) => {
         setAnswer(round.answer);
       } catch (err) {
         console.error("Failed to load round:", err);
-        Alert.alert("Error", "Failed to load round.");
+        setCustomAlert({ visible: true, title: "Error", message: "Failed to load round." });
       } finally {
         setLoading(false);
       }
@@ -52,7 +53,7 @@ const FeedbackScreen: React.FC<Props> = ({ navigation, route }) => {
       navigation.replace("RoundReviewScreen", { gameId, currentUserId });
     } catch (err) {
       console.error("Failed to submit feedback:", err);
-      Alert.alert("Error", "Could not submit feedback.");
+      setCustomAlert({ visible: true, title: "Error", message: "Could not submit feedback." });
     }
   };
 
@@ -87,6 +88,12 @@ const FeedbackScreen: React.FC<Props> = ({ navigation, route }) => {
       >
         <Text style={styles.buttonText}>👎 Dislike</Text>
       </TouchableOpacity>
+      <CustomAlert
+        visible={customAlert.visible}
+        title={customAlert.title}
+        message={customAlert.message}
+        onClose={() => setCustomAlert((prev) => ({ ...prev, visible: false }))}
+      />
     </View>
   );
 };

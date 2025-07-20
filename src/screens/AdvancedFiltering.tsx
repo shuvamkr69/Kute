@@ -123,7 +123,7 @@ const AdvancedFilteringScreen = ({ navigation }) => {
   const applyFilters = async () => {
     const userId = await getUserId(); // Replace with actual user ID from auth
     console.log("User ID:", userId);
-    const filters = {
+    const filtersRaw = {
       userId: userId, // Replace with actual user ID from auth
       genderPreference,
       relationshipType,
@@ -139,6 +139,10 @@ const AdvancedFilteringScreen = ({ navigation }) => {
       zodiac,
       interests,
     };
+    // Remove fields with empty string values
+    const filters = Object.fromEntries(
+      Object.entries(filtersRaw).filter(([key, value]) => value !== "")
+    );
 
     try {
       const response = await api.post(
@@ -253,7 +257,7 @@ const AdvancedFilteringScreen = ({ navigation }) => {
             />
           </View>
           {/* Verified User in its own box */}
-          <View style={styles.sectionContainer}>
+          <View style={styles.sectionContainerVerified}>
             <FilterSwitch
               label={<View style={{ flexDirection: 'row', alignItems: 'center' }}><Ionicons name="checkmark-done-circle-outline" size={20} color="#de822c" style={{ marginRight: 7 }} /><Text style={{ color: '#fff' }}>Verified User</Text></View>}
               value={verifiedUser}
@@ -268,6 +272,7 @@ const AdvancedFilteringScreen = ({ navigation }) => {
               selectedValue={personality}
               options={personalityOptions}
               onValueChange={setPersonality}
+              defaultToAny={true}
             />
             <PickerComponent
               label="Workout"
@@ -275,6 +280,7 @@ const AdvancedFilteringScreen = ({ navigation }) => {
               selectedValue={workout}
               options={workoutOptions}
               onValueChange={setWorkout}
+              defaultToAny={true}
             />
             <PickerComponent
               label="Drinking"
@@ -282,6 +288,7 @@ const AdvancedFilteringScreen = ({ navigation }) => {
               selectedValue={drinking}
               options={drinkingOptions}
               onValueChange={setDrinking}
+              defaultToAny={true}
             />
             <PickerComponent
               label="Smoking"
@@ -289,6 +296,7 @@ const AdvancedFilteringScreen = ({ navigation }) => {
               selectedValue={smoking}
               options={smokingOptions}
               onValueChange={setSmoking}
+              defaultToAny={true}
             />
             <PickerComponent
               label="Family Planning"
@@ -296,6 +304,7 @@ const AdvancedFilteringScreen = ({ navigation }) => {
               selectedValue={familyPlanning}
               options={familyPlanningOptions}
               onValueChange={setFamilyPlanning}
+              defaultToAny={true}
             />
             <PickerComponent
               label="Zodiac Sign"
@@ -303,6 +312,7 @@ const AdvancedFilteringScreen = ({ navigation }) => {
               selectedValue={zodiac}
               options={zodiacOptions}
               onValueChange={setZodiac}
+              defaultToAny={true}
             />
             <PickerComponent
               label="Relationship Type"
@@ -310,6 +320,7 @@ const AdvancedFilteringScreen = ({ navigation }) => {
               selectedValue={relationshipType}
               options={relationshipOptions}
               onValueChange={setRelationshipType}
+              defaultToAny={true}
             />
             <PickerComponent
               label="Gender Orientation"
@@ -317,6 +328,7 @@ const AdvancedFilteringScreen = ({ navigation }) => {
               selectedValue={genderOrientation}
               options={genderOrientationOptions}
               onValueChange={setGenderOrientation}
+              defaultToAny={true}
             />
           </View>
           {/* Distance in its own box */}
@@ -427,6 +439,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    marginBottom: 20,
+  },
+  sectionContainerVerified:{
+    backgroundColor: "#1E1E1E",
+    paddingTop: 20,
+    paddingLeft: 20,
+    paddingRight: 20,
+    paddingBottom: 0,
+    borderRadius: 15,
     marginBottom: 20,
   },
   sectionContainer: {
