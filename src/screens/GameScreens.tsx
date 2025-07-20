@@ -10,6 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { getUserId } from '../utils/constants';
 
 type Props = NativeStackScreenProps<any, 'Games'>;
 
@@ -19,7 +20,7 @@ const CARD_WIDTH = width;
 const CARD_HEIGHT = height * 0.85;
 
 const games = [
-  { name: 'Truth or Dare 🔥', img: require('../../assets/gameScreenImages/truth-or-dare_orig.png'), route: 'TruthOrDareModeSelection' },
+  { name: 'Truth or Dare 🔥', img: require('../../assets/gameScreenImages/truth-or-dare_orig.png'), route: 'TDWaitingScreen' },
   { name: 'Would You Rather ❓', img: require('../../assets/gameScreenImages/would-you-rather-questions.png'), route: 'WYRLobbyScreen' },
   { name: 'Couple Quiz 💕', img: require('../../assets/gameScreenImages/couples-quiz.png'), route: 'Couple Quiz' },
   { name: 'Never Have I Ever 🍸', img: require('../../assets/gameScreenImages/never-have-i-ever.png'), route: 'GroupSizeSelectorScreen' },
@@ -48,7 +49,18 @@ const GamesScreen: React.FC<Props> = ({ navigation }) => {
   });
   const viewConfigRef = useRef({ viewAreaCoveragePercentThreshold: 50 });
 
-  const handlePlay = (route: string) => navigation.navigate(route);
+  const handlePlay = async (route: string) => {
+    if (route === 'TDWaitingScreen') {
+      const playerId = await getUserId();
+      if (!playerId) {
+        Alert.alert('Error', 'Could not get your user ID. Please log in again.');
+        return;
+      }
+      navigation.navigate(route, { playerId });
+    } else {
+      navigation.navigate(route);
+    }
+  };
 
   return (
     <View style={styles.container}>

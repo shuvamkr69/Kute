@@ -1,7 +1,6 @@
 // utils/socket.js
 import { Server } from "socket.io";
 import { Message } from "../models/message.model.js";
-import { Score } from "../models/TruthOrDare/truthDare.model.js";
 
 let io = null;
 
@@ -63,45 +62,15 @@ export const initializeSocket = (server) => {
       }
     });
 
-    // 🎯 Truth or Dare Game System
-
-    // Join match room
-    socket.on("join_match", ({ matchId, userId }) => {
-      socket.join(matchId);
-      console.log(`🎮 ${userId} joined match room ${matchId}`);
-    });
-
-    // Send truth question
-    socket.on("send_truth_question", ({ matchId, question, fromUserId }) => {
-      socket.to(matchId).emit("receive_truth_question", { question, fromUserId });
-    });
-
-    // Submit truth answer
-    socket.on("submit_truth_answer", ({ matchId, answer, fromUserId }) => {
-      socket.to(matchId).emit("receive_truth_answer", { answer, fromUserId });
-    });
-
-    // Rate answer (+10 or -10)
-    socket.on("rate_answer", async ({ targetUserId, isThumbsUp }) => {
-      const delta = isThumbsUp ? 10 : -10;
-
-      try {
-        await Score.findOneAndUpdate(
-          { userId: targetUserId },
-          { $inc: { rating: delta } },
-          { upsert: true, new: true }
-        );
-
-        // Optionally emit the new rating
-        socket.to(targetUserId).emit("rating_updated", { ratingChange: delta });
-
-        console.log(`📈 Rating ${isThumbsUp ? "increased" : "decreased"} by ${Math.abs(delta)} for user ${targetUserId}`);
-      } catch (err) {
-        console.error("❌ Failed to update rating:", err.message);
+    // Join a room named after the userId for targeted emits
+    socket.on('td_register_user', ({ userId }) => {
+      if (userId) {
+        socket.join(userId);
+        console.log(`Socket ${socket.id} joined room for user ${userId}`);
       }
     });
 
-
+   
     // Add inside io.on("connection", (socket) => { ... });
 
 socket.on("call-user", ({ convId, offer, from }) => {

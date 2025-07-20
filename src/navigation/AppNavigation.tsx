@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { useAuth } from "./AuthContext"; 
+import { useAuth } from "./AuthContext";
 
-import SplashScreenComponent from "../components/SplashScreen"; 
+import SplashScreenComponent from "../components/SplashScreen";
 import OnboardingScreen from "../screens/OnboardingScreen";
 import LoginScreen from "../screens/LoginScreen";
 import RegisterScreen from "../screens/RegisterScreen";
@@ -44,14 +44,18 @@ import ResetPasswordScreen from "../screens/ResetPasswordScreen";
 import ChangePasswordScreen from "../screens/ChangePasswordScreen";
 import HelpScreen from "../screens/HelpScreen";
 // import CallScreen from "../screens/CallScreen";
-import ModeSelection from "../screens/games/TruthOrDare/ModeSelection";
-import SinglePlayerGame from "../screens/games/TruthOrDare/SinglePlayerGame";
-import MultiplayerGame from "../screens/games/TruthOrDare/MultiPlayerGame";
-import TruthAnswerScreen from "../screens/games/TruthOrDare/TruthAnswerScreen";
-import TruthSetScreen from "../screens/games/TruthOrDare/TruthSetScreen";
-import TruthReviewScreen from "../screens/games/TruthOrDare/TruthReviewScreen";
-import WaitingForAnswerScreen from "../screens/games/TruthOrDare/WaitingForAnswerScreen";
+
 import BuyFeaturesScreen from '../screens/BuyScreens/BuySuperLikes';
+import Agreements from "../screens/Agreements";
+import TDWaitingForChoiceScreen from "../screens/games/TruthOrDare/TDWaitingForChoiceScreen";
+import TDChoiceScreen from "../screens/games/TruthOrDare/TDChoiceScreen";
+import TDWaitingScreen from "../screens/games/TruthOrDare/TDWaitingScreen";
+import TDWaitingForQuestionScreen from "../screens/games/TruthOrDare/TDWaitingForQuestionScreen";
+import TDAnswerScreen from "../screens/games/TruthOrDare/TDAnswerScreen";
+import TDWaitingForAnswerScreen from "../screens/games/TruthOrDare/TDWaitingForAnswerScreen";
+import TDReviewScreen from "../screens/games/TruthOrDare/TDReviewScreen";
+import TDGameOverScreen from "../screens/games/TruthOrDare/TDGameOverScreen";
+import TDAskQuestionScreen from "../screens/games/TruthOrDare/TDAskQuestionScreen";
 
 const Stack = createNativeStackNavigator(); // Standard Stack Navigator
 
@@ -97,13 +101,22 @@ export default function AppNavigation() {
             <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
             <Stack.Screen name="HelpScreen" component={HelpScreen} />
             <Stack.Screen name="BuyFeatures" component={BuyFeaturesScreen} />
-            
+            <Stack.Screen name="Agreements" component={Agreements} />
             {/* User Info Screens */}
-            
-            
+
+
             {/* truth and dare */}
-            {/* <Stack.Screen name="GameCard" component={GameCard} /> */}
-            {/* <Stack.Screen name="GameImage" component={GameImage} /> */}
+            <Stack.Screen name="TDWaitingScreen" component={TDWaitingScreen} />
+            <Stack.Screen name="TDChoiceScreen" component={TDChoiceScreen} />
+            <Stack.Screen name="TDWaitingForChoiceScreen" component={TDWaitingForChoiceScreen} />
+            <Stack.Screen name="TDWaitingForQuestionScreen" component={TDWaitingForQuestionScreen} />
+            <Stack.Screen name="TDAskQuestionScreen" component={TDAskQuestionScreen} />
+            <Stack.Screen name="TDAnswerScreen" component={TDAnswerScreen} />
+            <Stack.Screen name="TDWaitingForAnswerScreen" component={TDWaitingForAnswerScreen} />
+            <Stack.Screen name="TDReviewScreen" component={TDReviewScreen} />
+            <Stack.Screen name="TDGameOverScreen" component={TDGameOverScreen} />
+
+
 
             {/* never have i ever */}
             <Stack.Screen name="GroupSizeSelectorScreen" component={GroupSizeSelectorScreen} />
@@ -122,16 +135,6 @@ export default function AppNavigation() {
             <Stack.Screen name="RoundReviewScreen" component={RoundReviewScreen} />
             <Stack.Screen name="WaitingForFeedbackScreen" component={WaitingForFeedbackScreen} />
             <Stack.Screen name="WYRLobbyScreen" component={WYRLobbyScreen} />
-
-            {/* Truth or Dare */}
-            <Stack.Screen name="TruthOrDareModeSelection" component={ModeSelection} />
-            <Stack.Screen name="SinglePlayerGame" component={SinglePlayerGame} />
-            <Stack.Screen name="MultiPlayerGame" component={MultiplayerGame} />
-            <Stack.Screen name="TruthAnswerScreen" component={TruthAnswerScreen} />
-            <Stack.Screen name="TruthSetScreen" component={TruthSetScreen} />
-            <Stack.Screen name="TruthReviewScreen" component={TruthReviewScreen} />
-            <Stack.Screen name="WaitingForAnswerScreen" component={WaitingForAnswerScreen} />
-
 
 
 
