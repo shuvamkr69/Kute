@@ -29,6 +29,7 @@ import { useNavigation } from "@react-navigation/native";
 import LoadingScreen from "./LoadingScreen";
 import AiChatbot from "../components/AiChatbot";
 import CustomAlert from "../components/CustomAlert";
+import { getSocket } from "../utils/socket";
 
 type RootStackParamList = {
   Chat: {
@@ -55,7 +56,10 @@ type Message = {
 
 type Props = NativeStackScreenProps<any, "Chat">;
 
-const socket = io("http://10.21.36.128:3000");
+// const socket = io("http://10.21.36.128:3000");
+
+
+const socket = getSocket();
 
 const MessageItem = memo(
   (props: {

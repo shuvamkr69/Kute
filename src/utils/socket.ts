@@ -1,7 +1,7 @@
 import { io, Socket } from 'socket.io-client';
 
 // Replace with your backend URL
-const SOCKET_URL = 'http://localhost:5000'; // TODO: Set to your production backend if needed
+const SOCKET_URL = 'http://10.21.36.128:3000'; // TODO: Set to your production backend if needed
 
 let socket: Socket | null = null;
 

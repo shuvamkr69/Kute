@@ -43,11 +43,13 @@ import BlockedUsersScreen from "../screens/BlockedUsersScreen";
 import ResetPasswordScreen from "../screens/ResetPasswordScreen";
 import ChangePasswordScreen from "../screens/ChangePasswordScreen";
 import HelpScreen from "../screens/HelpScreen";
-import TruthOrDareGame from "../screens/games/TruthOrDare/TruthOrDareGame";
 // import CallScreen from "../screens/CallScreen";
 
 import BuyFeaturesScreen from '../screens/BuyScreens/BuySuperLikes';
 import Agreements from "../screens/Agreements";
+import TDGameScreen from "../screens/games/TruthOrDare/TDGameScreen";
+import EventSelection from "../screens/games/Events/EventSelection";
+import ChamberOfSecrets from "../screens/games/Events/ChamberOfSecrets";
 
 const Stack = createNativeStackNavigator(); // Standard Stack Navigator
 
@@ -97,7 +99,7 @@ export default function AppNavigation() {
             {/* User Info Screens */}
 
             {/* truth and dare */}
-            <Stack.Screen name="TruthOrDareGame" component={TruthOrDareGame} />
+            <Stack.Screen name="TruthOrDareGame" component={TDGameScreen} />
 
 
 
@@ -121,6 +123,11 @@ export default function AppNavigation() {
             <Stack.Screen name="RoundReviewScreen" component={RoundReviewScreen} />
             <Stack.Screen name="WaitingForFeedbackScreen" component={WaitingForFeedbackScreen} />
             <Stack.Screen name="WYRLobbyScreen" component={WYRLobbyScreen} />
+
+
+          {/* Events screens */}
+          <Stack.Screen name="EventSelectionScreen" component={EventSelection} />
+          <Stack.Screen name="ChamberOfSecrets" component={ChamberOfSecrets} />
 
 
 
