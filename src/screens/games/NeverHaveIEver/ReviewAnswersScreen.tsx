@@ -93,28 +93,28 @@ const ReviewAnswersScreen: React.FC<Props> = ({ navigation }) => {
 
   // Trigger navigation to the next turn
   const triggerNextTurn = async () => {
-  if (hasNavigatedRef.current) return; // <-- use the ref!
-  hasNavigatedRef.current = true; // <-- set the ref!
+    if (hasNavigatedRef.current) return; // <-- use the ref!
+    hasNavigatedRef.current = true; // <-- set the ref!
 
-   await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, 500));
 
-  try {
-    const turnRes = await api.get("/api/v1/users/neverhaveiever/current-turn");
-    const { userId, chanceHolderId } = turnRes.data;
-    const isChanceHolder = userId === chanceHolderId;
+    try {
+      const turnRes = await api.get("/api/v1/users/neverhaveiever/current-turn");
+      const { userId, chanceHolderId } = turnRes.data;
+      const isChanceHolder = userId === chanceHolderId;
 
-    if (isChanceHolder) {
-      await api.post("/api/v1/users/neverhaveiever/next-turn");
-      navigation.navigate("SubmitPromptScreen");
-    } else {
-      navigation.navigate("WaitingForPromptScreen");
+      if (isChanceHolder) {
+        await api.post("/api/v1/users/neverhaveiever/next-turn");
+        navigation.navigate("SubmitPromptScreen");
+      } else {
+        navigation.navigate("WaitingForPromptScreen");
+      }
+    } catch (err) {
+      if (err.response && err.response.status === 404) {
+        navigation.navigate("WaitingRoomScreen");
+      }
     }
-  } catch (err) {
-    if (err.response && err.response.status === 404) {
-    navigation.navigate("WaitingRoomScreen");
-  }
-  }
-};
+  };
 
 
   const renderItem = ({ item }: { item: Answer }) => (

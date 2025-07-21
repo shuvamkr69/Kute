@@ -76,17 +76,20 @@ const NHIEWaitingForAnswersScreen: React.FC<Props> = ({ navigation }) => {
           api.get("/api/v1/users/neverhaveiever/current-turn"),
         ]);
 
-        // Assuming turnRes.data contains gamePhase and chanceHolderId, and answerRes.data contains userId
         const gamePhase = turnRes.data.gamePhase;
         const chanceHolderId = turnRes.data.chanceHolderId;
         const userId = answerRes.data.userId;
 
-        if (gamePhase === "reviewing" && userId === chanceHolderId) {
+        if (gamePhase === "reviewing") {
           setHasNavigated(true);
-          navigation.navigate("ReviewAnswersScreen");
+          if (userId === chanceHolderId) {
+            navigation.navigate("ReviewAnswersScreen");
+          } else {
+            navigation.navigate("WaitingForPromptScreen");
+          }
         }
       } catch (err) {
-        
+        // Optionally handle error
       }
     }, 3000);
 

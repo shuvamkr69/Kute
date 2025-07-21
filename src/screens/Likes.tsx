@@ -7,24 +7,15 @@ import {
   Image,
   TouchableOpacity,
   RefreshControl,
-<<<<<<< HEAD
-  Alert,
-  Modal,
-} from "react-native";
-=======
   Modal,
 } from "react-native";
 import CustomAlert from "../components/CustomAlert";
->>>>>>> main
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import Icon from "react-native-vector-icons/FontAwesome";
 import api from "../utils/api";
 import { getUserId } from "../utils/constants";
-<<<<<<< HEAD
-=======
 import { BlurView } from 'expo-blur';
 import { useFocusEffect } from '@react-navigation/native';
->>>>>>> main
 
 type Props = NativeStackScreenProps<any, "Likes">;
 
@@ -34,15 +25,12 @@ interface LikedUser {
   profileImage: string;
 }
 
-<<<<<<< HEAD
-=======
 interface ViewedByUser {
   _id: string;
   fullName: string;
   profileImage: string;
 }
 
->>>>>>> main
 const Likes: React.FC<Props> = ({ navigation }) => {
   const [likedUsers, setLikedUsers] = useState<LikedUser[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -50,8 +38,6 @@ const Likes: React.FC<Props> = ({ navigation }) => {
   const [selectedUser, setSelectedUser] = useState<LikedUser | null>(null);
   const [showOptions, setShowOptions] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
-<<<<<<< HEAD
-=======
   const [tab, setTab] = useState<'matches' | 'viewedBy'>('matches');
   const [viewedBy, setViewedBy] = useState<ViewedByUser[]>([]);
   const [premiumPlan, setPremiumPlan] = useState<string | null>(null);
@@ -59,7 +45,6 @@ const Likes: React.FC<Props> = ({ navigation }) => {
   const [customAlert, setCustomAlert] = useState({ visible: false, title: '', message: '', onConfirm: undefined as undefined | (() => void), confirmText: '', cancelText: '' });
   const [showUnmatchAlert, setShowUnmatchAlert] = useState(false);
   const [pendingUnmatchUser, setPendingUnmatchUser] = useState<LikedUser | null>(null);
->>>>>>> main
 
   const fetchLikedUsers = async (silent = false) => {
     try {
@@ -81,8 +66,6 @@ const Likes: React.FC<Props> = ({ navigation }) => {
     }
   };
 
-<<<<<<< HEAD
-=======
   // Fetch premium status
   useEffect(() => {
     const fetchPremium = async () => {
@@ -132,7 +115,6 @@ const Likes: React.FC<Props> = ({ navigation }) => {
     }, [tab])
   );
 
->>>>>>> main
   useEffect(() => {
   fetchLikedUsers(); // Initial fetch
 
@@ -150,41 +132,25 @@ const Likes: React.FC<Props> = ({ navigation }) => {
       await fetchLikedUsers();
     } catch (error) {
       console.error("Error refreshing likes:", error);
-<<<<<<< HEAD
-      Alert.alert("Error", "Failed to refresh likes.");
-=======
       setCustomAlert({ visible: true, title: "Error", message: "Failed to refresh likes.", onConfirm: undefined, confirmText: '', cancelText: 'OK' });
->>>>>>> main
     } finally {
       setRefreshing(false);
     }
   }, [fetchLikedUsers]);
 
-<<<<<<< HEAD
-  const renderItem = ({ item }: { item: LikedUser }) => (
-=======
   // Custom render function for matches (full-width, chat button, long-press)
   const renderMatchesItem = ({ item }: { item: LikedUser }) => (
->>>>>>> main
     <TouchableOpacity
       activeOpacity={0.9}
       onLongPress={() => {
         setSelectedUser(item);
         setShowOptions(true);
       }}
-<<<<<<< HEAD
-      style={styles.card}
-    >
-      <Image source={{ uri: item.profileImage }} style={styles.profileImage} />
-      <Text style={styles.name} numberOfLines={1} ellipsizeMode="tail">
-        {item.fullName}
-=======
       style={styles.viewedByCard}
     >
       <Image source={{ uri: item.profileImage }} style={styles.viewedByImage} />
       <Text style={styles.viewedByName} numberOfLines={1} ellipsizeMode="tail">
         {item.fullName.split(' ')[0]}
->>>>>>> main
       </Text>
       <TouchableOpacity
         onPress={async () => {
@@ -192,20 +158,12 @@ const Likes: React.FC<Props> = ({ navigation }) => {
             const userId = await getUserId();
             navigation.navigate("Chat", {
               likedUserId: item._id,
-<<<<<<< HEAD
-              userName: item.fullName,
-=======
               userName: item.fullName.split(' ')[0],
->>>>>>> main
               loggedInUserId: userId,
               likedUserAvatar: item.profileImage,
             });
           } catch (err) {
-<<<<<<< HEAD
-            Alert.alert("Error", "Could not open chat. Please try again later.");
-=======
             setCustomAlert({ visible: true, title: "Error", message: "Could not open chat. Please try again later.", onConfirm: undefined, confirmText: '', cancelText: 'OK' });
->>>>>>> main
           }
         }}
         style={styles.chatButton}
@@ -215,8 +173,6 @@ const Likes: React.FC<Props> = ({ navigation }) => {
     </TouchableOpacity>
   );
 
-<<<<<<< HEAD
-=======
   // Add a custom render function for viewed by cards
   const renderViewedByItem = ({ item }: { item: ViewedByUser }) => (
     <View style={styles.viewedByCard}>
@@ -227,7 +183,6 @@ const Likes: React.FC<Props> = ({ navigation }) => {
     </View>
   );
 
->>>>>>> main
   // Render fallback UI if offline or error
   if (isOffline) {
     return (
@@ -242,43 +197,6 @@ const Likes: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-<<<<<<< HEAD
-      <View style={styles.headingContainer}>
-        <Text style={styles.heading}>Matches</Text>
-        {isOffline && <Text style={styles.offlineBadge}>⚠️</Text>}
-      </View>
-
-      <FlatList
-        data={likedUsers}
-        keyExtractor={(item) => item._id}
-        renderItem={renderItem}
-        numColumns={2}
-        columnWrapperStyle={styles.columnWrapper}
-        contentContainerStyle={[
-          styles.list,
-          likedUsers.length === 0 && { flex: 1, justifyContent: "center" },
-        ]}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            colors={["#de822c"]}
-          />
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyStateContainer}>
-            <Image
-              source={require("../assets/icons/broken-heart.png")}
-              style={{ width: 150, height: 150, marginBottom: 20 }}
-            />
-            <Text style={styles.noLikes}>
-              No likes? The algorithm must be jealous
-            </Text>
-          </View>
-        }
-        key="two-columns"
-      />
-=======
       {/* Tab Bar */}
       <View style={styles.tabBar}>
         <TouchableOpacity
@@ -400,7 +318,6 @@ const Likes: React.FC<Props> = ({ navigation }) => {
           )}
         </View>
       )}
->>>>>>> main
 
       <Modal
         animationType="fade"
@@ -414,55 +331,16 @@ const Likes: React.FC<Props> = ({ navigation }) => {
           onPressOut={() => setShowOptions(false)}
         >
           <View style={styles.optionContainer}>
-<<<<<<< HEAD
-            <Text style={styles.optionTitle}>{selectedUser?.fullName}</Text>
-=======
             <Text style={styles.optionTitle}>{selectedUser?.fullName?.split(' ')[0]}</Text>
->>>>>>> main
 
             <TouchableOpacity
               style={[styles.optionButton, { backgroundColor: "#400" }]}
               onPress={() => {
-<<<<<<< HEAD
-                Alert.alert(
-                  "Unmatch?",
-                  `Are you sure you want to unmatch with ${selectedUser?.fullName}?`,
-                  [
-                    { text: "Cancel", style: "cancel" },
-                    {
-                      text: "Unmatch",
-                      style: "destructive",
-                      onPress: async () => {
-                        try {
-                          await api.delete(
-                            `/api/v1/users/unmatch/${selectedUser?._id}`
-                          );
-                          setLikedUsers((prev) =>
-                            prev.filter(
-                              (user) => user._id !== selectedUser?._id
-                            )
-                          );
-                        } catch (error) {
-                          Alert.alert("Error", "Failed to unmatch.");
-                        } finally {
-                          setShowOptions(false);
-                        }
-                      },
-                    },
-                  ]
-                );
-              }}
-            >
-              <Text style={[styles.optionText, { color: "#fff" }]}>
-                Unmatch
-              </Text>
-=======
                 setPendingUnmatchUser(selectedUser);
                 setShowUnmatchAlert(true);
               }}
             >
               <Text style={[styles.optionText, { color: "#fff" }]}>Unmatch</Text>
->>>>>>> main
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -474,8 +352,6 @@ const Likes: React.FC<Props> = ({ navigation }) => {
           </View>
         </TouchableOpacity>
       </Modal>
-<<<<<<< HEAD
-=======
       {/* CustomAlert for errors */}
       <CustomAlert
         visible={customAlert.visible}
@@ -505,7 +381,6 @@ const Likes: React.FC<Props> = ({ navigation }) => {
         confirmText="Unmatch"
         cancelText="Cancel"
       />
->>>>>>> main
     </View>
   );
 };
@@ -634,8 +509,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#ff4d4d",
   },
-<<<<<<< HEAD
-=======
   tabBar: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -732,5 +605,4 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     flex: 1,
   },
->>>>>>> main
 });

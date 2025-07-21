@@ -7,17 +7,10 @@ import {
   Animated,
   Dimensions,
   FlatList,
-<<<<<<< HEAD
-  Alert,
-  NativeSyntheticEvent,
-  NativeScrollEvent,
-} from "react-native";
-=======
   NativeSyntheticEvent,
   NativeScrollEvent,
 } from "react-native";
 import CustomAlert from "../components/CustomAlert";
->>>>>>> main
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import CustomButton from "../components/Button";
 import api from "../utils/api";
@@ -33,10 +26,7 @@ const PremiumScreen: React.FC<Props> = ({ navigation }) => {
   const scrollX = useRef(new Animated.Value(0)).current;
   const flatListRef = useRef<FlatList>(null);
   const [plans, setPlans] = useState<any[]>([]);
-<<<<<<< HEAD
-=======
   const [customAlert, setCustomAlert] = useState({ visible: false, title: '', message: '' });
->>>>>>> main
 
   const getImage = (imageName: string) => {
     switch (imageName) {
@@ -58,11 +48,7 @@ const PremiumScreen: React.FC<Props> = ({ navigation }) => {
         setPlans(response.data.data);
         console.log("Plans fetched successfully:", response.data.data); // Debug log
       } catch (error) {
-<<<<<<< HEAD
-        Alert.alert("Error", "Failed to fetch premium plans");
-=======
         setCustomAlert({ visible: true, title: "Error", message: "Failed to fetch premium plans" });
->>>>>>> main
       }
     };
 
@@ -85,18 +71,9 @@ const PremiumScreen: React.FC<Props> = ({ navigation }) => {
       await api.post("/api/v1/users/premiumActivated", {
         ActivePremiumPlan: planName,
       });
-<<<<<<< HEAD
-      Alert.alert(
-        "Success",
-        `You have successfully subscribed to the ${planName} Plan!`
-      );
-    } catch (error) {
-      Alert.alert("Error", `Failed to subscribe to the ${planName} Plan!`);
-=======
       setCustomAlert({ visible: true, title: "Success", message: `You have successfully subscribed to the ${planName} Plan!` });
     } catch (error) {
       setCustomAlert({ visible: true, title: "Error", message: `Failed to subscribe to the ${planName} Plan!` });
->>>>>>> main
     }
   };
 
@@ -174,15 +151,12 @@ const PremiumScreen: React.FC<Props> = ({ navigation }) => {
         <TouchableOpacity style={styles.linkBtn}><Text style={styles.linkBtnText}>Terms of Service</Text></TouchableOpacity>
         <TouchableOpacity style={styles.linkBtn}><Text style={styles.linkBtnText}>Privacy Policy</Text></TouchableOpacity>
       </View>
-<<<<<<< HEAD
-=======
       <CustomAlert
         visible={customAlert.visible}
         title={customAlert.title}
         message={customAlert.message}
         onClose={() => setCustomAlert((prev) => ({ ...prev, visible: false }))}
       />
->>>>>>> main
     </ScrollView>
   );
 };

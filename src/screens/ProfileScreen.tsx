@@ -326,7 +326,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
       const now = new Date();
       const diff = boostActiveUntil.getTime() - now.getTime();
 
-      if (diff <= 0) {
+      if (diff < 0) {
         // If boostActiveUntil is still in the future (from backend), but device time is ahead, show a warning or 'Boost active'
         // We'll keep the boostTimer visible until the backend says boost is over (i.e., boostActiveUntil is not set on next fetch)
         setBoostTimer('Boost active');
@@ -336,7 +336,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
       } else {
         const minutes = Math.floor(diff / 1000 / 60);
         const seconds = Math.floor((diff / 1000) % 60);
-        setBoostTimer(`${minutes}m ${seconds}s remaining`);
+        setBoostTimer(`${minutes}m ${seconds}s`);
       }
     }, 1000);
 
@@ -690,7 +690,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
                 end={{ x: 1, y: 1 }}
                 style={[styles.featureButtonGradient, { paddingVertical: 6, paddingHorizontal: 16 }]}
               >
-                <Text style={[styles.featureButtonText, { fontSize: 13 }]}>Buy Boosts</Text>
+                <Text style={[styles.featureButtonText, { fontSize: 13 }]}>Get More</Text>
               </LinearGradient>
             </TouchableOpacity>
           </View>
@@ -720,7 +720,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
                 end={{ x: 1, y: 1 }}
                 style={[styles.featureButtonGradient, { paddingVertical: 6, paddingHorizontal: 16 }]}
               >
-                <Text style={[styles.featureButtonText, { fontSize: 13 }]}>Buy Super Likes</Text>
+                <Text style={[styles.featureButtonText, { fontSize: 13 }]}>Get More</Text>
               </LinearGradient>
             </TouchableOpacity>
           </View>
@@ -1107,10 +1107,12 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
   featureTitle: {
+    flex: 1,
     fontSize: 20,
     fontWeight: 'bold',
     color: '#fff',
     letterSpacing: 0.5,
+    justifyContent: 'space-between'
   },
   featureDescription: {
     color: '#B0B0B0',
@@ -1164,7 +1166,7 @@ const styles = StyleSheet.create({
   featureTimerRight: {
     color: '#de822c',
     fontWeight: 'bold',
-    fontSize: 20,
+    fontSize: 16,
     marginLeft: 44,
     alignSelf: 'center',
   },

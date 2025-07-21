@@ -36,7 +36,12 @@ useEffect(() => {
 
     if (gamePhase === "reviewing") {
       clearInterval(interval);
-      navigation.navigate("ReviewAnswersScreen");
+      hasNavigatedRef.current = true;
+      if (isChanceHolder) {
+        navigation.navigate("ReviewAnswersScreen");
+      } else {
+        navigation.navigate("WaitingForPromptScreen");
+      }
     } 
     else if (gamePhase === "typing") {
       clearInterval(interval);
