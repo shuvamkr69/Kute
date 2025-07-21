@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 const BG_IMAGE = require('../../../../assets/gameScreenImages/brick-bg.png');
 const API_URL = '/api/v1/users/chamber-of-secrets/messages'; // Relative to api baseURL
+import BackButton from '../../../components/BackButton';
 
 const ChamberOfSecrets = () => {
   const [messages, setMessages] = useState<any[]>([]);
@@ -54,28 +55,21 @@ const ChamberOfSecrets = () => {
       isMine = true;
     }
     return (
-      <View style={[styles.messageBubble, isMine ? styles.myMessage : styles.otherMessage]}>
-        <Ionicons
-          name={isMine ? 'person-circle' : 'eye-off'}
-          size={22}
-          color={isMine ? '#de822c' : '#fff'}
-          style={{ marginBottom: 2, alignSelf: isMine ? 'flex-end' : 'flex-start' }}
-        />
-        <Text style={[styles.messageText, isMine && styles.myMessageText]}>{item.text}</Text>
-        <Text style={styles.timeText}>{new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+      <View style={styles.shadowContainer}>
+        <View style={[styles.messageBubble, isMine ? styles.myMessage : styles.otherMessage]}>
+          <Text style={[styles.messageText, isMine && styles.myMessageText]}>{item.text}</Text>
+          <Text style={styles.timeText}>{new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+        </View>
       </View>
     );
   };
 
   return (
+    <View style={styles.backButtonContainer}>
+      <BackButton title="Chamber Of Secrets" />
     <ImageBackground source={BG_IMAGE} style={styles.bgImage} resizeMode="cover">
       <View style={styles.overlay} />
       <View style={styles.container}>
-        <View style={styles.headerRow}>
-          <Ionicons name="lock-closed" size={28} color="#e0c3fc" style={{ marginRight: 8 }} />
-          <Text style={styles.header}>Chamber of Secrets</Text>
-          <Ionicons name="eye-off" size={24} color="#e0c3fc" style={{ marginLeft: 8 }} />
-        </View>
         <FlatList
           ref={flatListRef}
           data={messages}
@@ -91,7 +85,7 @@ const ChamberOfSecrets = () => {
               value={input}
               onChangeText={setInput}
               placeholder="Type a secret..."
-              placeholderTextColor="#e0c3fc"
+              placeholderTextColor="#eec095"
               onSubmitEditing={sendMessage}
               returnKeyType="send"
             />
@@ -102,10 +96,15 @@ const ChamberOfSecrets = () => {
         </KeyboardAvoidingView>
       </View>
     </ImageBackground>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  backButtonContainer: {
+    flex: 1,
+    backgroundColor: 'black',
+  },
   bgImage: {
     flex: 1,
     width: '100%',
@@ -114,7 +113,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(24,26,32,0.75)',
+    backgroundColor: 'rgba(32, 24, 24, 0.75)',
     zIndex: 1,
   },
   container: {
@@ -133,7 +132,7 @@ const styles = StyleSheet.create({
   header: {
     fontSize: 26,
     fontWeight: 'bold',
-    color: '#e0c3fc',
+    color: '#eec095',
     textAlign: 'center',
     letterSpacing: 1.5,
     textShadowColor: '#000',
@@ -145,34 +144,46 @@ const styles = StyleSheet.create({
     paddingBottom: 80,
   },
   messageBubble: {
-    backgroundColor: 'rgba(35,38,47,0.92)',
+    backgroundColor: 'rgba(178,216,216,0.92)',
     borderRadius: 18,
     padding: 14,
     marginBottom: 12,
     maxWidth: '85%',
+    // Enhanced shadow for both sender and receiver
     shadowColor: '#000',
-    shadowOpacity: 0.18,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.28,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8, // For Android
+  },
+  shadowContainer: {
+    width: '100%',
+    alignItems: 'flex-start',
+    shadowColor: '#000',
+    shadowOpacity: 0.28,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 10, // For Android
+    marginBottom: 2,
   },
   myMessage: {
     alignSelf: 'flex-end',
-    backgroundColor: 'rgba(224,195,252,0.95)',
+    backgroundColor: 'rgba(0,76,76,0.95)',
   },
   otherMessage: {
     alignSelf: 'flex-start',
   },
   messageText: {
-    color: '#fff',
+    color: '#23262F',
     fontSize: 17,
     fontWeight: '500',
     marginBottom: 2,
   },
   myMessageText: {
-    color: '#23262F',
+    color: 'white',
   },
   timeText: {
-    color: '#e0c3fc',
+    color: 'white',
     fontSize: 11,
     alignSelf: 'flex-end',
     marginTop: 4,
@@ -184,7 +195,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(35,38,47,0.95)',
     padding: 12,
     borderTopWidth: 1,
-    borderTopColor: '#e0c3fc33',
+    borderTopColor: '#eec09533',
     borderRadius: 16,
     margin: 10,
     marginBottom: 24,
@@ -199,10 +210,10 @@ const styles = StyleSheet.create({
     fontSize: 17,
     marginRight: 10,
     borderWidth: 1,
-    borderColor: '#e0c3fc55',
+    borderColor: '#eec09555',
   },
   sendButton: {
-    backgroundColor: '#de822c',
+    backgroundColor: '#e18e41',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 10,

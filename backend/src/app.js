@@ -20,14 +20,14 @@ app.use(cookieParser())
 
 import router from "./routes/mainRouter.js"
 import PaymentRouter from "./routes/payment.routes.js"
+import TDRouter from "./routes/TruthOrDare/TD.route.js";
 
 
 //routes decleartaion
 
 app.use("/api/v1/users", router)
 app.use("/api/v1/payment", PaymentRouter)
-
-
+app.use("/api/truth-or-dare", TDRouter);
 
 
 

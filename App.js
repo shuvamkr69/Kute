@@ -45,6 +45,7 @@ const MainApp = () => {
         const userToken = await AsyncStorage.getItem("accessToken"); // Get JWT
         console.log("User JWT:", userToken);
         console.log("Push Token:", token);
+        console.log("env:", process.env)
         if (storedToken !== token) {
           // Send to backend only if changed
           await api.patch("/api/v1/users/updatePushToken", { pushToken: token });

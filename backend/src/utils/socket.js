@@ -205,4 +205,4 @@ function setupTruthOrDare(io) {
   });
 }
 
-export default setupTruthOrDare ;
+export {setupTruthOrDare} ;

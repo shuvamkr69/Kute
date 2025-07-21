@@ -6,7 +6,7 @@ dotenv.config({
 import { createServer } from "http";
 import connectDB from "./db/index.js";
 import { app } from "./app.js";
-import { initializeSocket, getIO } from "./utils/socket.js";
+import { initializeSocket, getIO, setupTruthOrDare } from "./utils/socket.js";
 
 
 console.log(process.env.CLOUDINARY_CLOUD_NAME);
@@ -18,6 +18,9 @@ initializeSocket(server);
 
 // Get the initialized io instance
 const io = getIO();
+
+// Setup Truth or Dare socket logic
+setupTruthOrDare(io);
 
 // ✅ Connect DB & Start Server
 const startServer = async () => {

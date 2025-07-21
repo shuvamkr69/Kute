@@ -35,6 +35,7 @@ const OnboardingScreen: React.FC<Props> = ({ navigation }) => {
   const handleStart = () => {
     navigation.navigate('Login');
   };
+  console.log("env:", process.env)
 
   return (
     <View style={styles.container}>

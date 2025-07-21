@@ -25,7 +25,6 @@ const games = [
   { name: 'Couple Quiz 💕', img: require('../../assets/gameScreenImages/couples-quiz.png'), route: 'Couple Quiz' },
   { name: 'Never Have I Ever 🍸', img: require('../../assets/gameScreenImages/never-have-i-ever.png'), route: 'GroupSizeSelectorScreen' },
   { name: 'Events', img: require('../../assets/gameScreenImages/event-game-screen.png'), route: 'EventSelectionScreen' },
-
 ];
 
 const GameCard = ({
@@ -52,16 +51,7 @@ const GamesScreen: React.FC<Props> = ({ navigation }) => {
   const viewConfigRef = useRef({ viewAreaCoveragePercentThreshold: 50 });
 
   const handlePlay = async (route: string) => {
-    if (route === 'TDWaitingScreen') {
-      const playerId = await getUserId();
-      if (!playerId) {
-        Alert.alert('Error', 'Could not get your user ID. Please log in again.');
-        return;
-      }
-      navigation.navigate(route, { playerId });
-    } else {
-      navigation.navigate(route);
-    }
+    navigation.navigate(route);
   };
 
   return (

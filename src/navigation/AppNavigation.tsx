@@ -44,10 +44,10 @@ import ResetPasswordScreen from "../screens/ResetPasswordScreen";
 import ChangePasswordScreen from "../screens/ChangePasswordScreen";
 import HelpScreen from "../screens/HelpScreen";
 // import CallScreen from "../screens/CallScreen";
+import TruthOrDareGame from "../screens/games/TruthOrDare/TruthOrDareGame";
 
 import BuyFeaturesScreen from '../screens/BuyScreens/BuySuperLikes';
 import Agreements from "../screens/Agreements";
-import TDGameScreen from "../screens/games/TruthOrDare/TDGameScreen";
 import EventSelection from "../screens/games/Events/EventSelection";
 import ChamberOfSecrets from "../screens/games/Events/ChamberOfSecrets";
 
@@ -98,14 +98,6 @@ export default function AppNavigation() {
             <Stack.Screen name="Agreements" component={Agreements} />
             {/* User Info Screens */}
 
-            {/* truth and dare */}
-            <Stack.Screen name="TruthOrDareGame" component={TDGameScreen} />
-
-
-
-
-
-
             {/* never have i ever */}
             <Stack.Screen name="GroupSizeSelectorScreen" component={GroupSizeSelectorScreen} />
             <Stack.Screen name="SubmitPromptScreen" component={SubmitPromptScreen} />
@@ -124,6 +116,8 @@ export default function AppNavigation() {
             <Stack.Screen name="WaitingForFeedbackScreen" component={WaitingForFeedbackScreen} />
             <Stack.Screen name="WYRLobbyScreen" component={WYRLobbyScreen} />
 
+            {/*Truth or dare */}
+            <Stack.Screen name = "TDWaitingScreen" component = {TruthOrDareGame}/>
 
           {/* Events screens */}
           <Stack.Screen name="EventSelectionScreen" component={EventSelection} />
