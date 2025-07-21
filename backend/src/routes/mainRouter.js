@@ -9,6 +9,8 @@ import AiChatbotRouter from "./AiChatbot.route.js";
 import NeverHaveIEverRouter from "./NeverHaveIEver/neverHaveIEver.routes.js";
 import WYRRouter from "./WouldYouRather/WouldYouRather.route.js";
 import PaymentRouter from "./payment.routes.js";
+import COSRouter from "./ChamberOfSecrets/ChamberOfSecrets.route.js";
+
 const router = Router()
 
 router.use(UserRouter)
@@ -21,6 +23,7 @@ router.use(AiChatbotRouter)
 router.use(NeverHaveIEverRouter)
 router.use(WYRRouter)
 router.use(PaymentRouter)
+router.use(COSRouter);
 
 //Game screen routes
 

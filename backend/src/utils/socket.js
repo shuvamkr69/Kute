@@ -1,6 +1,9 @@
 // utils/socket.js
 import { Server } from "socket.io";
 import { Message } from "../models/message.model.js";
+import { ChamberMessage } from '../models/ChamberOfSecrets/message.model.js';
+import { ApiError } from "./ApiError.js";
+import { asyncHandler } from "./asyncHandler.js";
 
 let io = null;
 
@@ -62,16 +65,6 @@ export const initializeSocket = (server) => {
       }
     });
 
-    // // Join a room named after the userId for targeted emits
-    // socket.on('td_register_user', ({ userId }) => {
-    //   if (userId) {
-    //     socket.join(userId);
-    //     console.log(`Socket ${socket.id} joined room for user ${userId}`);
-    //   }
-    // });
-
-   
-    // Add inside io.on("connection", (socket) => { ... });
 
 socket.on("call-user", ({ convId, offer, from }) => {
   socket.to(convId).emit("call-made", { offer, from });
@@ -86,6 +79,26 @@ socket.on("ice-candidate", ({ convId, candidate, from }) => {
 });
 
 
+
+    // Chamber of Secrets live chat
+    socket.on("joinChamber", () => {
+      socket.join("chamberOfSecrets");
+    });
+
+    socket.on("sendChamberMessage", asyncHandler(async (data) => {
+      // data should be { text, senderId }
+      if (!data || !data.text || !data.senderId) return ApiError(400, "Invalid data");
+      // Save message to DB
+      const msg = await ChamberMessage.create({ text: data.text, senderId: data.senderId });
+      console.log(msg)
+      // Broadcast to all in the room (do NOT include senderId)
+      io.to("chamberOfSecrets").emit("newChamberMessage", {
+        _id: msg._id,
+        text: msg.text,
+        createdAt: msg.createdAt,
+        senderId: msg.senderId, // include senderId in the payload
+      });
+    }));
 
     socket.on("disconnect", () => {
       console.log("🔴 Client disconnected:", socket.id);

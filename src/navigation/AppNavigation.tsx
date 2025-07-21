@@ -48,6 +48,8 @@ import HelpScreen from "../screens/HelpScreen";
 import BuyFeaturesScreen from '../screens/BuyScreens/BuySuperLikes';
 import Agreements from "../screens/Agreements";
 import TDGameScreen from "../screens/games/TruthOrDare/TDGameScreen";
+import EventSelection from "../screens/games/Events/EventSelection";
+import ChamberOfSecrets from "../screens/games/Events/ChamberOfSecrets";
 
 const Stack = createNativeStackNavigator(); // Standard Stack Navigator
 
@@ -121,6 +123,11 @@ export default function AppNavigation() {
             <Stack.Screen name="RoundReviewScreen" component={RoundReviewScreen} />
             <Stack.Screen name="WaitingForFeedbackScreen" component={WaitingForFeedbackScreen} />
             <Stack.Screen name="WYRLobbyScreen" component={WYRLobbyScreen} />
+
+
+          {/* Events screens */}
+          <Stack.Screen name="EventSelectionScreen" component={EventSelection} />
+          <Stack.Screen name="ChamberOfSecrets" component={ChamberOfSecrets} />
 
 
 
