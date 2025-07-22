@@ -11,43 +11,49 @@ import {
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import api from "../../../utils/api";
 import { useFocusEffect } from "@react-navigation/native";
+import { getSocket } from '../../../utils/socket';
+import { getUserId } from '../../../utils/constants';
 
 type Props = NativeStackScreenProps<any, "AnswerPromptScreen">;
 
-const AnswerPromptScreen: React.FC<Props> = ({ navigation }) => {
+const AnswerPromptScreen: React.FC<Props> = ({ navigation, route }) => {
   const [timeLeft, setTimeLeft] = useState(30);
   const [submitted, setSubmitted] = useState(false);
   const [skipped, setSkipped] = useState(false);
   const [promptText, setPromptText] = useState("");
+  const [userId, setUserId] = useState<string | null>(null);
   const hasNavigatedRef = React.useRef(false);
+  const roomId = route?.params?.roomId;
 
   useEffect(() => {
-    console.log("🧭 [NAVIGATION] Current screen: AnswerPromptScreen");
+    getUserId().then(setUserId);
   }, []);
 
-  // AnswerPromptScreen.tsx
-useEffect(() => {
-  const interval = setInterval(async () => {
-    if (hasNavigatedRef.current) return; // Add navigation guard
-    
-    const res = await api.get("/api/v1/users/neverhaveiever/current-turn");
-    const { gamePhase, userId, chanceHolderId } = res.data;
-    const isChanceHolder = userId === chanceHolderId;
-
-    if (gamePhase === "reviewing") {
-      clearInterval(interval);
-      navigation.navigate("ReviewAnswersScreen");
-    } 
-    else if (gamePhase === "typing") {
-      clearInterval(interval);
-      navigation.navigate(isChanceHolder ? "SubmitPromptScreen" : "WaitingForPromptScreen");
-    }
-  }, 1000);
-  
-  return () => clearInterval(interval);
-}, []);
-
-
+  useEffect(() => {
+    if (!userId) return;
+    const socket = getSocket();
+    socket.on('nhie:roomUpdate', (room) => {
+      if (room.roomId !== roomId) return;
+      if (room.currentPrompt) setPromptText(room.currentPrompt.text || 'Waiting for prompt...');
+      if (!hasNavigatedRef.current) {
+        if (room.currentPrompt && room.currentPrompt.gamePhase === 'reviewing') {
+          hasNavigatedRef.current = true;
+          navigation.navigate('ReviewAnswersScreen', { roomId });
+        } else if (room.currentPrompt && room.currentPrompt.gamePhase === 'typing') {
+          hasNavigatedRef.current = true;
+          const idx = room.players.findIndex(p => p.userId === userId);
+          if (idx === room.chanceIndex) {
+            navigation.navigate('SubmitPromptScreen', { roomId });
+          } else {
+            navigation.navigate('WaitingForPromptScreen', { roomId });
+          }
+        }
+      }
+    });
+    return () => {
+      socket.off('nhie:roomUpdate');
+    };
+  }, [navigation, roomId, userId]);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -81,73 +87,28 @@ useEffect(() => {
   );
 
   useEffect(() => {
-    const pollMatchStatus = async () => {
-      try {
-        const res = await api.get(
-          "/api/v1/users/neverhaveiever/waiting-room-status"
-        );
-        if (!res.data.readyToStart) {
-          navigation.navigate("WaitingRoomScreen");
-        }
-      } catch (err) {
-        if (err.response && err.response.status === 404) {
-    navigation.navigate("WaitingRoomScreen");
-  }
-      }
-    };
-
-    const interval = setInterval(pollMatchStatus, 3000);
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    const fetchPrompt = async () => {
-      try {
-        const res = await api.get("/api/v1/users/neverhaveiever/prompt-status");
-        setPromptText(res.data.prompt || "Waiting for prompt...");
-      } catch (err) {
-        if (err.response && err.response.status === 404) {
-    navigation.navigate("WaitingRoomScreen");
-  }
-      }
-    };
-
-    fetchPrompt();
-
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
           if (!submitted) {
-            handleSubmit("Skipped");
+            handleSubmit('Skipped');
             setSkipped(true);
           }
         }
         return prev - 1;
       });
     }, 1000);
-
     return () => clearInterval(timer);
-  }, []);
+  }, [submitted]);
 
-
-  const handleSubmit = async (
-    response: "I Have" | "I Have Not" | "Skipped"
+  const handleSubmit = (
+    response: 'I Have' | 'I Have Not' | 'Skipped'
   ) => {
-    if (submitted) return;
-
-    try {
-      await api.post("/api/v1/users/neverhaveiever/submit-answer", {
-        response,
-      });
-      setSubmitted(true);
-
-      // Don't navigate early if skipped — wait on screen
-    } catch (err) {
-      if (err.response && err.response.status === 404) {
-    navigation.navigate("WaitingRoomScreen");
-  }
-    }
+    if (submitted || !userId) return;
+    const socket = getSocket();
+    socket.emit('nhie:submitAnswer', { roomId, userId, response });
+    setSubmitted(true);
   };
 
   return (

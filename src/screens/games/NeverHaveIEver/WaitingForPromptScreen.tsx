@@ -5,30 +5,34 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import axios from 'axios';
 import api from '../../../utils/api';
 import { useFocusEffect } from '@react-navigation/native';
+import { getSocket } from '../../../utils/socket';
+import { getUserId } from '../../../utils/constants';
 
 type Props = NativeStackScreenProps<any, "WaitingForPromptScreen">;
 
-const WaitingForPromptScreen: React.FC<Props> = ({ navigation }) => {
+const WaitingForPromptScreen: React.FC<Props> = ({ navigation, route }) => {
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [hasNavigated, setHasNavigated] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+  const roomId = route?.params?.roomId;
 
   useEffect(() => {
-    console.log("🧭 [NAVIGATION] Current screen: WaitingForPromptScreen");
+    getUserId().then(setUserId);
   }, []);
 
   useEffect(() => {
-  const poll = setInterval(async () => {
-    const res = await api.get('/api/v1/users/neverhaveiever/current-turn');
-    const { userId, chanceHolderId, gamePhase, promptSubmitted } = res.data;
-    const isChanceHolder = userId === chanceHolderId;
-
-    if (!isChanceHolder && gamePhase === "answering" && promptSubmitted && !hasNavigated) {
-      setHasNavigated(true);
-      navigation.navigate("AnswerPromptScreen");
-    }
-  }, 1000);
-  return () => clearInterval(poll);
-}, [hasNavigated]);
+    if (!userId) return;
+    const socket = getSocket();
+    socket.on('nhie:roomUpdate', (room) => {
+      if (!hasNavigated && room.roomId === roomId && room.currentPrompt && room.currentPrompt.promptSubmitted && room.currentPrompt.gamePhase === 'answering') {
+        setHasNavigated(true);
+        navigation.navigate('AnswerPromptScreen', { roomId });
+      }
+    });
+    return () => {
+      socket.off('nhie:roomUpdate');
+    };
+  }, [hasNavigated, navigation, roomId, userId]);
 
 
 
@@ -68,65 +72,6 @@ const WaitingForPromptScreen: React.FC<Props> = ({ navigation }) => {
 );
 
 
-
-useEffect(() => {
-  const poll = setInterval(async () => {
-    try {
-      const res = await api.get('/api/v1/users/neverhaveiever/prompt-status');
-      if (res.data.promptReady && !hasNavigated) {
-        setHasNavigated(true);
-        navigation.navigate("AnswerPromptScreen");
-      }
-    } catch (err) {
-      console.error("Polling prompt error:", err);
-    }
-  }, 3000);
-  return () => clearInterval(poll);
-}, []);
-
-
-
-   useEffect(() => {
-    const pollMatchStatus = async () => {
-      try {
-        const res = await api.get("/api/v1/users/neverhaveiever/waiting-room-status");
-
-        if (!res.data.readyToStart) {
-          navigation.navigate("WaitingRoomScreen");
-        }
-      } catch (err) {
-        console.error("Polling failed:", err.response?.data || err.message);
-      }
-    };
-
-    const interval = setInterval(pollMatchStatus, 3000);
-    return () => clearInterval(interval);
-  }, []);
-
-//   useEffect(() => {
-//     const timer = setInterval(() => {
-//       setTimeElapsed(prev => prev + 1);
-//     }, 1000);
-
-//     const pollPromptStatus = setInterval(async () => {
-//       try {
-//         const res = await api.get('/api/v1/users/neverhaveiever/prompt-status');
-//         if (res.data.promptReady && !hasNavigated) {
-//   setHasNavigated(true);
-//   navigation.navigate("AnswerPromptScreen");
-// }
-
-
-//       } catch (err) {
-//         console.error("Polling failed:", err);
-//       }
-//     }, 3000);
-
-//     return () => {
-//       clearInterval(timer);
-//       clearInterval(pollPromptStatus);
-//     };
-//   }, []);
 
   return (
     <View style={styles.container}>

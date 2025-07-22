@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet, Alert } from 'react-native';
 import axios from 'axios';
 
-const API = 'http://10.21.36.128:3000/api/v1/td'; // Update to your backend URL
+const API = 'http://10.21.39.161:3000/api/v1/td'; // Update to your backend URL
 
 type TDGameScreenProps = { playerId: string };
 

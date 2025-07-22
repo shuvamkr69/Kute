@@ -105,6 +105,10 @@ socket.on("ice-candidate", ({ convId, candidate, from }) => {
     });
   });
 
+  // Setup game logic after io is initialized
+  setupTruthOrDare(io);
+  setupNeverHaveIEver(io);
+
   return io;
 };
 
@@ -205,4 +209,141 @@ function setupTruthOrDare(io) {
   });
 }
 
-export default setupTruthOrDare ;
+// --- Never Have I Ever Socket.io Logic ---
+const nhieWaitingPlayers = [];
+const nhieGameRooms = {};
+
+function getNhieRoomId(groupSize) {
+  // Find a waiting room with the same group size and not full
+  for (const [roomId, room] of Object.entries(nhieGameRooms)) {
+    if (room.groupSize === groupSize && room.players.length < groupSize && room.state === 'waiting') {
+      return roomId;
+    }
+  }
+  // Otherwise, create a new room id
+  return `nhie_${groupSize}_${Date.now()}_${Math.floor(Math.random()*10000)}`;
+}
+
+function getPlayerIndex(room, userId) {
+  return room.players.findIndex(p => p.userId === userId);
+}
+
+function broadcastNhieRoomUpdate(roomId) {
+  const room = nhieGameRooms[roomId];
+  if (!room) return;
+  room.players.forEach(p => io.to(p.socketId).emit('nhie:roomUpdate', { ...room, roomId }));
+}
+
+function setupNeverHaveIEver(io) {
+  io.on('connection', (socket) => {
+    // Join waiting room
+    socket.on('nhie:joinRoom', ({ userId, groupSize }) => {
+      let roomId = getNhieRoomId(groupSize);
+      let room = nhieGameRooms[roomId];
+      if (!room) {
+        room = {
+          roomId,
+          groupSize,
+          players: [], // { userId, socketId }
+          state: 'waiting',
+          chanceIndex: 0,
+          currentPrompt: null,
+          turnInProgress: false,
+          skipCounts: {},
+        };
+        nhieGameRooms[roomId] = room;
+      }
+      if (!room.players.find(p => p.userId === userId)) {
+        room.players.push({ userId, socketId: socket.id });
+      }
+      socket.join(roomId);
+      // If room is full, start game
+      if (room.players.length === groupSize) {
+        room.state = 'in_progress';
+        room.chanceIndex = Math.floor(Math.random() * groupSize);
+        room.currentPrompt = null;
+        room.turnInProgress = false;
+        room.skipCounts = {};
+      }
+      broadcastNhieRoomUpdate(roomId);
+    });
+
+    // Leave room
+    socket.on('nhie:leaveRoom', ({ userId, roomId }) => {
+      const room = nhieGameRooms[roomId];
+      if (!room) return;
+      room.players = room.players.filter(p => p.userId !== userId);
+      if (room.players.length < room.groupSize) {
+        room.state = 'waiting';
+        room.currentPrompt = null;
+        room.chanceIndex = 0;
+      }
+      broadcastNhieRoomUpdate(roomId);
+      if (room.players.length === 0) {
+        delete nhieGameRooms[roomId];
+      }
+    });
+
+    // Submit prompt (by chance holder)
+    socket.on('nhie:submitPrompt', ({ roomId, userId, prompt }) => {
+      const room = nhieGameRooms[roomId];
+      if (!room) return;
+      if (room.players[room.chanceIndex].userId !== userId) return;
+      room.currentPrompt = {
+        text: prompt,
+        answers: [],
+        promptSubmitted: true,
+        gamePhase: 'answering',
+        createdAt: new Date(),
+      };
+      room.turnInProgress = false;
+      broadcastNhieRoomUpdate(roomId);
+    });
+
+    // Submit answer (by non-chance holders)
+    socket.on('nhie:submitAnswer', ({ roomId, userId, response }) => {
+      const room = nhieGameRooms[roomId];
+      if (!room || !room.currentPrompt) return;
+      if (room.players[room.chanceIndex].userId === userId) return; // chance holder can't answer
+      if (room.currentPrompt.answers.find(a => a.userId === userId)) return; // already answered
+      room.currentPrompt.answers.push({ userId, response });
+      // Check if all non-chance holders have answered
+      if (room.currentPrompt.answers.length === room.groupSize - 1) {
+        room.currentPrompt.gamePhase = 'reviewing';
+        room.turnInProgress = true;
+      }
+      broadcastNhieRoomUpdate(roomId);
+    });
+
+    // Next turn (by chance holder)
+    socket.on('nhie:nextTurn', ({ roomId, userId }) => {
+      const room = nhieGameRooms[roomId];
+      if (!room) return;
+      if (room.players[room.chanceIndex].userId !== userId) return;
+      room.chanceIndex = (room.chanceIndex + 1) % room.players.length;
+      room.currentPrompt = null;
+      room.turnInProgress = false;
+      broadcastNhieRoomUpdate(roomId);
+    });
+
+    // Disconnect logic
+    socket.on('disconnect', () => {
+      Object.entries(nhieGameRooms).forEach(([roomId, room]) => {
+        const idx = room.players.findIndex(p => p.socketId === socket.id);
+        if (idx !== -1) {
+          const userId = room.players[idx].userId;
+          room.players.splice(idx, 1);
+          if (room.players.length < room.groupSize) {
+            room.state = 'waiting';
+            room.currentPrompt = null;
+            room.chanceIndex = 0;
+          }
+          broadcastNhieRoomUpdate(roomId);
+          if (room.players.length === 0) {
+            delete nhieGameRooms[roomId];
+          }
+        }
+      });
+    });
+  });
+}
