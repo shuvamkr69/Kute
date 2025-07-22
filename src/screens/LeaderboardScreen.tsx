@@ -37,8 +37,8 @@ const LeaderboardScreen = ({ navigation }) => {
   const renderMyScore = () => (
     myScore !== null && (
       <View style={styles.myScoreBox}>
-        <Ionicons name="trophy-outline" size={24} color="#ffd54f" style={{ marginRight: 8 }} />
-        <Text style={styles.myScoreText}>Your Score: <Text style={{ color: '#ffd54f' }}>{myScore}</Text></Text>
+        <Ionicons name="trophy-outline" size={24} color="#de822c" style={{ marginRight: 8 }} />
+        <Text style={styles.myScoreText}>Your Score: <Text style={{ color: '#de822c' }}>{myScore}</Text></Text>
       </View>
     )
   );
@@ -56,7 +56,7 @@ const LeaderboardScreen = ({ navigation }) => {
       </View>
       <Text style={[styles.name, index === 0 && styles.topName]} numberOfLines={1}>{item.fullName}</Text>
       <View style={styles.scoreBox}>
-        <Ionicons name="star" size={22} color="#ffd54f" style={{ marginRight: 4 }} />
+        <Ionicons name="star" size={22} color="#de822c" style={{ marginRight: 4 }} />
         <Text style={[styles.score, index === 0 && styles.topScore]}>{item.leaderboardScore}</Text>
       </View>
     </View>
@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
   },
   bg: {
     flex: 1,
-    backgroundColor: '#181818',
+    backgroundColor: 'black',
     paddingTop: Platform.OS === 'ios' ? 60 : 30,
   },
   header: {
@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
     borderColor: '#444',
   },
   title: {
-    color: '#ffd54f',
+    color: '#de822c',
     fontSize: 28,
     fontWeight: 'bold',
     letterSpacing: 1,
@@ -138,8 +138,8 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   topRow: {
-    backgroundColor: '#ffd54f',
-    shadowColor: '#ffd54f',
+    backgroundColor: '#de822c',
+    shadowColor: '#de822c',
     elevation: 10,
   },
   avatarWrapper: {
@@ -152,9 +152,9 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     position: 'absolute',
-    top: -28,
-    left: 10,
-    zIndex: 2,
+    top: -15,
+    left: 0,
+    zIndex: 5,
   },
   avatar: {
     width: 54,
@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
     borderRadius: 27,
     backgroundColor: '#444',
     borderWidth: 2,
-    borderColor: '#ffd54f',
+    borderColor: '#de822c',
   },
   topAvatar: {
     width: 64,
@@ -192,13 +192,13 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   score: {
-    color: '#ffd54f',
+    color: '#de822c',
     fontSize: 20,
     fontWeight: 'bold',
     fontFamily: Platform.OS === 'ios' ? 'Comic Sans MS' : 'monospace',
   },
   topScore: {
-    color: '#222',
+    color: '#de822c',
     fontSize: 22,
   },
   myScoreBox: {
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   myScoreText: {
-    color: '#ffd54f',
+    color: '#de822c',
     fontSize: 18,
     fontWeight: 'bold',
     fontFamily: Platform.OS === 'ios' ? 'Comic Sans MS' : 'monospace',

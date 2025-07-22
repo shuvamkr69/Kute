@@ -1,15 +1,13 @@
 import React, { useEffect, useState, useRef } from "react";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { View, Text, TextInput, StyleSheet, ActivityIndicator, ImageBackground, TouchableOpacity, Platform } from "react-native";
+import { View, Text, TextInput, StyleSheet, ImageBackground, TouchableOpacity, Platform, Animated } from "react-native";
 import io from "socket.io-client";
 import LottieView from "lottie-react-native";
 import BackButton from "../../../components/BackButton";
-import { Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../../utils/api';
-// Import the brick background
 
-const SOCKET_URL = "http://10.21.39.161:3000"; // TODO: Replace with your backend URL
+const SOCKET_URL = "http://10.21.36.128:3000";
 
 const TruthOrDareGame = () => {
   const [phase, setPhase] = useState("waiting");
@@ -25,10 +23,9 @@ const TruthOrDareGame = () => {
   const [timer, setTimer] = useState(5);
   const swordAnim = useRef(new Animated.Value(1)).current;
   const [feedbackGiven, setFeedbackGiven] = useState(false);
-  const [pointsAnim, setPointsAnim] = useState<{show: boolean, value: number}>({show: false, value: 0});
+  const [pointsAnim, setPointsAnim] = useState({ show: false, value: 0 });
   const pointsAnimValue = useRef(new Animated.Value(0)).current;
 
-  // Load real userId from AsyncStorage
   useEffect(() => {
     AsyncStorage.getItem('user').then(userString => {
       const user = userString ? JSON.parse(userString) : null;
@@ -48,14 +45,12 @@ const TruthOrDareGame = () => {
       setChanceHolder(chanceHolder);
       setShowMatchStarting(true);
       setTimer(5);
-      // Start timer and animation
       let t = 5;
       const interval = setInterval(() => {
         t -= 1;
         setTimer(t);
         if (t === 0) {
           clearInterval(interval);
-          // Animate sword to grow
           Animated.timing(swordAnim, {
             toValue: 10,
             duration: 1200,
@@ -101,7 +96,6 @@ const TruthOrDareGame = () => {
     );
   }
 
-  // Handlers
   const handleChoice = (choice) => {
     setChoice(choice);
     socketRef.current.emit("td:makeChoice", { roomId, userId, choice });
@@ -121,16 +115,15 @@ const TruthOrDareGame = () => {
     socketRef.current.emit("td:nextRound", { roomId });
   };
 
-  // Feedback handler
   const handleFeedback = async (type) => {
     if (feedbackGiven) return;
     setFeedbackGiven(true);
     const delta = type === 'up' ? 10 : -10;
-    setPointsAnim({show: true, value: delta});
+    setPointsAnim({ show: true, value: delta });
     Animated.sequence([
       Animated.timing(pointsAnimValue, { toValue: 1, duration: 600, useNativeDriver: true }),
       Animated.timing(pointsAnimValue, { toValue: 0, duration: 400, useNativeDriver: true })
-    ]).start(() => setPointsAnim({show: false, value: 0}));
+    ]).start(() => setPointsAnim({ show: false, value: 0 }));
     try {
       await api.post('/api/v1/users/td/feedback', {
         gameId: game?._id,
@@ -138,12 +131,9 @@ const TruthOrDareGame = () => {
         userId,
         feedback: type
       });
-    } catch (e) {
-      // Optionally show error
-    }
+    } catch (e) { }
   };
 
-  // UI
   const renderCartooneyButton = (label, onPress, disabled = false, style = {}) => (
     <TouchableOpacity
       onPress={onPress}
@@ -155,398 +145,169 @@ const TruthOrDareGame = () => {
     </TouchableOpacity>
   );
 
-  const renderCard = (children, style = {}) => (
-    <View style={[styles.card, style]}>{children}</View>
-  );
-
   const renderContent = () => {
-    if (phase === "waitingForMatch") {
-      return renderCard(
-        <>
-          <LottieView
-            source={require("../../../assets/animations/sword-clashing.json")}
-            autoPlay
-            loop
-            style={styles.lottie}
-          />
+    switch (phase) {
+      case "waitingForMatch": return (
+        <View style={styles.contentContainer}>
+          <LottieView source={require("../../../assets/animations/sword-clashing.json")} autoPlay loop style={styles.lottie} />
           <Text style={styles.cartooneyText}>Waiting for an opponent</Text>
-        </>
+        </View>
       );
-    }
-    if (phase === "opponentLeft") {
-      return renderCard(<Text style={styles.cartooneyText}>Opponent left the game.</Text>);
-    }
-    if (phase === "choose") {
-      return renderCard(
-        <>
-          <Text style={styles.roundText}>Round {round}</Text>
-          <Text style={styles.cartooneyText}>You are the chance holder. Choose:</Text>
-          {renderCartooneyButton("Truth", () => handleChoice("truth"), false, { backgroundColor: '#6ec6ff' })}
-          {/* {renderCartooneyButton("Dare", () => handleChoice("dare"), true, { backgroundColor: '#ffb347' })} */}
-        </>
+      case "opponentLeft": return (
+        <View style={styles.contentContainer}><Text style={styles.cartooneyText}>Opponent left the game.</Text></View>
       );
-    }
-    if (phase === "waitForChoice") {
-      return renderCard(<Text style={styles.cartooneyText}>Waiting for other player to choose...</Text>);
-    }
-    if (phase === "askTruth") {
-      return renderCard(
-        <>
-          <Text style={styles.cartooneyText}>Opponent chose Truth. Type your question:</Text>
-          <TextInput
-            style={styles.input}
-            value={input}
-            onChangeText={setInput}
-            placeholder="Type a truth question..."
-            placeholderTextColor="#bdbdbd"
-          />
+      case "choose": return (
+        <View style={styles.splitChoiceContainer}>
+          {/* Diagonal Slash */}
+          <View style={styles.diagonalSlash} />
+      
+          {/* Truth Button */}
+          <TouchableOpacity onPress={() => handleChoice("truth")} style={styles.truthButton}>
+            <Text style={styles.splitButtonText}>TRUTH</Text>
+          </TouchableOpacity>
+      
+          {/* Dare Button */}
+          <TouchableOpacity onPress={() => handleChoice("dare")} style={styles.dareButton}>
+            <Text style={styles.splitButtonText}>DARE</Text>
+          </TouchableOpacity>
+        </View>
+      );
+      
+      case "waitForChoice": return (
+        <View style={styles.contentContainer}><Text style={styles.cartooneyText}>Your opponent is making a choice</Text></View>
+      );
+      case "askTruth": return (
+        <View style={styles.contentContainer}>
+          <Text style={styles.cartooneyText}>Ask a Question</Text>
+          <TextInput style={styles.input} value={input} onChangeText={setInput} placeholder="Type a truth question..." placeholderTextColor="#bdbdbd" />
           {renderCartooneyButton("Submit", handleSubmitQuestion, !input.trim(), { backgroundColor: '#ffd54f' })}
-        </>
+        </View>
       );
-    }
-    if (phase === "waitForQuestion") {
-      return renderCard(<Text style={styles.cartooneyText}>Waiting for opponent to give you a truth...</Text>);
-    }
-    if (phase === "answerTruth") {
-      return renderCard(
-        <>
+      case "waitForQuestion": return (
+        <View style={styles.contentContainer}><Text style={styles.cartooneyText}>Waiting for a question</Text></View>
+      );
+      case "answerTruth": return (
+        <View style={styles.contentContainer}>
           <Text style={styles.cartooneyText}>Your question:</Text>
           <Text style={styles.question}>{game?.truthQuestion}</Text>
-          <TextInput
-            style={styles.input}
-            value={input}
-            onChangeText={setInput}
-            placeholder="Type your answer..."
-            placeholderTextColor="#bdbdbd"
-          />
+          <TextInput style={styles.input} value={input} onChangeText={setInput} placeholder="Type your answer..." placeholderTextColor="#bdbdbd" />
           {renderCartooneyButton("Submit", handleSubmitAnswer, !input.trim(), { backgroundColor: '#aed581' })}
-        </>
+        </View>
       );
-    }
-    if (phase === "waitForAnswer") {
-      return renderCard(<Text style={styles.cartooneyText}>Waiting for opponent to answer...</Text>);
-    }
-    if (phase === "review") {
-      return renderCard(
-        <>
+      case "waitForAnswer": return (
+        <View style={styles.contentContainer}><Text style={styles.cartooneyText}>Waiting for opponent to answer...</Text></View>
+      );
+      case "review": return (
+        <View style={styles.contentContainer}>
           <Text style={styles.cartooneyText}>Review:</Text>
           <Text style={styles.question}>Q: {game?.truthQuestion}</Text>
           <Text style={styles.answer}>A: {game?.truthAnswer}</Text>
-          {/* Thumbs feedback only for question giver, only if not given */}
-          {game && game.chanceHolder === userId && !feedbackGiven && (
+          {game && game.chanceHolder !== userId && !feedbackGiven && (
             <View style={styles.feedbackRow}>
-              <TouchableOpacity onPress={() => handleFeedback('up')} style={styles.thumbBtn}>
-                <Ionicons name="thumbs-up" size={48} color="#90caf9" style={{textShadowColor:'#000',textShadowRadius:4}} />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => handleFeedback('down')} style={styles.thumbBtn}>
-                <Ionicons name="thumbs-down" size={48} color="#e57373" style={{textShadowColor:'#000',textShadowRadius:4}} />
-              </TouchableOpacity>
+              <TouchableOpacity onPress={() => handleFeedback('up')} style={styles.thumbBtn}><Ionicons name="thumbs-up" size={48} color="#90caf9" /></TouchableOpacity>
+              <TouchableOpacity onPress={() => handleFeedback('down')} style={styles.thumbBtn}><Ionicons name="thumbs-down" size={48} color="#e57373" /></TouchableOpacity>
             </View>
           )}
-          {/* Points animation */}
           {pointsAnim.show && (
-            <Animated.Text
-              style={{
-                position: 'absolute',
-                bottom: 80,
-                alignSelf: 'center',
-                fontSize: 36,
-                color: pointsAnim.value > 0 ? '#90caf9' : '#e57373',
-                fontWeight: 'bold',
-                opacity: pointsAnimValue,
-                transform: [{ translateY: pointsAnimValue.interpolate({inputRange:[0,1],outputRange:[30,-30]}) }],
-                textShadowColor: '#000',
-                textShadowRadius: 4,
-              }}
-            >
-              {pointsAnim.value > 0 ? `+${pointsAnim.value}` : `${pointsAnim.value}`}
-            </Animated.Text>
+            <Animated.Text style={{
+              position: 'absolute', bottom: 80, alignSelf: 'center', fontSize: 36,
+              color: pointsAnim.value > 0 ? '#90caf9' : '#e57373', fontWeight: 'bold',
+              opacity: pointsAnimValue, transform: [{ translateY: pointsAnimValue.interpolate({ inputRange: [0, 1], outputRange: [30, -30] }) }],
+              textShadowColor: '#000', textShadowRadius: 4,
+            }}>{pointsAnim.value > 0 ? `+${pointsAnim.value}` : `${pointsAnim.value}`}</Animated.Text>
           )}
-          {round < 3 && feedbackGiven
-            ? renderCartooneyButton("Next Round", handleNextRound, false, { backgroundColor: '#ffb347' })
-            : null}
-          {round >= 3 && feedbackGiven
-            ? <Text style={[styles.cartooneyText, { color: '#e57373', fontSize: 28 }]}>Game Over!</Text>
-            : null}
-        </>
+          {round < 3 && feedbackGiven && renderCartooneyButton("Next Round", handleNextRound)}
+          {round >= 3 && feedbackGiven && <Text style={[styles.cartooneyText, { color: '#e57373', fontSize: 28 }]}>Game Over!</Text>}
+        </View>
       );
+      default: return <Text style={styles.cartooneyText}>Loading...</Text>;
     }
-    return renderCard(<Text style={styles.cartooneyText}>Loading...</Text>);
   };
 
-  // Match Starting Screen
-  const renderMatchStarting = () => (
-    <View style={styles.matchStartingContainer}>
-      <Text style={styles.matchStartingText}>Match is starting!</Text>
-      <Text style={styles.matchStartingTimer}>{timer}</Text>
-      <Animated.View style={{
-        width: 180,
-        height: 180,
-        alignSelf: 'center',
-        justifyContent: 'center',
-        alignItems: 'center',
-        transform: [{ scale: swordAnim }],
-      }}>
-        <LottieView
-          source={require("../../../assets/animations/sword-clashing.json")}
-          autoPlay
-          loop
-          style={{ width: '100%', height: '100%' }}
-        />
-      </Animated.View>
-    </View>
-  );
-
   return (
-    <View style = {styles.backButtonContaine}>
-      <BackButton title = {"Truth or Dare"}/>
-    <ImageBackground source={require('../../../../assets/gameScreenImages/brick-bg.png')} style={styles.bg} resizeMode="cover">
-      <View style={styles.darkOverlay} />
-      <View style={styles.overlay}>
-        {showMatchStarting ? (
-          renderMatchStarting()
-        ) : phase === "waitingForMatch" ? (
-          <>
-            {/* Instructions at the top */}
-            <View style={styles.instructionsContainer}>
-              <Text style={styles.instructionsTitle}>How to Play</Text>
-              <Text style={styles.instructionsText}>
-                1. Wait to be matched with an opponent. {'\n'}
-                2. If you are the chance holder, choose "Truth" (or "Dare" in future). {'\n'}
-                3. Ask or answer questions as prompted. {'\n'}
-                4. Play up to 3 rounds. {'\n'}
-                5. Have fun and be respectful!
-              </Text>
+    <View style={styles.backButtonContaine}>
+      <BackButton title="Truth or Dare" />
+      <ImageBackground source={require('../../../../assets/gameScreenImages/brick-bg.png')} style={styles.bg} resizeMode="cover">
+        <View style={styles.darkOverlay} />
+        <View style={styles.overlay}>
+          {round && phase !== "waitingForMatch" && (
+            <View style={styles.roundHeader}>
+              <Text style={styles.roundText}>Round {round}</Text>
             </View>
-            {renderContent()}
-            {/* Rules at the bottom */}
-            <View style={styles.rulesContainer}>
-              <Text style={styles.rulesTitle}>Rules</Text>
-              <Text style={styles.rulesText}>
-                • No inappropriate or offensive questions.{"\n"}
-                • Be honest and respectful.{"\n"}
-                • You can skip a question if you feel uncomfortable.{"\n"}
-                • The game is for fun—don’t take it too seriously!
-              </Text>
+          )}
+          {showMatchStarting ? (
+            <View style={styles.matchStartingContainer}>
+              <Text style={styles.matchStartingText}>Game is Starting</Text>
+              <Text style={styles.matchStartingTimer}>{timer}</Text>
+              <Animated.View style={{ width: 180, height: 180, alignSelf: 'center', justifyContent: 'center', alignItems: 'center', transform: [{ scale: swordAnim }] }}>
+                <LottieView source={require("../../../assets/animations/sword-clashing.json")} autoPlay loop style={{ width: '100%', height: '100%' }} />
+              </Animated.View>
             </View>
-          </>
-        ) : (
-          renderContent()
-        )}
-      </View>
-    </ImageBackground>
+          ) : renderContent()}
+        </View>
+      </ImageBackground>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  backButtonContaine:{
-    flex: 1,
+  backButtonContaine: {
+    flex: 1
   },
   bg: {
-    flex: 1,
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flex: 1, width: '100%', height: '100%'
   },
   darkOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.8)',
-    zIndex: 1,
+    ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 1
   },
-  overlay: {
-    flex: 1,
-    width: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.0)',
-    padding: 20,
-    zIndex: 2,
+  overlay:
+  {
+    flex: 1, width: '100%', justifyContent: 'center', alignItems: 'center', padding: 20, zIndex: 2
   },
-  card: {
-    backgroundColor: '#181818',
-    borderRadius: 30,
-    padding: 30,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.5,
-    shadowRadius: 12,
-    elevation: 12,
-    marginVertical: 20,
-    minWidth: 300,
-    maxWidth: 350,
-    borderWidth: 2,
-    borderColor: '#333',
-  },
-  cartooneyButton: {
-    backgroundColor: '#222',
-    borderRadius: 20,
-    paddingVertical: 14,
-    paddingHorizontal: 40,
-    marginVertical: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.7,
-    shadowRadius: 8,
-    elevation: 6,
-    borderWidth: 2,
-    borderColor: '#444',
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 22,
-    letterSpacing: 1,
-    fontFamily: Platform.OS === 'ios' ? 'Comic Sans MS' : 'monospace',
-  },
-  buttonDisabled: {
-    opacity: 0.5,
-  },
-  input: {
-    borderWidth: 2,
-    borderColor: '#444',
-    borderRadius: 18,
-    padding: 12,
-    width: 220,
-    marginVertical: 12,
-    backgroundColor: '#222',
-    color: '#fff',
-    fontSize: 18,
-    fontFamily: Platform.OS === 'ios' ? 'Comic Sans MS' : 'monospace',
-  },
-  cartooneyText: {
-    fontSize: 22,
-    color: '#fff',
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginVertical: 10,
-    fontFamily: Platform.OS === 'ios' ? 'Comic Sans MS' : 'monospace',
-    textShadowColor: '#000',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+  roundHeader: {
+    position: 'absolute', top: 60, alignSelf: 'center', zIndex: 5, backgroundColor: 'transparent', paddingVertical: 10, paddingHorizontal: 30,  borderColor: '#ff7043', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.6, shadowRadius: 8, elevation: 10
   },
   roundText: {
-    fontSize: 26,
-    color: '#ff7043',
-    fontWeight: 'bold',
-    marginBottom: 10,
-    fontFamily: Platform.OS === 'ios' ? 'Comic Sans MS' : 'monospace',
-    textShadowColor: '#000',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    fontSize: 32, color: 'white', fontWeight: 'bold', fontFamily: Platform.OS === 'ios' ? 'Comic Sans MS' : 'monospace', textShadowColor: '#000', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 2
+  },
+  contentContainer: {
+    padding: 20, alignItems: 'center', justifyContent: 'center'
+  },
+  cartooneyButton: {
+    backgroundColor: '#ffeb3b', borderRadius: 25, paddingVertical: 16, paddingHorizontal: 40, marginVertical: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.6, shadowRadius: 10, elevation: 8, borderWidth: 3, borderColor: 'white', transform: [{ rotate: '-2deg' }]
+  },
+  buttonText: {
+    color: '#000', fontWeight: 'bold', fontSize: 24, letterSpacing: 1, textShadowColor: '#fff59d', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 3, fontFamily: Platform.OS === 'ios' ? 'Comic Sans MS' : 'monospace'
+  },
+  buttonDisabled: {
+    opacity: 0.5
+  },
+  input: {
+    borderWidth: 2, borderColor: '#444', borderRadius: 18, padding: 12, width: 220, marginVertical: 12, backgroundColor: '#222', color: '#fff', fontSize: 18, fontFamily: Platform.OS === 'ios' ? 'Comic Sans MS' : 'monospace'
+  },
+  cartooneyText: {
+    fontSize: 22, color: '#fff', fontWeight: 'bold', textAlign: 'center', marginVertical: 10, fontFamily: Platform.OS === 'ios' ? 'Comic Sans MS' : 'monospace', textShadowColor: '#000', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 2
   },
   question: {
-    fontWeight: 'bold',
-    marginVertical: 10,
-    fontSize: 20,
-    color: '#90caf9',
-    textAlign: 'center',
-    fontFamily: Platform.OS === 'ios' ? 'Comic Sans MS' : 'monospace',
-    textShadowColor: '#000',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    fontWeight: 'bold', marginVertical: 10, fontSize: 20, color: '#90caf9', textAlign: 'center', fontFamily: Platform.OS === 'ios' ? 'Comic Sans MS' : 'monospace', textShadowColor: '#000', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 2
   },
   answer: {
-    fontWeight: 'bold',
-    marginVertical: 10,
-    fontSize: 20,
-    color: '#a5d6a7',
-    textAlign: 'center',
-    fontFamily: Platform.OS === 'ios' ? 'Comic Sans MS' : 'monospace',
-    textShadowColor: '#000',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
+    fontWeight: 'bold', marginVertical: 10, fontSize: 20, color: '#a5d6a7', textAlign: 'center', fontFamily: Platform.OS === 'ios' ? 'Comic Sans MS' : 'monospace', textShadowColor: '#000', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 2
   },
   lottie: {
-    width: 180,
-    height: 180,
-    marginBottom: 10,
-    alignSelf: 'center',
-  },
-  instructionsContainer: {
-    width: '100%',
-    backgroundColor: 'rgba(30,30,30,0.85)',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 16,
-    marginBottom: 8,
-    alignItems: 'center',
-    borderBottomWidth: 2,
-    borderBottomColor: '#444',
-  },
-  instructionsTitle: {
-    color: '#ffd54f',
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 4,
-    fontFamily: Platform.OS === 'ios' ? 'Comic Sans MS' : 'monospace',
-  },
-  instructionsText: {
-    color: '#fff',
-    fontSize: 15,
-    textAlign: 'center',
-    fontFamily: Platform.OS === 'ios' ? 'Comic Sans MS' : 'monospace',
-  },
-  rulesContainer: {
-    width: '100%',
-    backgroundColor: 'rgba(30,30,30,0.85)',
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    padding: 16,
-    marginTop: 8,
-    alignItems: 'center',
-    borderTopWidth: 2,
-    borderTopColor: '#444',
-  },
-  rulesTitle: {
-    color: '#90caf9',
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 4,
-    fontFamily: Platform.OS === 'ios' ? 'Comic Sans MS' : 'monospace',
-  },
-  rulesText: {
-    color: '#fff',
-    fontSize: 14,
-    textAlign: 'center',
-    fontFamily: Platform.OS === 'ios' ? 'Comic Sans MS' : 'monospace',
+    width: 180, height: 180, marginBottom: 10, alignSelf: 'center'
   },
   matchStartingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: '100%',
+    flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%'
   },
   matchStartingText: {
-    color: '#ffd54f',
-    fontSize: 32,
-    fontWeight: 'bold',
-    marginBottom: 16,
-    textAlign: 'center',
-    fontFamily: Platform.OS === 'ios' ? 'Comic Sans MS' : 'monospace',
-    textShadowColor: '#000',
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 4,
+    color: '#ffd54f', fontSize: 32, fontWeight: 'bold', marginBottom: 16, textAlign: 'center', fontFamily: Platform.OS === 'ios' ? 'Comic Sans MS' : 'monospace', textShadowColor: '#000', textShadowOffset: { width: 2, height: 2 }, textShadowRadius: 4
   },
   matchStartingTimer: {
-    color: '#fff',
-    fontSize: 48,
-    fontWeight: 'bold',
-    marginBottom: 24,
-    textAlign: 'center',
-    fontFamily: Platform.OS === 'ios' ? 'Comic Sans MS' : 'monospace',
-    textShadowColor: '#000',
-    textShadowOffset: { width: 2, height: 2 },
-    textShadowRadius: 4,
+    color: '#fff', fontSize: 48, fontWeight: 'bold', marginBottom: 24, textAlign: 'center', fontFamily: Platform.OS === 'ios' ? 'Comic Sans MS' : 'monospace', textShadowColor: '#000', textShadowOffset: { width: 2, height: 2 }, textShadowRadius: 4
   },
   feedbackRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 18,
-    gap: 32,
+    flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: 18, gap: 32
   },
   thumbBtn: {
     backgroundColor: '#222',
@@ -561,6 +322,64 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 6,
   },
+
+  splitChoiceContainer: {
+  flex: 1,
+  width: '100%',
+  justifyContent: 'center',
+  alignItems: 'center',
+  position: 'relative',
+  paddingBottom: 40,
+},
+
+diagonalSlash: {
+  position: 'absolute',
+  width: '150%',
+  height: 4,
+  backgroundColor: '#fff',
+  top: '55%',
+  left: '-25%',
+  transform: [{ rotate: '-45deg' }],
+  zIndex: 1,
+},
+
+truthButton: {
+  position: 'absolute',
+  top: '25%',
+  left: '10%',
+  zIndex: 2,
+  paddingVertical: 24,
+  paddingHorizontal: 30,
+  borderColor: 'white',
+  borderWidth: 3,
+  backgroundColor: '#42a5f5',
+  borderRadius: 25,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 6 },
+  shadowOpacity: 0.5,
+  shadowRadius: 10,
+  elevation: 8,
+},
+
+dareButton: {
+  position: 'absolute',
+  bottom: '15%',
+  right: '10%',
+  zIndex: 2,
+  paddingVertical: 24,
+  paddingHorizontal: 30,
+  borderColor: 'white',
+  borderWidth: 3,
+  backgroundColor: '#ef5350',
+  borderRadius: 25,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 6 },
+  shadowOpacity: 0.5,
+  shadowRadius: 10,
+  elevation: 8,
+},
+
+  
 });
 
 export default TruthOrDareGame; 
