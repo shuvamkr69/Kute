@@ -45,6 +45,7 @@ import ChangePasswordScreen from "../screens/ChangePasswordScreen";
 import HelpScreen from "../screens/HelpScreen";
 // import CallScreen from "../screens/CallScreen";
 import TruthOrDareGame from "../screens/games/TruthOrDare/TruthOrDareGame";
+import LeaderboardScreen from '../screens/LeaderboardScreen';
 
 import BuyFeaturesScreen from '../screens/BuyScreens/BuySuperLikes';
 import Agreements from "../screens/Agreements";
@@ -118,6 +119,9 @@ export default function AppNavigation() {
 
             {/*Truth or dare */}
             <Stack.Screen name = "TDWaitingScreen" component = {TruthOrDareGame}/>
+
+            {/* Leaderboard */}
+            <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
 
           {/* Events screens */}
           <Stack.Screen name="EventSelectionScreen" component={EventSelection} />

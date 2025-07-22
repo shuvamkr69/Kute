@@ -532,7 +532,6 @@ const homescreenProfiles = async (req, res) => {
     }));
 
     res.status(200).json(formattedUsers);
-    console.log("Filtered Users:", formattedUsers);
   } catch (error) {
     console.error("Error fetching users:", error);
     res.status(500).json({ message: "Server error" });
@@ -1033,6 +1032,18 @@ const getViewedBy = async (req, res) => {
   }
 };
 
+// GET /api/v1/users/leaderboard
+const getLeaderboard = async (req, res) => {
+  try {
+    const users = await User.find({}, 'fullName avatar1 leaderboardScore')
+      .sort({ leaderboardScore: -1 })
+      .limit(20);
+    return res.status(200).json({ leaderboard: users });
+  } catch (err) {
+    return res.status(500).json({ message: "Error fetching leaderboard", error: err.message });
+  }
+};
+
 
 export {
   generateAccessAndRefreshTokens,
@@ -1062,4 +1073,5 @@ export {
   reportUser,
   addProfileView,
   getViewedBy,
+  getLeaderboard,
 };

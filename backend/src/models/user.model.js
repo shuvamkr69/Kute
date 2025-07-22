@@ -258,6 +258,10 @@ const userSchema = new Schema(
         },
       },
     ],
+    leaderboardScore: {
+      type: Number,
+      default: 0,
+    },
   },
   { timestamps: true }
 );

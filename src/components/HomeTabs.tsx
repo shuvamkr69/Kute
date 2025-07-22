@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Image, Text, StyleSheet } from "react-native";
 import { BlurView } from 'expo-blur';
+import { useNavigation } from '@react-navigation/native';
 
 // Import screens
 import HomeScreen from "../screens/HomeScreen";
@@ -20,6 +21,7 @@ type Props = NativeStackScreenProps<any, "HomeTabs">;
 const Tab = createBottomTabNavigator();
 
 const HomeTabs: React.FC<Props> = ({ navigation }) => {
+  const nav = useNavigation();
 
   const [superLikes, setSuperLikes] = useState(0);
   const [boosts, setBoosts] = useState(0);
@@ -116,7 +118,7 @@ const HomeTabs: React.FC<Props> = ({ navigation }) => {
           <View style={{ flexDirection: "row", alignItems: "center" }}>
             <Image source={require('../assets/icons/logo.webp')} style={{ width: 56, height: 56, left: -15 }}/>
           </View>
-          <View style={{ flexDirection: "row" }}>
+          <View style={{ flexDirection: "row", alignItems: 'center' }}>
             <Image
               source={require("../assets/icons/premium.png")}
               style={{
@@ -141,6 +143,10 @@ const HomeTabs: React.FC<Props> = ({ navigation }) => {
                 resizeMode="contain"
               />
             </View>
+            {/* Leaderboard Ionicon */}
+            <TouchableOpacity onPress={() => navigation.navigate('Leaderboard')} style={{ marginRight: 15 }}>
+              <Ionicons name="trophy-outline" size={22} color="#fff" style={{ textShadowColor: '#000', textShadowRadius: 4 }} />
+            </TouchableOpacity>
             <Ionicons
               name="search-outline"
               size={23}

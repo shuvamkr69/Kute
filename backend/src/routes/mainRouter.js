@@ -10,6 +10,7 @@ import NeverHaveIEverRouter from "./NeverHaveIEver/neverHaveIEver.routes.js";
 import WYRRouter from "./WouldYouRather/WouldYouRather.route.js";
 import PaymentRouter from "./payment.routes.js";
 import COSRouter from "./ChamberOfSecrets/ChamberOfSecrets.route.js";
+import TDRouter from "./TruthOrDare/TD.route.js";
 
 const router = Router()
 
@@ -24,6 +25,7 @@ router.use(NeverHaveIEverRouter)
 router.use(WYRRouter)
 router.use(PaymentRouter)
 router.use(COSRouter);
+router.use('/td', TDRouter);
 
 //Game screen routes
 

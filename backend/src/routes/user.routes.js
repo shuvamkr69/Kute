@@ -23,6 +23,7 @@ import {
   reportUser,
   addProfileView,
   getViewedBy,
+  getLeaderboard,
 } from "../controllers/user.controller.js";
 import { loginUser } from "../controllers/user.controller.js";
 import { logoutUser } from "../controllers/user.controller.js";
@@ -149,7 +150,7 @@ UserRouter.route("/report-problem").post(
 );
 
 UserRouter.route("/toggle-anonymous").post(
-  verifyJWT, 
+  verifyJWT,
   toggleAnonymousBrowsing
 );
 
@@ -157,5 +158,6 @@ UserRouter.post("/report-user", verifyJWT, reportUser);
 
 UserRouter.post('/profileViewed', verifyJWT, addProfileView);
 UserRouter.get('/viewedBy', verifyJWT, getViewedBy);
+UserRouter.get('/leaderboard', getLeaderboard);
 
 export default UserRouter;
