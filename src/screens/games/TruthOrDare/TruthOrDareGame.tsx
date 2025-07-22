@@ -163,12 +163,12 @@ const TruthOrDareGame = () => {
       
           {/* Truth Button */}
           <TouchableOpacity onPress={() => handleChoice("truth")} style={styles.truthButton}>
-            <Text style={styles.splitButtonText}>TRUTH</Text>
+            <Text style={styles.truthButton}>TRUTH</Text>
           </TouchableOpacity>
       
           {/* Dare Button */}
           <TouchableOpacity onPress={() => handleChoice("dare")} style={styles.dareButton}>
-            <Text style={styles.splitButtonText}>DARE</Text>
+            <Text style={styles.dareButton}>DARE</Text>
           </TouchableOpacity>
         </View>
       );
