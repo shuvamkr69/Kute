@@ -12,14 +12,18 @@ import { useFocusEffect } from "@react-navigation/native";
 import api from "../../../utils/api";
 import { LinearGradient } from "expo-linear-gradient";
 import CustomAlert from "../../../components/CustomAlert";
+import { getSocket } from '../../../utils/socket';
+import { getUserId } from '../../../utils/constants';
 
 type Props = NativeStackScreenProps<any, "WaitingRoomScreen">;
 
 const { width } = Dimensions.get("window");
 
-const WaitingRoomScreen: React.FC<Props> = ({ navigation }) => {
+const WaitingRoomScreen: React.FC<Props> = ({ navigation, route }) => {
   const [playersJoined, setPlayersJoined] = useState<number>(1);
   const [requiredPlayers, setRequiredPlayers] = useState<number>(2);
+  const [roomId, setRoomId] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [customAlert, setCustomAlert] = useState({ visible: false, title: '', message: '', onConfirm: null });
 
   useFocusEffect(
@@ -48,50 +52,32 @@ const WaitingRoomScreen: React.FC<Props> = ({ navigation }) => {
     }, [])
   );
 
-  const fetchTurnInfo = async () => {
-    try {
-      const res = await api.get("/api/v1/users/neverhaveiever/current-turn");
-console.log("📥 /current-turn result:", res.data);
-
-      const { userId, chanceHolderId, promptSubmitted } = res.data;
-
-      if (userId === chanceHolderId) {
-        if (promptSubmitted) {
-          navigation.navigate("NHIEWaitingForAnswersScreen");
-        } else {
-          navigation.navigate("SubmitPromptScreen");
-        }
-      } else {
-        if (promptSubmitted) {
-          navigation.navigate("AnswerPromptScreen");
-        } else {
-          navigation.navigate("WaitingForPromptScreen");
-        }
-      }
-      
-
-    } catch (err) {
-      console.error("Failed to fetch turn info:", err.response?.data || err.message);
-    }
-  };
-
   useEffect(() => {
-    const interval = setInterval(async () => {
-      try {
-        const res = await api.get("/api/v1/users/neverhaveiever/waiting-room-status");
-        setPlayersJoined(res.data.playersJoined);
-        setRequiredPlayers(res.data.requiredPlayers);
-
-        if (res.data.readyToStart) {
-          fetchTurnInfo();
+    getUserId().then(uid => {
+      setUserId(uid);
+      if (!uid) return;
+      const socket = getSocket();
+      const groupSize = route?.params?.groupSize || 2;
+      socket.emit('nhie:joinRoom', { userId: uid, groupSize });
+      socket.on('nhie:roomUpdate', (room) => {
+        setPlayersJoined(room.players.length);
+        setRequiredPlayers(room.groupSize);
+        setRoomId(room.roomId);
+        if (room.state === 'in_progress') {
+          const idx = room.players.findIndex(p => p.userId === uid);
+          if (idx === room.chanceIndex) {
+            navigation.navigate('SubmitPromptScreen', { roomId: room.roomId });
+          } else {
+            navigation.navigate('WaitingForPromptScreen', { roomId: room.roomId });
+          }
         }
-      } catch (err) {
-        console.error(err);
-      }
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, []);
+      });
+    });
+    return () => {
+      const socket = getSocket();
+      socket.off('nhie:roomUpdate');
+    };
+  }, [navigation, route]);
 
   return (
     <LinearGradient colors={["#ff172e", "#de822c"]} style={styles.gradient}>

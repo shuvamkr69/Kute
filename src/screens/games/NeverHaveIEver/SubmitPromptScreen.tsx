@@ -6,32 +6,46 @@ import axios from 'axios';
 import api from '../../../utils/api';
 import { Alert, BackHandler } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { getSocket } from '../../../utils/socket';
+import { getUserId } from '../../../utils/constants';
 
 type Props = NativeStackScreenProps<any, "SubmitPromptScreen">;
 
-const SubmitPromptScreen: React.FC<Props> = ({ navigation }) => {
+const SubmitPromptScreen: React.FC<Props> = ({ navigation, route }) => {
   const [prompt, setPrompt] = useState('');
   const [timeLeft, setTimeLeft] = useState(120); // 2 minutes
+  const [userId, setUserId] = useState<string | null>(null);
+  const roomId = route?.params?.roomId;
 
   useEffect(() => {
-  const fetchTurn = async () => {
-    const res = await api.get("/api/v1/users/neverhaveiever/current-turn");
-console.log("📥 /current-turn result:", res.data);
+    getUserId().then(setUserId);
+  }, []);
 
-    const { userId, chanceHolderId, gamePhase } = res.data;
-    const isChanceHolder = userId === chanceHolderId;
+  useEffect(() => {
+    if (!userId) return;
+    const socket = getSocket();
+    socket.on('nhie:roomUpdate', (room) => {
+      if (room.state === 'in_progress' && room.currentPrompt && room.currentPrompt.promptSubmitted) {
+        navigation.navigate('NHIEWaitingForAnswersScreen', { roomId });
+      }
+    });
+    return () => {
+      socket.off('nhie:roomUpdate');
+    };
+  }, [navigation, roomId, userId]);
 
-    console.log("📌 [TurnInfo] userId:", userId);
-    console.log("📌 [TurnInfo] chanceHolderId:", chanceHolderId);
-    console.log("📌 [TurnInfo] isChanceHolder:", isChanceHolder);
-    console.log("📌 [TurnInfo] gamePhase:", gamePhase);
-  };
-
-  fetchTurn();
-}, []);
-
-
-  
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          handleSubmit();
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   useFocusEffect(          //leave waiing room if back button clicked
   React.useCallback(() => {
@@ -64,50 +78,11 @@ console.log("📥 /current-turn result:", res.data);
   }, [])
 );
 
-   useEffect(() => {
-    const pollMatchStatus = async () => {
-      try {
-        const res = await api.get("/api/v1/users/neverhaveiever/waiting-room-status");
-
-        if (!res.data.readyToStart) {
-          navigation.navigate("WaitingRoomScreen");
-        }
-      } catch (err) {
-        if (err.response && err.response.status === 404) {
-    navigation.navigate("WaitingRoomScreen");
-  }
-      }
-    };
-
-    const interval = setInterval(pollMatchStatus, 3000);
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          handleSubmit(); // Auto-submit (could also mark as timeout)
-        }
-        return prev - 1;
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-
-  // SubmitPromptScreen.tsx (simplified core navigation logic)
-
-const handleSubmit = async () => {
-  try {
-    await api.post('/api/v1/users/neverhaveiever/submit-prompt', { prompt });
-    navigation.navigate("NHIEWaitingForAnswersScreen"); // Only chance holder
-  } catch (err) {
-    console.error("Prompt submission failed:", err);
-  }
-};
-
+  const handleSubmit = () => {
+    if (!prompt.trim() || !userId) return;
+    const socket = getSocket();
+    socket.emit('nhie:submitPrompt', { roomId, userId, prompt });
+  };
 
 
   return (

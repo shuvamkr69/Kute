@@ -69,7 +69,7 @@ const GroupSizeSelectorScreen: React.FC<Props> = ({ navigation }) => {
   const joinRoom = async (size: number) => {
     try {
       await api.post("/api/v1/users/neverhaveiever/join", { groupSize: size });
-      navigation.navigate("WaitingRoomScreen");
+      navigation.navigate("WaitingRoomScreen", { groupSize: size });
     } catch (err) {
       console.error("Failed to join waiting room:", err);
     }

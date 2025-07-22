@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from "react";
 import { View, Text, StyleSheet, Image, FlatList } from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import api from "../../../utils/api";
+import { getSocket } from '../../../utils/socket';
+import { getUserId } from '../../../utils/constants';
 
 type Props = NativeStackScreenProps<any, "ReviewAnswersScreen">;
 
@@ -12,107 +14,52 @@ interface Answer {
   response: "I Have" | "I Have Not" | "Skipped";
 }
 
-const ReviewAnswersScreen: React.FC<Props> = ({ navigation }) => {
+const ReviewAnswersScreen: React.FC<Props> = ({ navigation, route }) => {
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [prompt, setPrompt] = useState("");
   const [timer, setTimer] = useState(10);
+  const [userId, setUserId] = useState<string | null>(null);
   const hasNavigatedRef = useRef(false);
+  const roomId = route?.params?.roomId;
 
-
-  // Poll for answers and start countdown when ready
   useEffect(() => {
-    let pollInterval: NodeJS.Timeout;
-    let countdownInterval: NodeJS.Timeout;
-
-    const startCountdown = () => {
-      countdownInterval = setInterval(() => {
-        setTimer(prev => {
-          if (prev <= 1) {
-            clearInterval(countdownInterval);
-            triggerNextTurn();
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    };
-
-    const fetchAnswers = async () => {
-      try {
-        const res = await api.get("/api/v1/users/neverhaveiever/answers");
-        if (res.data.allAnswered && res.data.answers.length > 0) {
-          clearInterval(pollInterval);
-          setPrompt(res.data.prompt);
-          setAnswers(res.data.answers);
-          startCountdown();
-        }
-      } catch (err) {
-        if (err.response && err.response.status === 404) {
-    navigation.navigate("WaitingRoomScreen");
-  }
-      }
-    };
-
-    // Poll every second instead of 50ms
-    pollInterval = setInterval(fetchAnswers, 1000);
-    fetchAnswers();
-
-    return () => {
-      clearInterval(pollInterval);
-      clearInterval(countdownInterval);
-    };
+    getUserId().then(setUserId);
   }, []);
 
-  // Poll for gamePhase reset to typing for non–chance holders
- useEffect(() => {
-  const resetPoll = setInterval(async () => {
-    if (hasNavigatedRef.current) return; // <-- use the ref!
-    try {
-      const res = await api.get("/api/v1/users/neverhaveiever/current-turn");
-      const { userId, chanceHolderId, gamePhase, turnInProgress } = res.data;
-      const isChanceHolder = userId === chanceHolderId;
-
-      if (
-        !isChanceHolder &&
-        gamePhase === "typing" &&
-        turnInProgress === false &&
-        !hasNavigatedRef.current // <-- use the ref!
-      ) {
-        hasNavigatedRef.current = true; // <-- set the ref!
-        navigation.navigate("WaitingForPromptScreen");
+  useEffect(() => {
+    if (!userId) return;
+    const socket = getSocket();
+    socket.on('nhie:roomUpdate', (room) => {
+      if (room.roomId !== roomId) return;
+      if (room.currentPrompt && room.currentPrompt.gamePhase === 'reviewing') {
+        setPrompt(room.currentPrompt.text);
+        setAnswers(room.currentPrompt.answers.map(ans => ({
+          userId: ans.userId,
+          name: ans.name || '',
+          avatar: ans.avatar || '',
+          response: ans.response,
+        })));
+        // Start countdown for next turn
+        if (!hasNavigatedRef.current) {
+          hasNavigatedRef.current = true;
+          setTimeout(() => triggerNextTurn(room), 10000);
+        }
       }
-    } catch (err) {
-      if (err.response && err.response.status === 404) {
-    navigation.navigate("WaitingRoomScreen");
-  }
-    }
-  }, 1000);
+    });
+    return () => {
+      socket.off('nhie:roomUpdate');
+    };
+  }, [roomId, userId]);
 
-  return () => clearInterval(resetPoll);
-}, []);
-
-
-  // Trigger navigation to the next turn
-  const triggerNextTurn = async () => {
-    if (hasNavigatedRef.current) return; // <-- use the ref!
-    hasNavigatedRef.current = true; // <-- set the ref!
-
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    try {
-      const turnRes = await api.get("/api/v1/users/neverhaveiever/current-turn");
-      const { userId, chanceHolderId } = turnRes.data;
-      const isChanceHolder = userId === chanceHolderId;
-
-      if (isChanceHolder) {
-        await api.post("/api/v1/users/neverhaveiever/next-turn");
-        navigation.navigate("SubmitPromptScreen");
-      } else {
-        navigation.navigate("WaitingForPromptScreen");
-      }
-    } catch (err) {
-      if (err.response && err.response.status === 404) {
-        navigation.navigate("WaitingRoomScreen");
-      }
+  const triggerNextTurn = (room) => {
+    if (!userId) return;
+    const socket = getSocket();
+    const idx = room.players.findIndex(p => p.userId === userId);
+    if (idx === room.chanceIndex) {
+      socket.emit('nhie:nextTurn', { roomId, userId });
+      navigation.navigate('SubmitPromptScreen', { roomId });
+    } else {
+      navigation.navigate('WaitingForPromptScreen', { roomId });
     }
   };
 
