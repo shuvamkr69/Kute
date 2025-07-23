@@ -121,7 +121,7 @@ export const getIO = () => {
 const waitingPlayers = [];
 const gameRooms = {};
 
-function setupTruthOrDare(io) {
+export function setupTruthOrDare(io) {
   io.on('connection', (socket) => {
     socket.on('td:joinQueue', ({ userId }) => {
       if (!waitingPlayers.find(p => p.userId === userId)) {
