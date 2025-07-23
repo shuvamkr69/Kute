@@ -23,7 +23,7 @@ const games = [
   { name: 'Truth or Dare 🔥', img: require('../../assets/gameScreenImages/truth-or-dare_orig.png'), route: 'TDWaitingScreen' },
   { name: 'Would You Rather ❓', img: require('../../assets/gameScreenImages/would-you-rather-questions.png'), route: 'WYRLobbyScreen' },
   { name: 'Couple Quiz 💕', img: require('../../assets/gameScreenImages/couples-quiz.png'), route: 'Couple Quiz' },
-  { name: 'Never Have I Ever 🍸', img: require('../../assets/gameScreenImages/never-have-i-ever.png'), route: 'GroupSizeSelectorScreen' },
+  { name: 'Never Have I Ever 🍸', img: require('../../assets/gameScreenImages/never-have-i-ever.png'), route: 'NeverHaveIEverGame' },
   { name: 'Events', img: require('../../assets/gameScreenImages/event-game-screen.png'), route: 'EventSelectionScreen' },
 ];
 

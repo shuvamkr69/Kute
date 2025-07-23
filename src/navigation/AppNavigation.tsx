@@ -25,13 +25,7 @@ import BoostsAndLikesScreen from "../screens/BoostsAndLikes";
 import AdvancedFilteringScreen from "../screens/AdvancedFiltering"; // Import your Advanced Filtering screen
 import OtherProfileScreen from "../screens/OtherProfileScreen";
 import PhotoVerificationScreen from "../screens/PhotoVerification";
-import GroupSizeSelectorScreen from "../screens/games/NeverHaveIEver/GroupSizeSelectorScreen";
-import SubmitPromptScreen from "../screens/games/NeverHaveIEver/SubmitPromptScreen";
-import WaitingForPromptScreen from "../screens/games/NeverHaveIEver/WaitingForPromptScreen";
-import WaitingRoomScreen from "../screens/games/NeverHaveIEver/WaitingRoomScreen";
-import AnswerPromptScreen from "../screens/games/NeverHaveIEver/AnswerPromptScreen";
-import ReviewAnswersScreen from "../screens/games/NeverHaveIEver/ReviewAnswersScreen";
-import NHIEWaitingForAnswersScreen from "../screens/games/NeverHaveIEver/NHIEWaitingForAnswersScreen";
+import NeverHaveIEverGameScreen from "../screens/games/NeverHaveIEver/NeverHaveIEverGameScreen";
 import PromptInputScreen from "../screens/games/WouldYouRather/PromptInputScreen";
 import AnswerScreen from "../screens/games/WouldYouRather/AnswerScreen";
 import FeedbackScreen from "../screens/games/WouldYouRather/FeedbackScreen";
@@ -100,13 +94,7 @@ export default function AppNavigation() {
             {/* User Info Screens */}
 
             {/* never have i ever */}
-            <Stack.Screen name="GroupSizeSelectorScreen" component={GroupSizeSelectorScreen} />
-            <Stack.Screen name="SubmitPromptScreen" component={SubmitPromptScreen} />
-            <Stack.Screen name="WaitingForPromptScreen" component={WaitingForPromptScreen} />
-            <Stack.Screen name="WaitingRoomScreen" component={WaitingRoomScreen} />
-            <Stack.Screen name="AnswerPromptScreen" component={AnswerPromptScreen} />
-            <Stack.Screen name="ReviewAnswersScreen" component={ReviewAnswersScreen} />
-            <Stack.Screen name="NHIEWaitingForAnswersScreen" component={NHIEWaitingForAnswersScreen} />
+            <Stack.Screen name="NeverHaveIEverGame" component={NeverHaveIEverGameScreen} />
 
             {/* Would You Rather */}
             <Stack.Screen name="PromptInputScreen" component={PromptInputScreen} />
