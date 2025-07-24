@@ -2,6 +2,7 @@
 import { Server } from "socket.io";
 import { Message } from "../models/message.model.js";
 import { ChamberMessage } from '../models/ChamberOfSecrets/message.model.js';
+import { TDGame } from "../models/TruthOrDare/TDGame.model.js";
 import { ApiError } from "./ApiError.js";
 import { asyncHandler } from "./asyncHandler.js";
 
@@ -123,7 +124,7 @@ const gameRooms = {};
 
 export function setupTruthOrDare(io) {
   io.on('connection', (socket) => {
-    socket.on('td:joinQueue', ({ userId }) => {
+    socket.on('td:joinQueue', asyncHandler(async ({ userId }) => {
       if (!waitingPlayers.find(p => p.userId === userId)) {
         waitingPlayers.push({ userId, socketId: socket.id });
       }
@@ -131,7 +132,18 @@ export function setupTruthOrDare(io) {
         const [p1, p2] = waitingPlayers.splice(0, 2);
         const roomId = `td_${p1.userId}_${p2.userId}_${Date.now()}`;
         const chanceHolder = Math.random() < 0.5 ? p1.userId : p2.userId;
+        
+        // Create TDGame document in MongoDB
+        const gameDoc = await TDGame.create({
+          players: [p1.userId, p2.userId],
+          chanceHolder,
+          status: 'in_progress',
+          currentRound: 1,
+          rounds: []
+        });
+        
         gameRooms[roomId] = {
+          _id: gameDoc._id, // Include MongoDB _id
           players: [p1, p2],
           chanceHolder,
           state: 'waitingForChoice',
@@ -142,8 +154,12 @@ export function setupTruthOrDare(io) {
         };
         io.to(p1.socketId).emit('td:matched', { roomId, chanceHolder });
         io.to(p2.socketId).emit('td:matched', { roomId, chanceHolder });
+        
+        // Emit initial state update with game._id
+        const game = gameRooms[roomId];
+        game.players.forEach(p => io.to(p.socketId).emit('td:stateUpdate', game));
       }
-    });
+    }));
 
     socket.on('td:makeChoice', ({ roomId, userId, choice }) => {
       const game = gameRooms[roomId];
@@ -161,15 +177,33 @@ export function setupTruthOrDare(io) {
       game.players.forEach(p => io.to(p.socketId).emit('td:stateUpdate', game));
     });
 
-    socket.on('td:submitAnswer', ({ roomId, answer }) => {
+    socket.on('td:submitAnswer', asyncHandler(async ({ roomId, answer }) => {
       const game = gameRooms[roomId];
       if (!game) return;
       game.truthAnswer = answer;
       game.state = 'review';
+      
+      // Save the completed round to MongoDB
+      try {
+        await TDGame.findByIdAndUpdate(game._id, {
+          $push: {
+            rounds: {
+              type: 'truth',
+              prompt: game.truthQuestion,
+              answer: game.truthAnswer,
+              chanceHolder: game.chanceHolder,
+              roundNumber: game.round
+            }
+          }
+        });
+      } catch (error) {
+        console.error('Error saving round to database:', error);
+      }
+      
       game.players.forEach(p => io.to(p.socketId).emit('td:stateUpdate', game));
-    });
+    }));
 
-    socket.on('td:nextRound', ({ roomId }) => {
+    socket.on('td:nextRound', asyncHandler(async ({ roomId }) => {
       const game = gameRooms[roomId];
       if (!game) return;
       game.round += 1;
@@ -179,8 +213,19 @@ export function setupTruthOrDare(io) {
       game.truthQuestion = '';
       game.truthAnswer = '';
       game.state = 'waitingForChoice';
+      
+      // Update the current round in MongoDB
+      try {
+        await TDGame.findByIdAndUpdate(game._id, {
+          currentRound: game.round,
+          chanceHolder: game.chanceHolder
+        });
+      } catch (error) {
+        console.error('Error updating game in database:', error);
+      }
+      
       game.players.forEach(p => io.to(p.socketId).emit('td:stateUpdate', game));
-    });
+    }));
 
     socket.on('td:leave', ({ roomId, userId }) => {
       const idx = waitingPlayers.findIndex(p => p.userId === userId);
@@ -288,32 +333,46 @@ function setupNeverHaveIEver(io) {
     socket.on('nhie:submitPrompt', ({ roomId, userId, prompt }) => {
       const room = nhieGameRooms[roomId];
       if (!room) return;
-      if (room.players[room.chanceIndex].userId !== userId) return;
+    
       room.currentPrompt = {
+        createdBy: userId,
         text: prompt,
         answers: [],
-        promptSubmitted: true,
-        gamePhase: 'answering',
-        createdAt: new Date(),
       };
-      room.turnInProgress = false;
-      broadcastNhieRoomUpdate(roomId);
+    
+      room.gamePhase = 'answering';
+    
+      io.to(roomId).emit('nhie:roomUpdate', room);
     });
+    
 
     // Submit answer (by non-chance holders)
     socket.on('nhie:submitAnswer', ({ roomId, userId, response }) => {
       const room = nhieGameRooms[roomId];
       if (!room || !room.currentPrompt) return;
-      if (room.players[room.chanceIndex].userId === userId) return; // chance holder can't answer
-      if (room.currentPrompt.answers.find(a => a.userId === userId)) return; // already answered
-      room.currentPrompt.answers.push({ userId, response });
-      // Check if all non-chance holders have answered
-      if (room.currentPrompt.answers.length === room.groupSize - 1) {
-        room.currentPrompt.gamePhase = 'reviewing';
-        room.turnInProgress = true;
+    
+      const player = room.players.find(p => p.userId === userId);
+      if (!player) return;
+    
+      // Save the player's answer
+      if (!room.currentPrompt.answers) room.currentPrompt.answers = [];
+      const existing = room.currentPrompt.answers.find(a => a.userId === userId);
+      if (!existing) {
+        room.currentPrompt.answers.push({ userId, response, displayName: player.displayName });
       }
-      broadcastNhieRoomUpdate(roomId);
+    
+      // Count expected answers (excluding the prompt creator)
+      const expectedAnswers = room.players.filter(p => p.userId !== room.currentPrompt.createdBy).length;
+    
+      if (room.currentPrompt.answers.length === expectedAnswers) {
+        // All players have answered, move to 'reviewing'
+        room.gamePhase = 'reviewing';
+    
+        // Emit the updated room to all clients
+        io.to(roomId).emit('nhie:roomUpdate', room);
+      }
     });
+    
 
     // Next turn (by chance holder)
     socket.on('nhie:nextTurn', ({ roomId, userId }) => {

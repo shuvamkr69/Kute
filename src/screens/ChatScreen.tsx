@@ -15,6 +15,8 @@ import {
   Animated,
   Keyboard,
   Pressable,
+  ImageBackground,
+  ScrollView,
 } from "react-native";
 import { debounce } from "lodash";
 import {
@@ -30,6 +32,7 @@ import LoadingScreen from "./LoadingScreen";
 import AiChatbot from "../components/AiChatbot";
 import CustomAlert from "../components/CustomAlert";
 import { getSocket } from "../utils/socket";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type RootStackParamList = {
   Chat: {
@@ -60,6 +63,17 @@ type Props = NativeStackScreenProps<any, "Chat">;
 
 
 const socket = getSocket();
+
+// Wallpaper options
+const wallpaperOptions = [
+  { id: 'default', name: 'Default', source: null },
+  { id: 'img1', name: 'Abstract 1', source: require('../assets/images/img1.jpg') },
+  { id: 'img2', name: 'Abstract 2', source: require('../assets/images/img2.jpg') },
+  { id: 'img3', name: 'Abstract 3', source: require('../assets/images/img3.jpg') },
+  { id: 'user1', name: 'Scenic 1', source: require('../../assets/images/user1.jpg') },
+  { id: 'user2', name: 'Scenic 2', source: require('../../assets/images/user2.jpg') },
+  { id: 'user3', name: 'Scenic 3', source: require('../../assets/images/user3.jpg') },
+];
 
 const MessageItem = memo(
   (props: {
@@ -209,6 +223,8 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const [searchResultsModalVisible, setSearchResultsModalVisible] = useState(false);
   const [searchSubmitted, setSearchSubmitted] = useState(false);
+  const [currentWallpaper, setCurrentWallpaper] = useState('default');
+  const [wallpaperModalVisible, setWallpaperModalVisible] = useState(false);
 
   const flatListRef = useRef<FlatList<Message>>(null);
   const menuAnim = useRef(new Animated.Value(400)).current; // Start off-screen right
@@ -290,6 +306,21 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
     return () => {
       socket.off("messageDeleted");
     };
+  }, []);
+
+  // Load saved wallpaper
+  useEffect(() => {
+    const loadWallpaper = async () => {
+      try {
+        const savedWallpaper = await AsyncStorage.getItem('chatWallpaper');
+        if (savedWallpaper) {
+          setCurrentWallpaper(savedWallpaper);
+        }
+      } catch (error) {
+        console.error('Error loading wallpaper:', error);
+      }
+    };
+    loadWallpaper();
   }, []);
 
   useEffect(() => {
@@ -507,6 +538,11 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
   const handleOptionPress = async (option: string) => {
     setMenuVisible(false);
 
+    if (option === 'background') {
+      setWallpaperModalVisible(true);
+      return;
+    }
+
     await api.post("/api/v1/users/block", {
   blockedUserId: likedUserId,
 });
@@ -550,6 +586,119 @@ navigation.goBack();
         return updated;
       });
     }
+  };
+
+  // Wallpaper selection functions
+  const selectWallpaper = async (wallpaperId: string) => {
+    setCurrentWallpaper(wallpaperId);
+    setWallpaperModalVisible(false);
+    
+    try {
+      await AsyncStorage.setItem('chatWallpaper', wallpaperId);
+    } catch (error) {
+      console.error('Error saving wallpaper:', error);
+    }
+  };
+
+  // Render main chat content
+  const renderMainContent = () => (
+    <>
+      {loading ? (
+        <LoadingScreen description="Cupid's syncing your chats... 🏹" />
+      ) : (
+        <>
+          {/* Search Bar Overlay */}
+          {searchBarVisible && (
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="Search messages..."
+                placeholderTextColor="#B0B0B0"
+                value={searchText}
+                onChangeText={setSearchText}
+                returnKeyType="search"
+                onSubmitEditing={() => {
+                  setSearchSubmitted(true);
+                  setSearchResultsModalVisible(true);
+                }}
+              />
+              <TouchableOpacity
+                onPress={() => {
+                  setSearchBarVisible(false);
+                  setSearchText("");
+                  setSearchSubmitted(false);
+                }}
+              >
+                <Ionicons name="close" size={24} color="white" style={{ marginHorizontal: 10 }} />
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* FlatList for messages */}
+          <FlatList
+            ref={flatListRef}
+            data={filteredMessages}
+            renderItem={({ item }) => {
+              const isMyMessage = item.senderId === loggedInUserId;
+              const isLastMyMessage =
+                isMyMessage &&
+                !messages
+                  .slice(messages.indexOf(item) + 1)
+                  .some(msg => msg.senderId === loggedInUserId);
+              return (
+                <MessageItem
+                  text={item.text}
+                  isMyMessage={isMyMessage}
+                  createdAt={item.createdAt}
+                  replyTo={item.replyTo}
+                  onLongPress={() => handleLongPress(item._id)}
+                  onPress={() => handlePress(item._id)}
+                  onReply={() => handleMessageLongPress(item)}
+                  loggedInUserId={loggedInUserId}
+                  isSelected={selectedMessages.has(item._id)}
+                  isLastMyMessage={isLastMyMessage}
+                  isRead={item.isRead}
+                  otherUserAvatar={likedUserAvatar}
+                  selectionMode={selectionMode}
+                />
+              );
+            }}
+            keyExtractor={(item) => item._id}
+            style={{ flex: 1, paddingTop: keyboardVisible ? 0 : 10 }}
+            contentContainerStyle={{ paddingBottom: 20 }}
+            ListEmptyComponent={<EmptyChatState userName={userName} />}
+            ListFooterComponent={isTyping ? <TypingIndicator /> : null}
+            onScroll={handleScroll}
+          />
+
+          {showScrollToBottom && (
+            <TouchableOpacity
+              style={{
+                position: 'absolute',
+                bottom: 80,
+                right: 20,
+                backgroundColor: '#de822c',
+                borderRadius: 25,
+                padding: 10,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.3,
+                shadowRadius: 4,
+                elevation: 5,
+              }}
+              onPress={scrollToBottom}
+            >
+              <Ionicons name="arrow-down" size={24} color="white" />
+            </TouchableOpacity>
+          )}
+        </>
+      )}
+    </>
+  );
+
+  const getCurrentWallpaperSource = () => {
+    const wallpaper = wallpaperOptions.find(w => w.id === currentWallpaper);
+    return wallpaper ? wallpaper.source : null;
   };
 
   const confirmDelete = () => {
@@ -655,6 +804,8 @@ navigation.goBack();
         dotAnimations.forEach((anim) => anim.stopAnimation());
       };
     }, []);
+
+    if (!isTyping) return null;
 
     return (
       <View style={styles.typingContainer}>
@@ -880,187 +1031,91 @@ navigation.goBack();
         </View>
       </View>
 
-      <View style={styles.container}>
-        {loading ? (
-          <LoadingScreen description="Cupid's syncing your chats... 🏹" />
-        ) : (
-          <>
-            {/* Search Bar */}
-            {/* Search Bar Overlay */}
-            {searchBarVisible && (
-              <View style={styles.inputContainer}>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Search messages..."
-                  placeholderTextColor="#B0B0B0"
-                  value={searchText}
-                  onChangeText={setSearchText}
-                  returnKeyType="search"
-                  autoFocus
-                />
-                <TouchableOpacity
-                  onPress={() => {
-                    setSearchResultsModalVisible(true);
-                    setSearchSubmitted(true);
-                  }}
-                  style={{ marginLeft: 6, marginRight: 2 }}
-                >
-                  <Ionicons name="search" size={24} color="#de822c" />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => { setSearchBarVisible(false); setSearchText(""); setSearchSubmitted(false); }}>
-                  <Ionicons name="close" size={24} color="#fff" />
-                </TouchableOpacity>
-              </View>
-            )}
-            {/* Search Results Modal */}
-            <Modal
-              visible={searchResultsModalVisible && searchBarVisible && searchSubmitted && searchText.trim().length > 0}
-              transparent
-              animationType="fade"
-              onRequestClose={() => setSearchResultsModalVisible(false)}
-            >
-              <View style={styles.searchResultsModalBg}>
-                <View style={styles.searchResultsModalCard}>
-                  <Text style={styles.searchResultsTitle}>Search Results</Text>
-                  <FlatList
-                    data={matchingMessages}
-                    keyExtractor={item => item._id}
-                    renderItem={({ item }) => (
-                      <TouchableOpacity
-                        style={styles.searchResultItem}
-                        onPress={() => jumpToMessage(item._id)}
-                      >
-                        <Text style={styles.searchResultText}>{item.text}</Text>
-                        <Text style={styles.searchResultTime}>{item.createdAt ? new Date(item.createdAt).toLocaleString() : ''}</Text>
-                      </TouchableOpacity>
-                    )}
-                    ListEmptyComponent={<Text style={styles.searchResultEmpty}>No results found.</Text>}
-                    style={{ maxHeight: 350 }}
-                  />
-                  <TouchableOpacity style={styles.searchResultsCloseBtn} onPress={() => setSearchResultsModalVisible(false)}>
-                    <Ionicons name="close" size={28} color="#fff" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </Modal>
-            {/* Messages List */}
-            <FlatList
-              showsVerticalScrollIndicator={false}
-              ref={flatListRef}
-              data={filteredMessages}
-              renderItem={({ item, index }) => (
-                <MessageItem
-                  text={item.text}
-                  isMyMessage={item.senderId === loggedInUserId}
-                  createdAt={item.createdAt}
-                  replyTo={item.replyTo}
-                  loggedInUserId={loggedInUserId} // Pass the loggedInUserId prop
-                  onLongPress={() => handleLongPress(item._id)}
-                  onPress={() => handlePress(item._id)}
-                  isSelected={selectedMessages.has(item._id)}
-                  onReply={() => setReplyingTo(item)} // ✅ For reply
-                  isLastMyMessage={item.senderId === loggedInUserId && item._id === messages[messages.length - 1]?._id}
-                  isRead={item.isRead ?? false}
-                  otherUserAvatar={item.senderId === loggedInUserId ? profileImage : undefined}
-                  style={index === 0 ? { marginTop: 24 } : undefined}
-                  selectionMode={selectionMode}
-                />
-              )}
-              keyExtractor={(item) => item._id}
-              getItemLayout={(data, index) => ({ length: 70, offset: 70 * index, index })}
-              ListEmptyComponent={<EmptyChatState userName={userName} />}
-              ListFooterComponent={isBlockedByMe ? null : isTyping ? <TypingIndicator /> : null}
-              initialScrollIndex={messages.length > 0 ? messages.length - 1 : 0}
-              onScroll={handleScroll}
-              scrollEventThrottle={16}
-            />
-            {/* Scroll to Bottom Button */}
-            {showScrollToBottom && (
-              <TouchableOpacity
-                onPress={scrollToBottom}
-                style={{
-                  position: 'absolute',
-                  right: 20,
-                  bottom: 90,
-                  backgroundColor: '#23242a',
-                  borderRadius: 22,
-                  padding: 10,
-                  elevation: 6,
-                  zIndex: 20,
-                }}
-              >
-                <Ionicons name="arrow-down" size={20} color="#de822c" />
-              </TouchableOpacity>
-            )}
-          </>
-        )}
-
-        {!isBlockedByMe && replyingTo && (
-          <View style={styles.replyPreviewContainer}>
-            <View style={styles.replyPreviewContent}>
-              <Text style={styles.replyPreviewText}>
-                Replying to{" "}
-                {replyingTo.senderId === loggedInUserId
-                  ? "yourself"
-                  : userName.split(" ")[0]}
-              </Text>
-              <Text style={styles.replyPreviewMessage}>{replyingTo.text}</Text>
-            </View>
-            <TouchableOpacity
-              onPress={cancelReply}
-              style={styles.cancelReplyButton}
-            >
-              <Ionicons name="close" size={20} color="white" />
-            </TouchableOpacity>
+      {/* Main Container with Background */}
+      {getCurrentWallpaperSource() ? (
+        <ImageBackground 
+          source={getCurrentWallpaperSource()} 
+          style={styles.container}
+          imageStyle={{ opacity: 0.3 }}
+        >
+          <View style={styles.backgroundOverlay}>
+            {renderMainContent()}
           </View>
-        )}
+        </ImageBackground>
+      ) : (
+        <View style={styles.container}>
+          {renderMainContent()}
+        </View>
+      )}
 
-        {isBlockedByMe ? (
-  <TouchableOpacity
-    style={[
-      styles.inputContainer,
-      { backgroundColor: "#1c1c1c", opacity: 0.5 },
-    ]}
-    onPress={() =>
-      setCustomAlert({ visible: true, title: "Blocked", message: "Unblock this user to send messages." })
-    }
-    activeOpacity={1}
-  >
-    <Text style={{ color: "#888", marginLeft: 16 }}>
-      You have blocked this user
-    </Text>
-  </TouchableOpacity>
-) : (
-  <View style={styles.inputContainer}>
-    <TextInput
-      style={styles.input}
-      value={message}
-      onChangeText={(text) => {
-        setMessage(text);
-        handleTyping();
-      }}
-      onBlur={() => {
-        if (conversationId) {
-          socket.emit("stopTyping", {
-            convId: conversationId,
-            senderId: loggedInUserId,
-          });
-        }
-      }}
-      placeholder="Type a message..."
-      placeholderTextColor="#B0B0B0"
-    />
-    <AiChatbot messages={messages} loggedInUserId={loggedInUserId} />
-    <TouchableOpacity onPress={sendMessage} style={{ marginLeft: 18 }}>
-      <Image
-        source={require("../assets/icons/send-message.png")}
-        style={styles.sendIcon}
-      />
-    </TouchableOpacity>
-  </View>
-)}
+      {/* Reply Preview */}
+      {!isBlockedByMe && replyingTo && (
+        <View style={styles.replyPreviewContainer}>
+          <View style={styles.replyPreviewContent}>
+            <Text style={styles.replyPreviewText}>
+              Replying to{" "}
+              {replyingTo.senderId === loggedInUserId
+                ? "yourself"
+                : userName.split(" ")[0]}
+            </Text>
+            <Text style={styles.replyPreviewMessage}>{replyingTo.text}</Text>
+          </View>
+          <TouchableOpacity
+            onPress={cancelReply}
+            style={styles.cancelReplyButton}
+          >
+            <Ionicons name="close" size={20} color="white" />
+          </TouchableOpacity>
+        </View>
+      )}
 
-      </View>
+      {/* Input Section */}
+      {isBlockedByMe ? (
+        <TouchableOpacity
+          style={[
+            styles.inputContainer,
+            { backgroundColor: "#1c1c1c", opacity: 0.5 },
+          ]}
+          onPress={() =>
+            setCustomAlert({ visible: true, title: "Blocked", message: "Unblock this user to send messages." })
+          }
+          activeOpacity={1}
+        >
+          <Text style={{ color: "#888", marginLeft: 16 }}>
+            You have blocked this user
+          </Text>
+        </TouchableOpacity>
+      ) : (
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.input}
+            value={message}
+            onChangeText={(text) => {
+              setMessage(text);
+              handleTyping();
+            }}
+            onBlur={() => {
+              if (conversationId) {
+                socket.emit("stopTyping", {
+                  convId: conversationId,
+                  senderId: loggedInUserId,
+                });
+              }
+            }}
+            placeholder="Type a message..."
+            placeholderTextColor="#B0B0B0"
+          />
+          <AiChatbot messages={messages} loggedInUserId={loggedInUserId} />
+          <TouchableOpacity onPress={sendMessage} style={{ marginLeft: 18 }}>
+            <Image
+              source={require("../assets/icons/send-message.png")}
+              style={styles.sendIcon}
+            />
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Three-dot Menu Modal */}
 
       <Modal transparent visible={menuVisible} animationType="none">
         <TouchableOpacity
@@ -1077,6 +1132,15 @@ navigation.goBack();
               >
                 <Ionicons name="notifications-off-outline" size={20} color="#de822c" style={{ marginRight: 14 }} />
                 <Text style={styles.menuItemText}>Mute Notifications</Text>
+              </TouchableOpacity>
+              <View style={styles.menuDivider} />
+              <TouchableOpacity
+                style={styles.menuItemRow}
+                activeOpacity={0.7}
+                onPress={() => handleOptionPress("background")}
+              >
+                <Ionicons name="image-outline" size={20} color="#de822c" style={{ marginRight: 14 }} />
+                <Text style={styles.menuItemText}>Change Background</Text>
               </TouchableOpacity>
               <View style={styles.menuDivider} />
               <TouchableOpacity
@@ -1112,6 +1176,69 @@ navigation.goBack();
           </Animated.View>
         </TouchableOpacity>
       </Modal>
+
+      {/* Wallpaper Selection Modal */}
+      <Modal 
+        visible={wallpaperModalVisible} 
+        transparent={true} 
+        animationType="slide"
+        onRequestClose={() => setWallpaperModalVisible(false)}
+      >
+        <View style={styles.modalBackground}>
+          <View style={styles.wallpaperModalContainer}>
+            <Text style={styles.wallpaperModalTitle}>Choose Background</Text>
+            
+            <ScrollView style={styles.wallpaperGrid} showsVerticalScrollIndicator={false}>
+              <View style={styles.wallpaperRow}>
+                {/* Default/No wallpaper option */}
+                <TouchableOpacity
+                  style={[
+                    styles.wallpaperItem,
+                    !currentWallpaper && styles.selectedWallpaper
+                  ]}
+                  onPress={() => selectWallpaper('')}
+                >
+                  <View style={styles.defaultWallpaperPreview}>
+                    <Text style={styles.defaultWallpaperText}>Default</Text>
+                  </View>
+                  {!currentWallpaper && (
+                    <View style={styles.selectedIndicator}>
+                      <Ionicons name="checkmark" size={16} color="white" />
+                    </View>
+                  )}
+                </TouchableOpacity>
+
+                {/* Wallpaper options */}
+                {wallpaperOptions.map((wallpaper, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={[
+                      styles.wallpaperItem,
+                      currentWallpaper === wallpaper.id && styles.selectedWallpaper
+                    ]}
+                    onPress={() => selectWallpaper(wallpaper.id)}
+                  >
+                    <Image source={wallpaper.source} style={styles.wallpaperPreview} />
+                    {currentWallpaper === wallpaper.id && (
+                      <View style={styles.selectedIndicator}>
+                        <Ionicons name="checkmark" size={16} color="white" />
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+
+            <TouchableOpacity
+              style={styles.wallpaperModalCloseButton}
+              onPress={() => setWallpaperModalVisible(false)}
+            >
+              <Text style={styles.wallpaperModalCloseText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       <CustomAlert
         visible={customAlert.visible}
         title={customAlert.title}
@@ -1136,6 +1263,10 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
   },
+  backgroundOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.1)', // Slight overlay for readability
+  },
   chatBackButton: {
     fontSize: 18,
     fontWeight: "bold",
@@ -1151,6 +1282,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     maxWidth: "80%",
     elevation: 2,
+    borderWidth: 0, // Ensure no border
   },
   selectedMessageOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -1225,7 +1357,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     backgroundColor: "black",
     width: "100%",
-    marginTop: 10,
+    marginTop: 0, // Remove margin that might cause spacing issues
   },
   input: {
     flex: 1,
@@ -1492,6 +1624,82 @@ const styles = StyleSheet.create({
     marginTop: 2,
     marginRight: 2,
     marginBottom: 4,
+  },
+  // Wallpaper Modal Styles
+  wallpaperModalContainer: {
+    backgroundColor: '#1a1a1a',
+    margin: 20,
+    borderRadius: 15,
+    padding: 20,
+    maxHeight: '80%',
+  },
+  wallpaperModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: 'white',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  wallpaperGrid: {
+    flex: 1,
+  },
+  wallpaperRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-around',
+  },
+  wallpaperItem: {
+    width: 80,
+    height: 80,
+    borderRadius: 10,
+    margin: 8,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  selectedWallpaper: {
+    borderWidth: 3,
+    borderColor: '#de822c',
+  },
+  wallpaperPreview: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 8,
+  },
+  defaultWallpaperPreview: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#333',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  defaultWallpaperText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  selectedIndicator: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    backgroundColor: '#de822c',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  wallpaperModalCloseButton: {
+    backgroundColor: '#de822c',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  wallpaperModalCloseText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });
 

@@ -5,12 +5,11 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import BackButton from '../components/BackButton';
 
-const trophyIcon = require('../assets/icons/most-popular.png');
 
 const LeaderboardScreen = ({ navigation }) => {
   const [leaderboard, setLeaderboard] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [myScore, setMyScore] = useState(null);
+  const [myUser, setMyUser] = useState(null);
 
   useEffect(() => {
     const fetchLeaderboard = async () => {
@@ -22,11 +21,11 @@ const LeaderboardScreen = ({ navigation }) => {
         const user = userString ? JSON.parse(userString) : null;
         if (user && user._id) {
           const me = res.data.leaderboard.find(u => u._id === user._id);
-          setMyScore(me ? me.leaderboardScore : null);
+          setMyUser(me || null);
         }
       } catch (e) {
         setLeaderboard([]);
-        setMyScore(null);
+        setMyUser(null);
       } finally {
         setLoading(false);
       }
@@ -34,41 +33,99 @@ const LeaderboardScreen = ({ navigation }) => {
     fetchLeaderboard();
   }, []);
 
-  const renderMyScore = () => (
-    myScore !== null && (
-      <View style={styles.myScoreBox}>
-        <Ionicons name="trophy-outline" size={24} color="#de822c" style={{ marginRight: 8 }} />
-        <Text style={styles.myScoreText}>Your Score: <Text style={{ color: '#de822c' }}>{myScore}</Text></Text>
+  const renderMyProfile = () => {
+    if (!myUser) return null;
+    
+    // Find my position in the leaderboard
+    const myPosition = leaderboard.findIndex(user => user._id === myUser._id) + 1;
+    
+    return (
+      <View style={styles.myProfileCard}>
+        <View style={styles.myProfileHeader}>
+          <Text style={styles.myProfileTitle}>Your Ranking</Text>
+        </View>
+        <View style={styles.myProfileContent}>
+          <View style={styles.myAvatarWrapper}>
+            <Image
+              source={myUser.avatar1 ? { uri: myUser.avatar1 } : require('../assets/icons/user-white.png')}
+              style={styles.myAvatar}
+            />
+          </View>
+          <View style={styles.myProfileInfo}>
+            <Text style={styles.myName} numberOfLines={1}>{myUser.fullName?.split(' ')[0] || myUser.fullName}</Text>
+            <View style={styles.myStatsContainer}>
+              <View style={styles.myScoreContainer}>
+                <Ionicons name="star" size={16} color="#de822c" style={{ marginRight: 4 }} />
+                <Text style={styles.myScore}>{myUser.leaderboardScore}</Text>
+              </View>
+            </View>
+          </View>
+          <View style={styles.myPositionContainer}>
+            <Text style={styles.myPositionLabel}>Position</Text>
+            <Text style={styles.myPosition}>{myPosition}</Text>
+          </View>
+        </View>
       </View>
-    )
-  );
+    );
+  };
 
-  const renderItem = ({ item, index }) => (
-    <View style={[styles.row, index === 0 && styles.topRow]}>
-      <View style={styles.avatarWrapper}>
-        {index === 0 ? (
-          <Image source={trophyIcon} style={styles.trophy} />
-        ) : null}
-        <Image
-          source={item.avatar1 ? { uri: item.avatar1 } : require('../assets/icons/user-white.png')}
-          style={[styles.avatar, index === 0 && styles.topAvatar]}
-        />
+  const renderItem = ({ item, index }) => {
+    const isTopPlayer = index === 0;
+    const isTop3 = index < 3;
+    const rank = index + 1;
+    
+    const getBorderColor = () => {
+      if (index === 0) return '#FFD700'; // Gold
+      if (index === 1) return '#C0C0C0'; // Silver
+      if (index === 2) return '#CD7F32'; // Bronze
+      return '#333';
+    };
+    
+    return (
+      <View style={[
+        styles.row, 
+        isTopPlayer && styles.topRow,
+        isTop3 && { borderColor: getBorderColor(), borderWidth: 2 }
+      ]}>
+        <View style={styles.rankContainer}>
+          <Text style={[styles.rankText, isTopPlayer && styles.topRankText]}>
+            {rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank}
+          </Text>
+        </View>
+        <View style={styles.avatarWrapper}>
+          
+          <Image
+            source={item.avatar1 ? { uri: item.avatar1 } : require('../assets/icons/user-white.png')}
+            style={[styles.avatar, isTopPlayer && styles.topAvatar]}
+          />
+        </View>
+        <Text style={[styles.name, isTopPlayer && styles.topName]} numberOfLines={1}>
+          {item.fullName?.split(' ')[0] || item.fullName}
+        </Text>
+        <View style={[styles.scoreBox, isTopPlayer && styles.topScoreBox]}>
+          <Ionicons 
+            name="star" 
+            size={16} 
+            color={isTopPlayer ? "#de822c" : "#de822c"} 
+            style={{ marginRight: 3 }} 
+          />
+          <Text style={[styles.score, isTopPlayer && styles.topScore]}>
+            {item.leaderboardScore}
+          </Text>
+        </View>
       </View>
-      <Text style={[styles.name, index === 0 && styles.topName]} numberOfLines={1}>{item.fullName}</Text>
-      <View style={styles.scoreBox}>
-        <Ionicons name="star" size={22} color="#de822c" style={{ marginRight: 4 }} />
-        <Text style={[styles.score, index === 0 && styles.topScore]}>{item.leaderboardScore}</Text>
-      </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <View style = {styles.backButtonContainer}>
-      <BackButton title = {"Leader Board"}/>
+      <BackButton title = {""}/>
     <View style={styles.bg}>
       <View style={styles.header}>
+        <Text style={styles.headerTitle}>Leaderboard</Text>
+        <Text style={styles.headerSubtitle}>Top performers this month</Text>
       </View>
-      {renderMyScore()}
+      {renderMyProfile()}
       {loading ? (
         <Text style={styles.loading}>Loading...</Text>
       ) : (
@@ -85,8 +142,8 @@ const LeaderboardScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  backButtonContainer:{
-    flex:1,
+  backButtonContainer: {
+    flex: 1,
   },
   bg: {
     flex: 1,
@@ -94,134 +151,227 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'ios' ? 60 : 30,
   },
   header: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'center',
-    marginBottom: 18,
-    paddingHorizontal: 18,
+    marginBottom: 16,
+    paddingHorizontal: 16,
   },
-  backBtn: {
-    marginRight: 10,
-    backgroundColor: '#222',
-    borderRadius: 20,
-    padding: 6,
-    borderWidth: 2,
-    borderColor: '#444',
-  },
-  title: {
+  headerTitle: {
     color: '#de822c',
-    fontSize: 28,
+    fontSize: 24,
+    marginBottom: 4,
     fontWeight: 'bold',
+    textAlign: 'center',
+    fontFamily: Platform.OS === 'ios' ? 'Comic Sans MS' : 'monospace',
     letterSpacing: 1,
+  },
+  headerSubtitle: {
+    color: '#888',
+    fontSize: 14,
+    textAlign: 'center',
+    marginTop: 3,
+    marginBottom: 16,
     fontFamily: Platform.OS === 'ios' ? 'Comic Sans MS' : 'monospace',
   },
   loading: {
     color: '#fff',
-    fontSize: 18,
+    fontSize: 16,
     textAlign: 'center',
-    marginTop: 40,
+    marginTop: 30,
+    fontFamily: Platform.OS === 'ios' ? 'Comic Sans MS' : 'monospace',
   },
   list: {
-    paddingHorizontal: 18,
-    paddingBottom: 30,
+    paddingHorizontal: 16,
+    paddingBottom: 24,
   },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#222',
-    borderRadius: 18,
-    marginBottom: 16,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+  
+  // My Profile Card Styles
+  myProfileCard: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 16,
+    marginHorizontal: 16,
+    marginBottom: 24,
+    overflow: 'hidden',
+    shadowColor: '#de822c',
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.3,
     shadowRadius: 6,
     elevation: 6,
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  myProfileHeader: {
+    backgroundColor: '#de822c',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+  },
+  myProfileTitle: {
+    color: '#000',
+    fontSize: 14,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    fontFamily: Platform.OS === 'ios' ? 'Comic Sans MS' : 'monospace',
+    letterSpacing: 0.5,
+  },
+  myProfileContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+  },
+  myAvatarWrapper: {
+    marginRight: 12,
+  },
+  myAvatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#333',
+    borderWidth: 2,
+    borderColor: '#ffffffff',
+  },
+  myProfileInfo: {
+    flex: 1,
+  },
+  myName: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 6,
+    fontFamily: Platform.OS === 'ios' ? 'Comic Sans MS' : 'monospace',
+  },
+  myStatsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  myScoreContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#333',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    alignSelf: 'flex-start',
+  },
+  myScore: {
+    color: '#ffffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    fontFamily: Platform.OS === 'ios' ? 'Comic Sans MS' : 'monospace',
+  },
+  myPositionContainer: {
+    alignItems: 'center',
+    backgroundColor: '#333',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: 2,
+    borderColor: '#ff820eff',
+  },
+  myPositionLabel: {
+    color: '#888',
+    fontSize: 10,
+    fontFamily: Platform.OS === 'ios' ? 'Comic Sans MS' : 'monospace',
+    marginBottom: 1,
+  },
+  myPosition: {
+    color: '#ffffffff',
+    fontSize: 20,
+    fontWeight: 'bold',
+    fontFamily: Platform.OS === 'ios' ? 'Comic Sans MS' : 'monospace',
+  },
+  
+  // Leaderboard Row Styles
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1a1a1a',
+    borderRadius: 14,
+    marginBottom: 10,
+    padding: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+    borderWidth: 1,
+    borderColor: '#333',
   },
   topRow: {
-    backgroundColor: '#de822c',
-    shadowColor: '#de822c',
-    elevation: 10,
+    backgroundColor: '#1a1a1a',
+    shadowColor: '#1a1a1a',
+    elevation: 8,
+    borderColor: '#fff',
+    borderWidth: 2,
+  },
+  rankContainer: {
+    width: 32,
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  rankText: {
+    color: '#eeeeeeff',
+    fontSize: 14,
+    fontWeight: 'bold',
+    fontFamily: Platform.OS === 'ios' ? 'Comic Sans MS' : 'monospace',
+  },
+  topRankText: {
+    color: '#000',
+    fontSize: 16,
   },
   avatarWrapper: {
-    marginRight: 16,
+    marginRight: 10,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
   },
-  trophy: {
-    width: 36,
-    height: 36,
-    position: 'absolute',
-    top: -15,
-    left: 0,
-    zIndex: 5,
-  },
+  
   avatar: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     backgroundColor: '#444',
     borderWidth: 2,
-    borderColor: '#de822c',
+    borderColor: '#ffffffff',
   },
   topAvatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    borderWidth: 3,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    borderWidth: 2,
     borderColor: '#fff',
   },
   name: {
     flex: 1,
     color: '#fff',
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 16,
+    fontWeight: '600',
     fontFamily: Platform.OS === 'ios' ? 'Comic Sans MS' : 'monospace',
   },
   topName: {
-    color: '#222',
-    fontSize: 22,
+    color: 'white',
+    fontSize: 16,
   },
   scoreBox: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#333',
-    borderRadius: 12,
-    paddingHorizontal: 12,
+    borderRadius: 10,
+    paddingHorizontal: 10,
     paddingVertical: 4,
-    marginLeft: 10,
+    marginLeft: 8,
+  },
+  topScoreBox: {
+    backgroundColor: '#000',
   },
   score: {
-    color: '#de822c',
-    fontSize: 20,
+    color: '#ffffffff',
+    fontSize: 16,
     fontWeight: 'bold',
     fontFamily: Platform.OS === 'ios' ? 'Comic Sans MS' : 'monospace',
   },
   topScore: {
-    color: '#de822c',
-    fontSize: 22,
-  },
-  myScoreBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#222',
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 15,
-    marginHorizontal: 18,
-    marginBottom: 40,
-    alignSelf: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 6,
-  },
-  myScoreText: {
-    color: '#de822c',
-    fontSize: 18,
-    fontWeight: 'bold',
-    fontFamily: Platform.OS === 'ios' ? 'Comic Sans MS' : 'monospace',
+    color: '#ffffffff',
+    fontSize: 17,
   },
 });
 

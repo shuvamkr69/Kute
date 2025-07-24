@@ -25,7 +25,7 @@ router.use(NeverHaveIEverRouter)
 router.use(WYRRouter)
 router.use(PaymentRouter)
 router.use(COSRouter);
-router.use('/td', TDRouter);
+router.use(TDRouter);
 
 //Game screen routes
 

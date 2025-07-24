@@ -28,7 +28,7 @@ export const giveTDFeedback = async (req, res) => {
     if (!round) return res.status(404).json({ message: "Round not found" });
     // Explicitly determine the answerer for this round
     const answererId = game.players.find(
-      id => id.toString() !== round.chanceHolder.toString()
+      id => id.toString() === round.chanceHolder.toString()
     );
     if (!answererId) return res.status(404).json({ message: "Answerer not found" });
     const user = await User.findById(answererId);

@@ -7,7 +7,7 @@ import BackButton from "../../../components/BackButton";
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../../utils/api';
 
-const SOCKET_URL = "http://10.21.36.128:3000";
+const SOCKET_URL = "http://10.21.39.161:3000";
 
 const TruthOrDareGame = () => {
   const [phase, setPhase] = useState("waiting");
@@ -128,9 +128,11 @@ const TruthOrDareGame = () => {
       await api.post('/api/v1/users/td/feedback', {
         gameId: game?._id,
         roundNumber: round,
-        userId,
+        userId: game?.chanceHolder,
         feedback: type
       });
+
+      console.log(game?._id, round, game?.chanceHolder, delta, type);
     } catch (e) { }
   };
 
@@ -217,7 +219,7 @@ const TruthOrDareGame = () => {
             }}>{pointsAnim.value > 0 ? `+${pointsAnim.value}` : `${pointsAnim.value}`}</Animated.Text>
           )}
           {round < 3 && feedbackGiven && renderCartooneyButton("Next Round", handleNextRound)}
-          {round >= 3 && feedbackGiven && <Text style={[styles.cartooneyText, { color: '#e57373', fontSize: 28 }]}>Game Over!</Text>}
+          {round >= 3 && feedbackGiven && <Text style={[styles.cartooneyText, { color: '#e57373', fontSize: 28 }]}>Game Completed</Text>}
         </View>
       );
       default: return <Text style={styles.cartooneyText}>Loading...</Text>;

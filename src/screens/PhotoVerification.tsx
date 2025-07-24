@@ -18,6 +18,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import Icon from "react-native-vector-icons/FontAwesome";
 import BackButton from "../components/BackButton";
 import CustomAlert from "../components/CustomAlert";
+import VerificationModal from "../components/VerificationModal";
 
 type Props = NativeStackScreenProps<any, "PhotoVerification">;
 
@@ -35,6 +36,7 @@ const PhotoVerificationScreen: React.FC<Props> = ({ navigation }) => {
 
   const FACE_API_KEY = Constants?.expoConfig?.extra?.FACE_API_KEY;
   const FACE_API_SECRET = Constants?.expoConfig?.extra?.FACE_API_SECRET;
+  const [modalVisible, setModalVisible] = useState(true);
 
   useEffect(() => {
     getProfilePhoto();
@@ -108,7 +110,7 @@ const PhotoVerificationScreen: React.FC<Props> = ({ navigation }) => {
 
     const result = await ImagePicker.launchCameraAsync({
       allowsEditing: true,
-      aspect: [4, 3],
+      aspect: [9,16],
       quality: 0.7,
       base64: true,
     });
@@ -244,6 +246,13 @@ const PhotoVerificationScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   return (
+    <View style={{ flex: 1 }}>
+    <VerificationModal
+      visible={modalVisible}
+      onClose={() => setModalVisible(false)}
+    />
+    {/* ...rest of your screen */}
+ 
     <View style={styles.backButtonContainer}>
       <BackButton title="Photo Verification" />
       <ScrollView contentContainerStyle={styles.container}>
@@ -344,6 +353,7 @@ const PhotoVerificationScreen: React.FC<Props> = ({ navigation }) => {
         message={customAlert.message}
         onClose={() => setCustomAlert((prev) => ({ ...prev, visible: false }))}
       />
+    </View>
     </View>
   );
 };
