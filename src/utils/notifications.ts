@@ -2,6 +2,7 @@ import * as Notifications from "expo-notifications";
 import * as Device from "expo-device";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform, Vibration } from "react-native";
+import Constants from "expo-constants";
 
 // Function to trigger vibration for matches
 export const triggerMatchVibration = () => {
@@ -78,7 +79,14 @@ export const registerForPushNotifications = async (): Promise<string | null> => 
 
     // Get Expo push token
     console.log("🔑 Getting Expo push token...");
-    const token = (await Notifications.getExpoPushTokenAsync()).data;
+    const projectId = Constants.expoConfig?.extra?.eas?.projectId;
+    
+    if (!projectId) {
+      console.error("❌ No projectId found in Expo config");
+      return null;
+    }
+    
+    const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
     console.log("✅ Expo Push Token obtained:", token ? `${token.substring(0, 20)}...` : "FAILED");
     
     if (token) {

@@ -37,6 +37,10 @@ android {
     ndkVersion "23.1.7779620"
     compileSdkVersion 34
 
+    buildFeatures {
+        buildConfig true
+    }
+
     defaultConfig {
         applicationId 'com.dating.kute'
         minSdkVersion 21
@@ -117,6 +121,9 @@ dependencies {
     } else {
         implementation jscFlavor
     }
+
+    // Force ExoPlayer UI dependency to ensure drawable resources are available
+    implementation 'com.google.android.exoplayer:exoplayer-ui:2.18.1'
 }
 
 apply from: new File([

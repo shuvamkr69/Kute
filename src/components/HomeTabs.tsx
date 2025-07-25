@@ -155,13 +155,6 @@ const HomeTabs: React.FC<Props> = ({ navigation }) => {
               onPress={() => navigation.navigate("AdvancedFiltering")}
             />
             <Ionicons
-              name="notifications-outline"
-              size={23}
-              color="white"
-              style={{ marginRight: 15 }}
-              onPress={() => navigation.navigate("Notifications")}
-            />
-            <Ionicons
               name="settings-outline"
               size={23}
               color="white"

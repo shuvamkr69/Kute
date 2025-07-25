@@ -11,7 +11,6 @@ import ForgotPasswordScreen from "../screens/ForgotPasswordScreen";
 import SettingsScreen from "../screens/SettingScreen";
 import EditProfileScreen from "../screens/EditProfile";
 import PremiumScreen from "../screens/Premium";
-import NotificationsScreen from "../screens/NotificationScreen";
 import BasicDetails from "../screens/UserInfo/BasicDetails";
 import LocationPage from "../screens/UserInfo/Location";
 import AddProfilePictures from "../screens/UserInfo/addProfilePictures";
@@ -77,7 +76,6 @@ export default function AppNavigation() {
             <Stack.Screen name="Settings" component={SettingsScreen} />
             <Stack.Screen name="EditProfile" component={EditProfileScreen} />
             <Stack.Screen name="Premium" component={PremiumScreen} />
-            <Stack.Screen name="Notifications" component={NotificationsScreen} />
             <Stack.Screen name="BlockedUsersScreen" component={BlockedUsersScreen} />
             <Stack.Screen name="MatchScreen" component={MatchScreen} />
             <Stack.Screen name="Chat" component={ChatScreen} />

@@ -2,10 +2,10 @@
 
 buildscript {
     ext {
-        buildToolsVersion = findProperty('android.buildToolsVersion') ?: '33.0.0'
+        buildToolsVersion = findProperty('android.buildToolsVersion') ?: '34.0.0'
         minSdkVersion = Integer.parseInt(findProperty('android.minSdkVersion') ?: '21')
-        compileSdkVersion = Integer.parseInt(findProperty('android.compileSdkVersion') ?: '33')
-        targetSdkVersion = Integer.parseInt(findProperty('android.targetSdkVersion') ?: '33')
+        compileSdkVersion = Integer.parseInt(findProperty('android.compileSdkVersion') ?: '34')
+        targetSdkVersion = Integer.parseInt(findProperty('android.targetSdkVersion') ?: '34')
         kotlinVersion = findProperty('android.kotlinVersion') ?: '1.8.10'
         frescoVersion = findProperty('expo.frescoVersion') ?: '2.5.0'
 
@@ -37,5 +37,90 @@ allprojects {
         google()
         mavenCentral()
         maven { url 'https://www.jitpack.io' }
+    }
+    
+    configurations.all {
+        resolutionStrategy {
+            // Force ExoPlayer version to ensure UI resources are available
+            force 'com.google.android.exoplayer:exoplayer:2.18.1'
+            force 'com.google.android.exoplayer:exoplayer-ui:2.18.1'
+            force 'com.google.android.exoplayer:extension-okhttp:2.18.1'
+        }
+    }
+    
+    // Enable BuildConfig for all subprojects to fix BuildConfig issues
+    afterEvaluate { project ->
+        if (project.hasProperty('android')) {
+            project.android {
+                // Force buildConfig and aapt for all projects, especially react-native-reanimated
+                buildFeatures {
+                    buildConfig = true
+                    aidl = true
+                    viewBinding = true
+                    // Force resource generation for R.id
+                    resValues = true
+                }
+                
+                // Ensure aapt generates R.id for all resources with comprehensive flags
+                aaptOptions {
+                    additionalParameters "--no-version-vectors", "--auto-add-overlay", "--extra-packages", "com.swmansion.reanimated;com.swmansion.rnscreens"
+                }
+                
+                // Force compilation options for better compatibility
+                compileOptions {
+                    sourceCompatibility JavaVersion.VERSION_11
+                    targetCompatibility JavaVersion.VERSION_11
+                }
+                
+                // Special handling for react-native-reanimated R.id generation
+                if (project.name == 'react-native-reanimated') {
+                    project.android {
+                        buildFeatures {
+                            buildConfig = true
+                            aidl = true
+                            viewBinding = true
+                            resValues = true
+                        }
+                        // Force resource compilation for reanimated
+                        aaptOptions {
+                            additionalParameters "--no-version-vectors", "--auto-add-overlay", "--extra-packages", "com.swmansion.reanimated"
+                        }
+                        // Ensure namespace is set
+                        if (!project.android.hasProperty('namespace') || !project.android.namespace) {
+                            project.android.namespace = "com.swmansion.reanimated"
+                        }
+                    }
+                }
+                
+                // Special handling for react-native-screens R.attr generation
+                if (project.name == 'react-native-screens') {
+                    project.android {
+                        buildFeatures {
+                            buildConfig = true
+                            aidl = true
+                            viewBinding = true
+                            resValues = true
+                        }
+                        // Force resource compilation for screens
+                        aaptOptions {
+                            additionalParameters "--no-version-vectors", "--auto-add-overlay", "--extra-packages", "com.swmansion.rnscreens"
+                        }
+                        // Ensure namespace is set
+                        if (!project.android.hasProperty('namespace') || !project.android.namespace) {
+                            project.android.namespace = "com.swmansion.rnscreens"
+                        }
+                    }
+                }
+                
+                // Set namespace for modules that don't have it
+                if (!project.android.hasProperty('namespace') || !project.android.namespace) {
+                    if (project.name.startsWith('@react-native-async-storage')) {
+                        project.android.namespace = "com.reactnativecommunity.asyncstorage"
+                    } else if (project.name.contains('react-native')) {
+                        project.android.namespace = "com.${project.name.replace('-', '').replace('@', '').replace('/', '')}"
+                    }
+                }
+            }
+        }
     }
 }
