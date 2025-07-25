@@ -149,7 +149,15 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
       setHeight(user.height || "");
       setHeightUnit(user.heightUnit || "cm");
       setPersonality(user.personality || "Any");
-      setInterests(user.interests || []);
+      setInterests(
+        Array.isArray(user.interests) 
+          ? user.interests.flatMap((interest) =>
+              typeof interest === "string" && interest.includes(",")
+                ? interest.split(",").map((i) => i.trim()).filter(i => i.length > 0)
+                : [interest]
+            ).filter(Boolean)
+          : []
+      );
       setBoostActiveUntil(
         user.boostActiveUntil ? new Date(user.boostActiveUntil) : null
       );
@@ -219,11 +227,13 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
       setHeightUnit(user.heightUnit || "cm");
       setPersonality(user.personality || "Any");
       setInterests(
-        user.interests?.flatMap((interest) =>
-          typeof interest === "string"
-            ? interest.split(",").map((i) => i.trim())
-            : interest
-        ) || []
+        Array.isArray(user.interests) 
+          ? user.interests.flatMap((interest) =>
+              typeof interest === "string" && interest.includes(",")
+                ? interest.split(",").map((i) => i.trim()).filter(i => i.length > 0)
+                : [interest]
+            ).filter(Boolean)
+          : []
       );
       setSuperLikes(response.data.superLike);
       setBoosts(response.data.boost);
@@ -829,7 +839,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     width: 38,
     height: 38,
-    marginTop: 30,
+    marginTop: 5,
   },
 
   username: {

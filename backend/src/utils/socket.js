@@ -206,6 +206,30 @@ export function setupTruthOrDare(io) {
     socket.on('td:nextRound', asyncHandler(async ({ roomId }) => {
       const game = gameRooms[roomId];
       if (!game) return;
+      
+      // Prevent going to next round if not in review state
+      if (game.state !== 'review') return;
+      
+      // Check if game should be completed
+      if (game.round >= 4) {
+        game.state = 'finished';
+        
+        // Update game status in MongoDB
+        try {
+          await TDGame.findByIdAndUpdate(game._id, {
+            status: 'finished'
+          });
+        } catch (error) {
+          console.error('Error updating game status to finished:', error);
+        }
+        
+        // Emit game completion to both players
+        game.players.forEach(p => io.to(p.socketId).emit('td:gameCompleted', game));
+        return;
+      }
+      
+      console.log(`Moving from round ${game.round} to round ${game.round + 1} in room ${roomId}`);
+      
       game.round += 1;
       const [p1, p2] = game.players;
       game.chanceHolder = game.chanceHolder === p1.userId ? p2.userId : p1.userId;
@@ -227,11 +251,27 @@ export function setupTruthOrDare(io) {
       game.players.forEach(p => io.to(p.socketId).emit('td:stateUpdate', game));
     }));
 
-    socket.on('td:leave', ({ roomId, userId }) => {
+    socket.on('td:leave', async ({ roomId, userId }) => {
       const idx = waitingPlayers.findIndex(p => p.userId === userId);
       if (idx !== -1) waitingPlayers.splice(idx, 1);
       if (roomId && gameRooms[roomId]) {
         const game = gameRooms[roomId];
+        
+        // Apply -10 penalty if game was in progress and not finished
+        if (game.state !== 'finished' && game.round < 4) {
+          try {
+            const { User } = await import("../models/user.model.js");
+            const user = await User.findById(userId);
+            if (user) {
+              user.leaderboardScore = (user.leaderboardScore || 0) - 10;
+              await user.save();
+              console.log(`Player ${userId} left game early. -10 penalty applied. New score: ${user.leaderboardScore}`);
+            }
+          } catch (error) {
+            console.error('Error applying leave penalty:', error);
+          }
+        }
+        
         game.players.forEach(p => {
           if (p.userId !== userId) io.to(p.socketId).emit('td:opponentLeft');
         });
@@ -239,11 +279,28 @@ export function setupTruthOrDare(io) {
       }
     });
 
-    socket.on('disconnect', () => {
+    socket.on('disconnect', async () => {
       const idx = waitingPlayers.findIndex(p => p.socketId === socket.id);
       if (idx !== -1) waitingPlayers.splice(idx, 1);
-      Object.entries(gameRooms).forEach(([roomId, game]) => {
+      Object.entries(gameRooms).forEach(async ([roomId, game]) => {
         if (game.players.some(p => p.socketId === socket.id)) {
+          const disconnectedPlayer = game.players.find(p => p.socketId === socket.id);
+          
+          // Apply -10 penalty if game was in progress and not finished
+          if (disconnectedPlayer && game.state !== 'finished' && game.round < 4) {
+            try {
+              const { User } = await import("../models/user.model.js");
+              const user = await User.findById(disconnectedPlayer.userId);
+              if (user) {
+                user.leaderboardScore = (user.leaderboardScore || 0) - 10;
+                await user.save();
+                console.log(`Player ${disconnectedPlayer.userId} disconnected from game. -10 penalty applied. New score: ${user.leaderboardScore}`);
+              }
+            } catch (error) {
+              console.error('Error applying disconnect penalty:', error);
+            }
+          }
+          
           game.players.forEach(p => {
             if (p.socketId !== socket.id) io.to(p.socketId).emit('td:opponentLeft');
           });

@@ -9,11 +9,11 @@ import {
   ScrollView,
   Modal,
   FlatList,
-  Alert,
   ActivityIndicator,
   ToastAndroid,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import CustomAlert from "../components/CustomAlert";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import Icon from "react-native-vector-icons/FontAwesome";
 import CustomButton from "../components/Button";
@@ -81,9 +81,9 @@ const zodiacOptions = [
 ];
 const familyPlanningOptions = ["Want Kids", "Don't Want Kids", "Undecided"];
 const bodyTypeOptions = ["Muscular", "Average", "Obese", "Athletic", "Slim"];
-const drinkingOptions = ["Socially", "Regularly", "Never"];
-const smokingOptions = ["Socially", "Regularly", "Never"];
-const workoutOptions = ["Daily", "Weekly", "Occasionally", "Never"];
+const drinkingOptions = ["Socially", "Regularly", "Never", "Not Set"];
+const smokingOptions = ["Socially", "Regularly", "Never", "Not Set"];
+const workoutOptions = ["Daily", "Weekly", "Occasionally", "Never", "Not Set"];
 const religionOptions = [
   "Hinduism",
   "Christianity",
@@ -213,9 +213,10 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
   const [showInterestModal, setShowInterestModal] = useState(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [religion, setReligion] = useState("");
+  const [customAlert, setCustomAlert] = useState({ visible: false, title: '', message: '' });
 
   // Replace profilePhoto state with an array
-  const [profilePhotos, setProfilePhotos] = useState<string[]>([]);
+  const [profilePhotos, setProfilePhotos] = useState<(string | null)[]>([]);
 
   const [height, setHeight] = useState<string>("");
   const [heightUnit, setHeightUnit] = useState<"cm" | "feet">("cm");
@@ -241,17 +242,27 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
       const response = await api.get("/api/v1/users/me");
       const profileData = response.data;
 
-      const avatars = []; //fetching all photos
+      const avatars = []; // Create array with 6 slots for avatar1-avatar6
       for (let i = 1; i <= 6; i++) {
         const avatar = profileData[`avatar${i}`];
-        if (avatar) avatars.push(avatar);
+        avatars.push(avatar || null); // Push null if avatar doesn't exist
       }
 
+      console.log("Loaded avatars from backend:", avatars);
       setProfilePhotos(avatars);
       setRelationshipType(profileData.relationshipType);
-      setSelectedInterests(
-        Array.isArray(profileData.interests) ? profileData.interests : []
-      );
+      
+      console.log("Raw interests from API:", profileData.interests);
+      const processedInterests = Array.isArray(profileData.interests) 
+        ? profileData.interests.flatMap((interest) =>
+            typeof interest === "string" && interest.includes(",")
+              ? interest.split(",").map((i) => i.trim()).filter(i => i.length > 0)
+              : [interest]
+          ).filter(Boolean)
+        : [];
+      console.log("Processed interests:", processedInterests);
+      setSelectedInterests(processedInterests);
+      
       setBio(profileData.bio || "");
       setOccupation(profileData.occupation || "");
       setHeight(profileData.height?.split(" ")[0] || "");
@@ -271,52 +282,42 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
       await AsyncStorage.setItem("profileData", JSON.stringify(profileData));
     } catch (error) {
       console.log("Error fetching profile:", error);
-      Alert.alert("Error", "Failed to load profile data");
+      setCustomAlert({ visible: true, title: "Error", message: "Failed to load profile data" });
     } finally {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    const fetchProfile = async () => {
-      const res = await api.get("/api/v1/users/me");
-      console.log("Fetched interests:", res.data.interests);
-      setSelectedInterests(
-        Array.isArray(res.data.interests)
-          ? res.data.interests
-          : res.data.interests.split(",").map((item) => item.trim())
-      );
-    };
-
-    fetchProfile();
-  }, []);
 
   // Add this function RIGHT AFTER your profileFetcher function
   // (inside the EditProfileScreen component)
   const handleDragEnd = (fromIndex: number, toIndex: number) => {
     if (fromIndex === toIndex) return;
 
+    console.log("Dragging from index:", fromIndex, "to index:", toIndex);
+    console.log("Before drag - profilePhotos:", profilePhotos);
+
     const newPhotos = [...profilePhotos];
     const temp = newPhotos[fromIndex];
     newPhotos[fromIndex] = newPhotos[toIndex];
     newPhotos[toIndex] = temp;
 
+    console.log("After drag - newPhotos:", newPhotos);
     setProfilePhotos(newPhotos);
   };
 
   const handleAddPhoto = async () => {
     const validPhotos = profilePhotos.filter(
-      (photo) => photo && photo !== "null"
+      (photo) => photo && photo !== "null" && photo !== null
     );
     if (validPhotos.length >= 6) {
-      Alert.alert("Limit Reached", "You can upload a maximum of 6 photos.");
+      setCustomAlert({ visible: true, title: "Limit Reached", message: "You can upload a maximum of 6 photos." });
       return;
     }
 
     const permissionResult =
       await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permissionResult.granted) {
-      Alert.alert("Permission Denied", "Please grant access to your gallery.");
+      setCustomAlert({ visible: true, title: "Permission Denied", message: "Please grant access to your gallery." });
       return;
     }
 
@@ -329,13 +330,16 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
 
     if (!result.canceled && result.assets?.length) {
       const newPhotos = [...profilePhotos];
-      const emptyIndex = newPhotos.findIndex((photo) => !photo);
+      // Ensure we have exactly 6 slots
+      while (newPhotos.length < 6) {
+        newPhotos.push(null);
+      }
+      
+      const emptyIndex = newPhotos.findIndex((photo) => !photo || photo === null);
       if (emptyIndex !== -1) {
         newPhotos[emptyIndex] = result.assets[0].uri;
-      } else {
-        newPhotos.push(result.assets[0].uri);
+        setProfilePhotos(newPhotos);
       }
-      setProfilePhotos(newPhotos);
     }
   };
 
@@ -354,23 +358,39 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
 
   // ✅ PATCH request to update profile
   const updateProfile = async () => {
+    // Validate required fields based on backend model
+    if (!genderOrientation.trim()) {
+      setCustomAlert({ visible: true, title: "Error", message: "Gender orientation is required" });
+      return;
+    }
+
+    if (!religion.trim()) {
+      setCustomAlert({ visible: true, title: "Error", message: "Religion is required" });
+      return;
+    }
+
+    if (selectedInterests.length === 0) {
+      setCustomAlert({ visible: true, title: "Error", message: "At least one interest is required" });
+      return;
+    }
+
     if (bio.trim() === "") {
-      Alert.alert("Error", "Bio cannot be empty");
+      setCustomAlert({ visible: true, title: "Error", message: "Bio cannot be empty" });
       return;
     }
 
     try {
       const formData = new FormData();
-      formData.append("relationshipType", relationshipType);
+      formData.append("relationshipType", relationshipType || "");
       formData.append("bio", bio);
-      formData.append("occupation", occupation);
+      formData.append("occupation", occupation || "");
       formData.append("workingAt", workingAt);
       formData.append("height", height);
       formData.append("pronouns", pronouns);
       formData.append("interests", JSON.stringify(selectedInterests)); // Convert to JSON string
       formData.append("genderOrientation", genderOrientation);
       formData.append("languages", languages);
-      formData.append("loveLanguage", loveLanguage);
+      formData.append("loveLanguage", loveLanguage || "");
       formData.append("zodiac", zodiac);
       formData.append("familyPlanning", familyPlanning);
       formData.append("bodyType", bodyType);
@@ -379,35 +399,39 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
       formData.append("workout", workout);
       formData.append("religion", religion);
 
-      // ✅ Append images using FormData (handling both URLs and file URIs)
-      profilePhotos.forEach((photoUri: string | null, index: number) => {
-        if (photoUri === null || photoUri === "") {
-          // Append "null" for removed images
-          formData.append(`avatar${index + 1}`, "null");
+      // ✅ Append all 6 avatar positions using FormData (handling both URLs and file URIs)
+      console.log("Sending profilePhotos to backend:", profilePhotos);
+      for (let i = 0; i < 6; i++) {
+        const photoUri = profilePhotos[i];
+        console.log(`Avatar${i + 1}:`, photoUri);
+        if (photoUri === null || photoUri === "" || photoUri === undefined) {
+          // Append "null" for removed/empty images
+          formData.append(`avatar${i + 1}`, "null");
         } else if (photoUri.startsWith("http")) {
           // Append existing image URLs
-          formData.append(`avatar${index + 1}`, photoUri);
+          formData.append(`avatar${i + 1}`, photoUri);
         } else {
           // Append new images (converted to FormData object)
-          formData.append(`avatar${index + 1}`, {
+          formData.append(`avatar${i + 1}`, {
             uri: photoUri,
-            name: `avatar${index + 1}.jpg`,
+            name: `avatar${i + 1}.jpg`,
             type: "image/jpeg",
           } as any);
         }
-      });
+      }
 
       console.log(profilePhotos);
 
       const hasAtLeastOnePhoto = profilePhotos.some(
-        (photoUri) => photoUri && photoUri !== "null"
+        (photoUri) => photoUri && photoUri !== "null" && photoUri !== null
       );
 
       if (!hasAtLeastOnePhoto) {
-        Alert.alert(
-          "Error",
-          "You must have at least one photo on your profile."
-        );
+        setCustomAlert({
+          visible: true,
+          title: "Error",
+          message: "You must have at least one photo on your profile."
+        });
         return;
       }
 
@@ -420,7 +444,7 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
       ToastAndroid.show("Profile Updated Successfully!", ToastAndroid.SHORT);
       navigation.goBack();
     } catch (error) {
-      Alert.alert("Error", "Could not update profile");
+      setCustomAlert({ visible: true, title: "Error", message: "Could not update profile" });
       console.error("Error updating profile:", error);
     }
   };
@@ -483,19 +507,11 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
                 </TouchableOpacity>
               </View>
               <View style={styles.tagsContainer}>
-                {selectedInterests.map((item, index) => {
-                  // Split comma-separated string if needed (as fallback)
-                  const interests =
-                    typeof item === "string" ? item.split(",") : [item];
-                  return interests.map((interest, idx) => (
-                    <View
-                      key={`${index}-${idx}`}
-                      style={styles.tag}
-                    >
-                      <Text style={styles.tagText}>{interest.trim()}</Text>
-                    </View>
-                  ));
-                })}
+                {selectedInterests.map((interest, index) => (
+                  <View key={index} style={styles.tag}>
+                    <Text style={styles.tagText}>{interest}</Text>
+                  </View>
+                ))}
                 {selectedInterests.length === 0 && (
                   <Text style={{ color: "#B0B0B0", paddingLeft: 10 }}>
                     Your interests
@@ -706,6 +722,13 @@ const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
             />
           </>
         )}
+      />
+      
+      <CustomAlert
+        visible={customAlert.visible}
+        title={customAlert.title}
+        message={customAlert.message}
+        onClose={() => setCustomAlert((prev) => ({ ...prev, visible: false }))}
       />
     </View>
   );

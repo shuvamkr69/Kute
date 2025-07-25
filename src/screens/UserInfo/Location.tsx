@@ -1,11 +1,35 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ActivityIndicator, Platform, Dimensions } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
+import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import BackButton from '../../components/BackButton';
+import { LinearGradient } from 'expo-linear-gradient';
+import MaskedView from '@react-native-masked-view/masked-view';
+
+const { width } = Dimensions.get('window');
+
+// Gradient Icon Component
+const GradientIcon = ({ name, size = 20 }: { name: any; size?: number }) => (
+  <MaskedView
+    style={{ width: size, height: size }}
+    maskElement={
+      <View style={{ flex: 1, backgroundColor: 'transparent', justifyContent: 'center', alignItems: 'center' }}>
+        <Ionicons name={name} size={size} color="black" />
+      </View>
+    }
+  >
+    <LinearGradient
+      colors={["#de822c", "#ff172e"]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={{ flex: 1 }}
+    />
+  </MaskedView>
+);
 
 type Props = NativeStackScreenProps<any, 'Location'>;
 
@@ -125,9 +149,17 @@ const LocationUniversityPage: React.FC<Props> = ({ navigation }) => {
     <View style={styles.backButtonContainer}>
       <BackButton title={"Your current location"} />
       <SafeAreaView style={styles.container}>
+        <View style={styles.headerSection}>
+          <Text style={styles.headerTitle}>Where are you?</Text>
+          <Text style={styles.headerSubtitle}>
+            Help us find your perfect matches nearby
+          </Text>
+        </View>
+
         {loading ? (
           <View style={styles.centeredLoader}>
             <ActivityIndicator size="large" color="#de822c" />
+            <Text style={styles.loadingText}>Getting your location...</Text>
           </View>
         ) : (
           <>
@@ -147,171 +179,212 @@ const LocationUniversityPage: React.FC<Props> = ({ navigation }) => {
                   coordinate={selectedLocation}
                   draggable
                   onDragEnd={(e) => setSelectedLocation(e.nativeEvent.coordinate)}
-                />
+                >
+                  <View style={styles.customMarker}>
+                    <GradientIcon name="location" size={30} />
+                  </View>
+                </Marker>
               </MapView>
+              <TouchableOpacity 
+                style={styles.mapConfirmButton} 
+                onPress={handleConfirmLocation}
+                activeOpacity={0.8}
+              >
+                <GradientIcon name="checkmark-circle" size={20} />
+                <Text style={styles.mapConfirmButtonText}>Confirm Location</Text>
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity style={styles.mapButtonModern} onPress={handleConfirmLocation}>
-              <Text style={styles.mapButtonText}>Confirm Location</Text>
-            </TouchableOpacity>
-            <View style={[styles.inputContainer, { marginTop: 18 }]}> 
-              <Icon name="map-marker" size={20} color="#B0B0B0" style={styles.icon} />
-              <Text style={[styles.input, { color: location ? 'white' : '#B0B0B0' }]}> 
-                {address || 'Location'}
-              </Text>
+
+            <View style={styles.inputsSection}>
+              <View style={styles.inputContainer}>
+                <View style={styles.inputIconContainer}>
+                  <GradientIcon name="location-outline" size={20} />
+                </View>
+                <Text style={styles.locationText} numberOfLines={2}>
+                  {address || 'Tap on map to select location'}
+                </Text>
+              </View>
+
+              <View style={styles.inputContainer}>
+                <View style={styles.inputIconContainer}>
+                  <GradientIcon name="flag-outline" size={20} />
+                </View>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Country / Region"
+                  placeholderTextColor="#888"
+                  value={country}
+                  onChangeText={setCountry}
+                />
+              </View>
             </View>
-            <View style={styles.inputContainer}> 
-              <Icon name="flag" size={20} color="#B0B0B0" style={styles.icon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Country / Region"
-                placeholderTextColor="#B0B0B0"
-                value={country}
-                onChangeText={setCountry}
-              />
-            </View>
-            <TouchableOpacity style={styles.buttonModern} onPress={handleSubmit}>
-              <Text style={styles.buttonText}>Submit</Text>
+
+            <TouchableOpacity 
+              style={styles.submitButton} 
+              onPress={handleSubmit}
+              activeOpacity={0.9}
+            >
+              <LinearGradient
+                colors={["#de822c", "#ff172e"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.submitButtonGradient}
+              >
+                <Text style={styles.submitButtonText}>Continue</Text>
+                <Ionicons name="arrow-forward" size={20} color="#FFF" />
+              </LinearGradient>
             </TouchableOpacity>
           </>
         )}
       </SafeAreaView>
     </View>
-
-    
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: 'black',
-    padding: 20,
-    justifyContent: 'center',
-  },
   backButtonContainer: {
     flex: 1,
-    backgroundColor: 'black',
+    backgroundColor: '#121212',
   },
-  loader: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: [{ translateX: -25 }, { translateY: -25 }],
-    zIndex: 1,
-  },
-  title: {
-    fontSize: 28,
-    color: 'white',
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 10,
-  },
-  subtitle: {
-    color: '#B0B0B0',
-    textAlign: 'center',
-    marginBottom: 40,
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1E1E1E',
-    borderRadius: 10,
-    marginBottom: 15,
-    paddingHorizontal: 10,
-    height: 50,
-  },
-  input: {
+  container: {
     flex: 1,
-    fontSize: 16,
-    paddingLeft: 10,
-    color: 'white',
+    backgroundColor: '#121212',
+    paddingHorizontal: 20,
   },
-  icon: {
-    marginRight: 10,
-  },
-  button: {
-    backgroundColor: '#de822c',
-    borderRadius: 10,
-    paddingVertical: 15,
+  headerSection: {
     alignItems: 'center',
-    marginTop: 20,
-    bottom: 0,
-    
+    paddingTop: 20,
+    paddingBottom: 30,
   },
-  buttonText: {
-    color: 'white',
+  headerTitle: {
+    fontSize: 28,
     fontWeight: 'bold',
+    color: '#de822c',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  headerSubtitle: {
     fontSize: 16,
-  },
-  map: {
-    flex: 1
-  },
-  mapButtonContainer :{
-    backgroundColor : '1e1e1e',
-  },
-  mapButton: {
-    backgroundColor: '#de822c',
-    borderRadius: 10,
-    paddingVertical: 15,
-    alignItems: 'center',
-    margin: 10,
+    color: '#A1A7B3',
+    textAlign: 'center',
+    lineHeight: 22,
   },
   centeredLoader: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'black',
+  },
+  loadingText: {
+    color: '#A1A7B3',
+    fontSize: 16,
+    marginTop: 15,
+    fontWeight: '500',
   },
   mapContainer: {
     flex: 1,
-    borderRadius: 18,
+    borderRadius: 20,
     overflow: 'hidden',
-    marginBottom: 18,
+    marginBottom: 20,
     borderWidth: 2,
-    borderColor: '#23242a',
+    borderColor: '#23262F',
     backgroundColor: '#181A20',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    position: 'relative',
+  },
+  map: {
+    flex: 1,
+  },
+  customMarker: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFF',
+    borderRadius: 20,
+    padding: 5,
+    borderWidth: 2,
+    borderColor: '#de822c',
+    elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
-  mapButtonModern: {
-    backgroundColor: '#23242a',
-    borderRadius: 10,
-    paddingVertical: 14,
+  mapConfirmButton: {
+    position: 'absolute',
+    bottom: 15,
+    right: 15,
+    backgroundColor: '#181A20',
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
-    marginTop: 2,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 25,
     borderWidth: 1,
     borderColor: '#de822c',
-    width: '100%',
-    alignSelf: 'center',
-    shadowColor: '#de822c',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.10,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  mapButtonText: {
-    color: '#de822c',
-    fontWeight: 'bold',
-    fontSize: 16,
-    letterSpacing: 0.2,
-  },
-  buttonModern: {
-    backgroundColor: '#de822c',
-    borderRadius: 10,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginTop: 18,
-    width: '100%',
-    alignSelf: 'center',
-    shadowColor: '#de822c',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.13,
-    shadowRadius: 4,
     elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  mapConfirmButtonText: {
+    color: '#de822c',
+    fontWeight: '600',
+    fontSize: 14,
+    marginLeft: 6,
+  },
+  inputsSection: {
+    marginBottom: 25,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#181A20',
+    borderRadius: 16,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#23262F',
+    paddingHorizontal: 15,
+    paddingVertical: 18,
+  },
+  inputIconContainer: {
+    width: 24,
+    alignItems: 'center',
+    marginRight: 15,
+  },
+  input: {
+    flex: 1,
+    fontSize: 16,
+    color: '#FFF',
+    fontWeight: '500',
+  },
+  locationText: {
+    flex: 1,
+    fontSize: 16,
+    color: '#FFF',
+    fontWeight: '500',
+    lineHeight: 22,
+  },
+  submitButton: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 20,
+  },
+  submitButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 18,
+    paddingHorizontal: 30,
+  },
+  submitButtonText: {
+    color: '#FFF',
+    fontWeight: 'bold',
+    fontSize: 17,
+    marginRight: 8,
   },
 });
 

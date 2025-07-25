@@ -25,7 +25,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from '@expo/vector-icons';
 import { Easing } from 'react-native-reanimated';
-import { getUserId } from '../utils/constants';
+import { getUserId } from "../utils/constants";
+import { triggerMatchVibration } from "../utils/notifications";
 import CustomAlert from "../components/CustomAlert";
 
 const VerificationImage = require("../assets/icons/verified-logo.png");
@@ -377,6 +378,11 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           fullName: user.fullName,
           image: avatar,
         };
+        
+        // 🎉 Trigger vibration for successful match
+        triggerMatchVibration();
+        console.log("🎉 Match detected in userLiked - vibrating!");
+        
         navigation.navigate("MatchScreen", {
           user: currentUser,
           matchedUser: {
@@ -434,6 +440,11 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           fullName: user.fullName,
           image: avatar,
         };
+        
+        // 🎉 Trigger vibration for successful super like match
+        triggerMatchVibration();
+        console.log("🎉 Match detected in handleSuperLike - vibrating!");
+        
         navigation.navigate("MatchScreen", {
           user: currentUser,
           matchedUser: {
@@ -770,20 +781,199 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             {selectedProfile && (
-              <ScrollView contentContainerStyle={styles.modalScrollContainer}>
-                {/* Top bar with close and 3-dots menu icons */}
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                  <TouchableOpacity activeOpacity={0.8}
-                  onPress={() => setSelectedProfile(null)} style={{ paddingVertical: 8, paddingHorizontal: 16 }}>
-                    <Image
-                      source={require("../assets/icons/red-cross.png")}
-                      style={styles.closeIconSmall}
-                    />
+              <>
+                {/* Custom Header */}
+                <View style={styles.modalHeader}>
+                  <TouchableOpacity 
+                    style={styles.modalBackButton} 
+                    onPress={() => setSelectedProfile(null)}
+                  >
+                    <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => setMenuVisible(true)} style={{ paddingVertical: 8, paddingHorizontal: 16 }}>
-                    <Ionicons name="ellipsis-vertical" size={28} color="#de822c" />
+                  <Text style={styles.modalHeaderTitle}>Profile</Text>
+                  <TouchableOpacity 
+                    style={styles.modalMenuButton}
+                    onPress={() => setMenuVisible(true)}
+                  >
+                    <Ionicons name="ellipsis-vertical" size={24} color="#FFFFFF" />
                   </TouchableOpacity>
                 </View>
+
+                <ScrollView 
+                  style={styles.modalScrollContainer} 
+                  showsVerticalScrollIndicator={false}
+                  contentContainerStyle={styles.modalScrollContent}
+                >
+                  {/* Image Carousel */}
+                  <View style={styles.modalImageContainer}>
+                    {Array.isArray(selectedProfile.images) && selectedProfile.images.length > 0 ? (
+                      <>
+                        <ScrollView
+                          horizontal
+                          pagingEnabled
+                          showsHorizontalScrollIndicator={false}
+                          onScroll={(event) => {
+                            const scrollPosition = event.nativeEvent.contentOffset.x;
+                            const index = Math.round(scrollPosition / screenWidth);
+                            setCurrentImageIndex(index);
+                          }}
+                          scrollEventThrottle={16}
+                        >
+                          {selectedProfile.images.map((imageUrl, index) => (
+                            <View key={index} style={styles.modalImageWrapper}>
+                              <Animated.Image
+                                source={{ uri: imageUrl }}
+                                style={[styles.modalProfileImage, { opacity: fadeAnim }]}
+                                resizeMode="cover"
+                              />
+                            </View>
+                          ))}
+                        </ScrollView>
+                        
+                        {/* Image Indicators */}
+                        {selectedProfile.images.length > 1 && (
+                          <View style={styles.modalImageIndicators}>
+                            {selectedProfile.images.map((_, index) => (
+                              <View
+                                key={index}
+                                style={[
+                                  styles.modalIndicator,
+                                  currentImageIndex === index && styles.modalActiveIndicator,
+                                ]}
+                              />
+                            ))}
+                          </View>
+                        )}
+                      </>
+                    ) : (
+                      <View style={styles.modalNoImageContainer}>
+                        <Ionicons name="person-circle" size={120} color="#666" />
+                        <Text style={styles.modalNoImageText}>No photos available</Text>
+                      </View>
+                    )}
+
+                    {/* Gradient Overlay */}
+                    <LinearGradient
+                      colors={["transparent", "rgba(15,15,15,0.8)"]}
+                      style={styles.modalGradientOverlay}
+                    />
+                  </View>
+
+                  {/* Profile Content */}
+                  <View style={styles.modalContentContainer}>
+                    {/* Name and Age */}
+                    <View style={styles.modalNameSection}>
+                      <Text style={styles.modalNameText}>
+                        {selectedProfile.fullName?.split(" ")[0] || "User"}
+                      </Text>
+                      <View style={styles.modalAgeContainer}>
+                        <Text style={styles.modalAgeText}>{selectedProfile.age}</Text>
+                      </View>
+                    </View>
+
+                    {/* Gender and Relationship */}
+                    <View style={styles.modalInfoRow}>
+                      {selectedProfile.gender && (
+                        <View style={styles.modalInfoTag}>
+                          <Ionicons name="person" size={16} color="#FF8A00" />
+                          <Text style={styles.modalInfoTagText}>{selectedProfile.gender}</Text>
+                        </View>
+                      )}
+                      {selectedProfile.relationshipType && (
+                        <View style={styles.modalInfoTag}>
+                          <Ionicons name="heart" size={16} color="#FF8A00" />
+                          <Text style={styles.modalInfoTagText}>{selectedProfile.relationshipType}</Text>
+                        </View>
+                      )}
+                    </View>
+
+                    {/* Distance */}
+                    <View style={styles.modalDistanceContainer}>
+                      <Ionicons name="location" size={16} color="#FF8A00" />
+                      <Text style={styles.modalDistanceText}>
+                        {Math.round(selectedProfile.distance)} km away
+                      </Text>
+                    </View>
+
+                    {/* Interests */}
+                    {selectedProfile.interests && (
+                      <View style={styles.modalInterestsSection}>
+                        <Text style={styles.modalSectionTitle}>Interests</Text>
+                        <View style={styles.modalInterestsContainer}>
+                          {selectedProfile.interests
+                            .split(",")
+                            .map((interest, index) => (
+                              <View key={index} style={styles.modalInterestBadge}>
+                                <Text style={styles.modalInterestText}>
+                                  {interest.trim()}
+                                </Text>
+                              </View>
+                            ))}
+                        </View>
+                      </View>
+                    )}
+
+                    {/* Profile Details */}
+                    <View style={styles.modalDetailsSection}>
+                      <Text style={styles.modalSectionTitle}>About</Text>
+                      
+                      <View style={styles.modalDetailsGrid}>
+                        {/* Workout */}
+                        {selectedProfile.workout && (
+                          <View style={styles.modalDetailCard}>
+                            <View style={styles.modalDetailIcon}>
+                              <Ionicons name="fitness" size={20} color="#FF8A00" />
+                            </View>
+                            <View style={styles.modalDetailContent}>
+                              <Text style={styles.modalDetailLabel}>Workout</Text>
+                              <Text style={styles.modalDetailValue}>{selectedProfile.workout}</Text>
+                            </View>
+                          </View>
+                        )}
+
+                        {/* Smoking */}
+                        {selectedProfile.smoking && (
+                          <View style={styles.modalDetailCard}>
+                            <View style={styles.modalDetailIcon}>
+                              <Ionicons name="remove-circle-outline" size={20} color="#FF8A00" />
+                            </View>
+                            <View style={styles.modalDetailContent}>
+                              <Text style={styles.modalDetailLabel}>Smoking</Text>
+                              <Text style={styles.modalDetailValue}>{selectedProfile.smoking}</Text>
+                            </View>
+                          </View>
+                        )}
+
+                        {/* Drinking */}
+                        {selectedProfile.drinking && (
+                          <View style={styles.modalDetailCard}>
+                            <View style={styles.modalDetailIcon}>
+                              <Ionicons name="wine" size={20} color="#FF8A00" />
+                            </View>
+                            <View style={styles.modalDetailContent}>
+                              <Text style={styles.modalDetailLabel}>Drinking</Text>
+                              <Text style={styles.modalDetailValue}>{selectedProfile.drinking}</Text>
+                            </View>
+                          </View>
+                        )}
+
+                        {/* Zodiac */}
+                        {selectedProfile.zodiac && (
+                          <View style={styles.modalDetailCard}>
+                            <View style={styles.modalDetailIcon}>
+                              <Ionicons name="star" size={20} color="#FF8A00" />
+                            </View>
+                            <View style={styles.modalDetailContent}>
+                              <Text style={styles.modalDetailLabel}>Zodiac</Text>
+                              <Text style={styles.modalDetailValue}>{selectedProfile.zodiac}</Text>
+                            </View>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                  </View>
+                </ScrollView>
+
                 {/* Menu Modal */}
                 <Modal
                   visible={menuVisible}
@@ -803,17 +993,33 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
                           }
                         }}
                       >
+                        <Ionicons name="remove-circle-outline" size={20} color="#FF4444" />
                         <Text style={styles.menuText}>Block User</Text>
                       </TouchableOpacity>
-                      <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); setReportModalVisible(true); }}>
+                      <TouchableOpacity 
+                        style={styles.menuItem} 
+                        onPress={() => { 
+                          setMenuVisible(false); 
+                          setReportModalVisible(true); 
+                        }}
+                      >
+                        <Ionicons name="flag" size={20} color="#FF8A00" />
                         <Text style={styles.menuText}>Report User</Text>
                       </TouchableOpacity>
-                      <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); handleShareProfile(); }}>
+                      <TouchableOpacity 
+                        style={styles.menuItem} 
+                        onPress={() => { 
+                          setMenuVisible(false); 
+                          handleShareProfile(); 
+                        }}
+                      >
+                        <Ionicons name="share-social" size={20} color="#00BFFF" />
                         <Text style={styles.menuText}>Share Profile</Text>
                       </TouchableOpacity>
                     </View>
                   </TouchableOpacity>
                 </Modal>
+
                 {/* Report User Modal */}
                 <Modal
                   visible={reportModalVisible}
@@ -857,143 +1063,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
                     </View>
                   </TouchableOpacity>
                 </Modal>
-                {/* Image Navigation with Smooth Animation */}
-                <View style={styles.imageContainer}>
-                  <TouchableOpacity
-                    style={styles.imageTouchableLeft}
-                    onPress={() => handlePrevImage()}
-                  />
-                  <Animated.Image
-                    source={{
-                      uri:
-                        Array.isArray(selectedProfile.images) && selectedProfile.images.length > 0
-                          ? selectedProfile.images[currentImageIndex]
-                          : "https://via.placeholder.com/400x600/AAAAAA/FFFFFF?text=No+Image",
-                    }}
-                    style={[styles.modalImage, { opacity: fadeAnim }]}
-                  />
-                  <TouchableOpacity
-                    style={styles.imageTouchableRight}
-                    onPress={() => handleNextImage()}
-                  />
-                </View>
-
-                {/* Dotted Navigation */}
-                <View style={styles.dotsContainer}>
-                  {Array.isArray(selectedProfile.images) && selectedProfile.images.length > 0
-                    ? selectedProfile.images.map((_, index) => {
-                        return (
-                          <Animated.View
-                            key={index}
-                            style={[
-                              styles.dot,
-                              {
-                                transform: [
-                                  {
-                                    translateX: dotAnimation.interpolate({
-                                      inputRange: [index - 1, index, index + 1],
-                                      outputRange: [-1, 0, 1],
-                                      extrapolate: "clamp",
-                                    }),
-                                  },
-                                ],
-                                backgroundColor:
-                                  currentImageIndex === index ? "#de822c" : "#777",
-                                width: currentImageIndex === index ? 30 : 30,
-                              },
-                            ]}
-                          />
-                        );
-                      })
-                    : [<Animated.View key={0} style={[styles.dot, { backgroundColor: "#777", width: 30 }]} />]}
-                </View>
-
-                {/* Profile Details */}
-                <View style={styles.modalDetails}>
-                  <Text style={styles.modalName}>
-                    {selectedProfile.fullName} {selectedProfile.age}{" "}
-                    {selectedProfile.verifiedUser && (
-                      <Image
-                        source={require("../assets/icons/verified-logo.png")}
-                        style={styles.verificationImage}
-                      />
-                    )}
-                  </Text>
-                  <Text style={styles.modalGender}>
-                    {selectedProfile.gender}
-                  </Text>
-                  <Text style={styles.modalRelationship}>
-                    {selectedProfile.relationshipType}
-                  </Text>
-                  <Text style={styles.modalLocation}>
-                    <Text style={styles.distance}>
-                      {Math.round(selectedProfile.distance) + " km away"}
-                    </Text>
-                  </Text>
-
-                  <View style={styles.divider} />
-
-                  <Text style={styles.myInterestsText}>My interests</Text>
-
-                  <View style={styles.interestsContainer}>
-                    {selectedProfile.interests
-                      .split(",")
-                      .map((interest, index) => (
-                        <View key={index} style={styles.interestItem}>
-                          <Text style={styles.interestText}>
-                            {interest.trim()}
-                          </Text>
-                        </View>
-                      ))}
-                  </View>
-                  <View style={styles.divider} />
-
-                  <View style={styles.modalInfoContainer}>
-                    <Image
-                      source={require("../assets/icons/dumble.png")}
-                      style={styles.modalIcons}
-                    />
-                    <Text style={styles.modalBio}>
-                      {selectedProfile.workout}
-                    </Text>
-                  </View>
-                  <View style={styles.divider} />
-
-                  <View style={styles.modalInfoContainer}>
-                    <Image
-                      source={require("../assets/icons/cigarette.png")}
-                      style={styles.modalIcons}
-                    />
-                    <Text style={styles.modalBio}>
-                      {selectedProfile.smoking}
-                    </Text>
-                  </View>
-                  <View style={styles.divider} />
-
-                  <View style={styles.modalInfoContainer}>
-                    <Image
-                      source={require("../assets/icons/wine.png")}
-                      style={styles.modalIcons}
-                    />
-                    <Text style={styles.modalBio}>
-                      {selectedProfile.drinking}
-                    </Text>
-                  </View>
-                  <View style={styles.divider} />
-
-                  <View style={styles.modalInfoContainer}>
-                    <Image
-                      source={require("../assets/icons/constellation.png")}
-                      style={styles.modalIcons}
-                    />
-                    <Text style={styles.modalBio}>
-                      {selectedProfile.zodiac}
-                    </Text>
-                  </View>
-                  <View style={styles.divider} />
-                </View>
-
-              </ScrollView>
+              </>
             )}
           </View>
         </View>
@@ -1136,20 +1206,14 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.8)",
+    backgroundColor: "rgba(0, 0, 0, 0.9)",
   },
   modalContent: {
-    width: "100%", // Changed from '90%' to '100%'
-    height: "100%", // Changed from '80%' to '100%'
-    backgroundColor: "#121212",
-    borderRadius: 15, // You might want to remove this if you want full screen
-    overflow: "hidden",
+    flex: 1,
+    backgroundColor: "#0F0F0F",
   },
   modalScrollContainer: {
-    marginTop: 30, //adding distance between the top of the screen and profile images on the profile modal
-    paddingBottom: 20,
+    flex: 1,
   },
   modalImage: {
     width: 350,
@@ -1305,6 +1369,9 @@ const styles = StyleSheet.create({
   menuItem: {
     paddingVertical: 14,
     paddingHorizontal: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   menuText: {
     fontSize: 16,
@@ -1357,6 +1424,225 @@ const styles = StyleSheet.create({
     height: 28,
     tintColor: '#de822c',
     marginLeft: 10,
+  },
+  // New Professional Modal Styles
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: "#0F0F0F",
+    borderBottomWidth: 0.5,
+    borderBottomColor: "#333",
+  },
+  modalBackButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#1F1F1F",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalHeaderTitle: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  modalMenuButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#1F1F1F",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalScrollContent: {
+    paddingBottom: 40,
+  },
+  modalImageContainer: {
+    position: "relative",
+    height: 500,
+  },
+  modalImageWrapper: {
+    width: Dimensions.get("window").width,
+    height: 500,
+  },
+  modalProfileImage: {
+    width: "100%",
+    height: "100%",
+  },
+  modalImageIndicators: {
+    position: "absolute",
+    bottom: 20,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "rgba(255, 255, 255, 0.3)",
+    marginHorizontal: 4,
+  },
+  modalActiveIndicator: {
+    backgroundColor: "#FF8A00",
+    width: 24,
+  },
+  modalNoImageContainer: {
+    width: Dimensions.get("window").width,
+    height: 500,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#1F1F1F",
+  },
+  modalNoImageText: {
+    color: "#888888",
+    fontSize: 16,
+    marginTop: 16,
+    fontWeight: "500",
+  },
+  modalGradientOverlay: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 100,
+  },
+  modalContentContainer: {
+    backgroundColor: "#0F0F0F",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    marginTop: -24,
+    paddingTop: 24,
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+  },
+  modalNameSection: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  modalNameText: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#FFFFFF",
+    flex: 1,
+  },
+  modalAgeContainer: {
+    backgroundColor: "#FF8A00",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  modalAgeText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  modalInfoRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 16,
+  },
+  modalInfoTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#1F1F1F",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 16,
+    gap: 6,
+  },
+  modalInfoTagText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  modalDistanceContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 20,
+    backgroundColor: "#1F1F1F",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 8,
+  },
+  modalDistanceText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  modalInterestsSection: {
+    marginBottom: 24,
+  },
+  modalSectionTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#FF8A00",
+    marginBottom: 12,
+  },
+  modalInterestsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  modalInterestBadge: {
+    backgroundColor: "#1F1F1F",
+    borderWidth: 1,
+    borderColor: "#FF8A00",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  modalInterestText: {
+    color: "#FF8A00",
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  modalDetailsSection: {
+    marginBottom: 24,
+  },
+  modalDetailsGrid: {
+    gap: 12,
+  },
+  modalDetailCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#1F1F1F",
+    padding: 16,
+    borderRadius: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: "#FF8A00",
+  },
+  modalDetailIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255, 138, 0, 0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 16,
+  },
+  modalDetailContent: {
+    flex: 1,
+  },
+  modalDetailLabel: {
+    fontSize: 14,
+    color: "#888888",
+    marginBottom: 4,
+    fontWeight: "500",
+  },
+  modalDetailValue: {
+    fontSize: 16,
+    color: "#FFFFFF",
+    fontWeight: "600",
   },
 });
 

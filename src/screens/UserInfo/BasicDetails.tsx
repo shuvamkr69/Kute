@@ -10,6 +10,8 @@ import {
   SafeAreaView,
   Modal,
   FlatList,
+  ToastAndroid,
+  Dimensions,
 } from "react-native";
 import CustomAlert from "../../components/CustomAlert";
 import Icon from "react-native-vector-icons/FontAwesome";
@@ -17,6 +19,29 @@ import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import PickerComponent from "../../components/PickerComponent";
 import BackButton from "../../components/BackButton";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import MaskedView from "@react-native-masked-view/masked-view";
+
+const { width } = Dimensions.get('window');
+
+// Gradient Icon Component
+const GradientIcon = ({ name, size = 20 }: { name: any; size?: number }) => (
+  <MaskedView
+    style={{ width: size, height: size }}
+    maskElement={
+      <View style={{ flex: 1, backgroundColor: 'transparent', justifyContent: 'center', alignItems: 'center' }}>
+        <Ionicons name={name} size={size} color="black" />
+      </View>
+    }
+  >
+    <LinearGradient
+      colors={["#de822c", "#ff172e"]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={{ flex: 1 }}
+    />
+  </MaskedView>
+);
 
 type Props = NativeStackScreenProps<any, "BasicDetails">;
 
@@ -50,7 +75,7 @@ const BasicDetails: React.FC<Props> = ({ navigation }) => {
     "Photography",
     "Cooking",
   ];
-  const relationshipOptions = ["Long Term", "Casual", "Hookup", "Marriage"];
+  const relationshipOptions = ["Long Term", "Casual", "Hookup", "Marriage", "Not Set"];
   const genderOrientationOptions = [
     "Straight",
     "Gay",
@@ -98,13 +123,23 @@ const BasicDetails: React.FC<Props> = ({ navigation }) => {
   ];
 
   const selectInterest = (item: string) => {
-    setSelectedInterests((prev) =>
-      prev.includes(item)
-        ? prev.filter((interest) => interest !== item)
-        : prev.length < 7
-        ? [...prev, item]
-        : prev
-    );
+    setSelectedInterests((prev) => {
+      // Check if the interest is already selected
+      if (prev.includes(item)) {
+        return prev.filter((interest) => interest !== item);
+      }
+
+      // Prevent duplicates and limit to a maximum of 7 interests
+      if (prev.length < 7) {
+        return [...prev, item];
+      } else {
+        ToastAndroid.show(
+          "You can select up to 7 interests only!",
+          ToastAndroid.SHORT
+        );
+        return prev;
+      }
+    });
   };
 
   const removeInterest = (item: string) => {
@@ -172,41 +207,47 @@ const BasicDetails: React.FC<Props> = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <BackButton title={"Tell us about yourself"} />
-      <ScrollView contentContainerStyle={[styles.scrollContainer, { paddingBottom: 40 }]}>
-        <TouchableOpacity style={[styles.inputContainer, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]} activeOpacity={1}>
-          <Icon
-            name="calendar"
-            size={20}
-            color="#de822c"
-            alignItems={"flex-end"}
-          />
-          <TextInput
-            style={[styles.input, { flex: 1, textAlign: 'right' }]}
-            placeholder="Select Age"
-            placeholderTextColor="#B0B0B0"
-            value={age}
-            onChangeText={setAge}
-            keyboardType="numeric"
-          />
-        </TouchableOpacity>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContainer} 
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.headerSection}>
+          <Text style={styles.headerTitle}>About You</Text>
+          <Text style={styles.headerSubtitle}>
+            Help us understand who you are and what you're looking for
+          </Text>
+        </View>
 
-        <View style={{ width: "100%" }}>
+        <View style={styles.formSection}>
+          <View style={styles.ageInputContainer}>
+            <View style={styles.inputIconContainer}>
+              <GradientIcon name="calendar-outline" size={20} />
+            </View>
+            <TextInput
+              style={styles.ageInput}
+              placeholder="Enter your age"
+              placeholderTextColor="#888"
+              value={age}
+              onChangeText={setAge}
+              keyboardType="numeric"
+              maxLength={2}
+            />
+          </View>
+
           <PickerComponent
             label="Gender"
             selectedValue={gender}
             options={genderOptions}
             onValueChange={setGender}
-            icon={<Ionicons name="person-outline" size={20} color="#de822c" />}
+            icon={<GradientIcon name="person-outline" size={20} />}
           />
 
           <PickerComponent
-            label="Gender Orientaion"
+            label="Gender Orientation"
             selectedValue={genderOrientation}
             options={genderOrientationOptions}
             onValueChange={setGenderOrientation}
-            icon={
-              <Ionicons name="male-female-outline" size={20} color="#de822c" />
-            }
+            icon={<GradientIcon name="male-female-outline" size={20} />}
           />
 
           <PickerComponent
@@ -214,7 +255,7 @@ const BasicDetails: React.FC<Props> = ({ navigation }) => {
             selectedValue={personality}
             options={personalityType}
             onValueChange={setPersonality}
-            icon={<Ionicons name="happy-outline" size={20} color="#de822c" />}
+            icon={<GradientIcon name="happy-outline" size={20} />}
           />
 
           <PickerComponent
@@ -222,7 +263,7 @@ const BasicDetails: React.FC<Props> = ({ navigation }) => {
             selectedValue={religion}
             options={religionOptions}
             onValueChange={setReligion}
-            icon={<Ionicons name="leaf-outline" size={20} color="#de822c" />}
+            icon={<GradientIcon name="leaf-outline" size={20} />}
           />
 
           <PickerComponent
@@ -230,7 +271,7 @@ const BasicDetails: React.FC<Props> = ({ navigation }) => {
             selectedValue={occupation}
             options={occupationOptions}
             onValueChange={setOccupation}
-            icon={<Ionicons name="briefcase-outline" size={20} color="#de822c" />}
+            icon={<GradientIcon name="briefcase-outline" size={20} />}
           />
 
           <PickerComponent
@@ -238,79 +279,78 @@ const BasicDetails: React.FC<Props> = ({ navigation }) => {
             selectedValue={loveLanguage}
             options={loveLanguageOptions}
             onValueChange={setloveLanguage}
-            icon={<Ionicons name="heart-circle-outline" size={20} color="#de822c" />}
+            icon={<GradientIcon name="heart-circle-outline" size={20} />}
+          />
+
+          <View style={styles.interestsSection}>
+            <Text style={styles.sectionLabel}>Interests</Text>
+            <TouchableOpacity
+              style={styles.interestsContainer}
+              onPress={() => setShowInterestModal(true)}
+              activeOpacity={0.8}
+            >
+              <View style={styles.interestsContent}>
+                {selectedInterests.length === 0 ? (
+                  <Text style={styles.placeholderText}>Select your interests</Text>
+                ) : (
+                  <View style={styles.tagsContainer}>
+                    {selectedInterests.map((item, index) => (
+                      <View key={index} style={styles.tag}>
+                        <Text style={styles.tagText}>{item}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </View>
+              <GradientIcon name="chevron-forward" size={20} />
+            </TouchableOpacity>
+          </View>
+
+          <PickerComponent
+            label="Relationship Type"
+            selectedValue={relationshipType}
+            options={relationshipOptions}
+            onValueChange={setRelationshipType}
+            icon={<GradientIcon name="heart-outline" size={20} />}
           />
         </View>
 
-        <TouchableOpacity
-          style={[styles.inputContainer, { marginTop: 18 }]}
-          onPress={() => setShowInterestModal(true)}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, justifyContent: 'space-between' }}>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', flex: 1 }}>
-              {selectedInterests.length === 0 ? (
-                <Text style={{ color: "#B0B0B0", paddingLeft: 10 }}>
-                  Your interests
-                </Text>
-              ) : (
-                selectedInterests.map((item, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    style={styles.tag}
-                    onPress={() => removeInterest(item)}
-                  >
-                    <Text style={styles.tagText}>{item}</Text>
-                  </TouchableOpacity>
-                ))
-              )}
-            </View>
-            <Icon name="pencil" size={20} color="#de822c" style={{ marginLeft: 8 }} />
-          </View>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.inputContainer, { marginBottom: 24 }]}
-          onPress={() => setShowRelationshipModal(true)}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, justifyContent: 'space-between' }}>
-            <Text
-              style={{
-                color: relationshipType ? "#FFF" : "#B0B0B0",
-                paddingLeft: 10,
-              }}
-            >
-              {relationshipType || "Select Relationship Type"}
-            </Text>
-            <Icon name="heart" size={20} color="#de822c" style={{ marginLeft: 8 }} />
-          </View>
-        </TouchableOpacity>
-
         <Modal visible={showInterestModal} transparent animationType="fade">
           <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <FlatList
-                data={interestOptions}
-                keyExtractor={(item) => item}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    onPress={() => selectInterest(item)}
-                    style={styles.interestOption}
-                  >
-                    <Text
-                      style={[
-                        styles.interestText,
-                        selectedInterests.includes(item) &&
-                          styles.selectedInterest,
-                      ]}
+            <View style={styles.pickerModalContent}>
+              <Text style={styles.pickerModalLabel}>Select Interests</Text>
+              <View style={styles.bubbleContainer}>
+                {interestOptions.map((item) => {
+                  const isSelected = selectedInterests.includes(item);
+                  return (
+                    <TouchableOpacity
+                      key={item}
+                      style={styles.bubbleTouchable}
+                      onPress={() => selectInterest(item)}
+                      activeOpacity={0.9}
                     >
-                      {item}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              />
+                      {isSelected ? (
+                        <LinearGradient
+                          colors={["#ff172e", "#de822c"]}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 1 }}
+                          style={styles.bubble}
+                        >
+                          <Text style={[styles.bubbleText, { color: "#fff" }]}>{item}</Text>
+                        </LinearGradient>
+                      ) : (
+                        <View style={[styles.bubble, styles.bubbleUnselected]}>
+                          <Text style={[styles.bubbleText, { color: "#B0B0B0" }]}>{item}</Text>
+                        </View>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
               <TouchableOpacity
                 onPress={() => setShowInterestModal(false)}
                 style={styles.confirmButton}
+                activeOpacity={0.9}
               >
                 <Text style={styles.confirmButtonText}>Confirm</Text>
               </TouchableOpacity>
@@ -318,44 +358,23 @@ const BasicDetails: React.FC<Props> = ({ navigation }) => {
           </View>
         </Modal>
 
-        <Modal visible={showRelationshipModal} transparent animationType="fade">
-          <View style={styles.modalContainer}>
-            <View style={styles.modalContent}>
-              <FlatList
-                data={relationshipOptions}
-                keyExtractor={(item) => item}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    onPress={() => {
-                      setRelationshipType(item);
-                      setShowRelationshipModal(false);
-                    }}
-                    style={styles.interestOption}
-                  >
-                    <Text
-                      style={[
-                        styles.interestText,
-                        relationshipType === item && styles.selectedInterest,
-                      ]}
-                    >
-                      {item}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              />
-              <TouchableOpacity
-                onPress={() => setShowRelationshipModal(false)}
-                style={styles.confirmButton}
-              >
-                <Text style={styles.confirmButtonText}>Confirm</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
-        <TouchableOpacity style={styles.button} onPress={detailHandler}>
-          <Text style={styles.buttonText}>Update Profile</Text>
+        <TouchableOpacity 
+          style={styles.continueButton} 
+          onPress={detailHandler}
+          activeOpacity={0.9}
+        >
+          <LinearGradient
+            colors={["#de822c", "#ff172e"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.continueButtonGradient}
+          >
+            <Text style={styles.continueButtonText}>Continue</Text>
+            <Ionicons name="arrow-forward" size={20} color="#FFF" />
+          </LinearGradient>
         </TouchableOpacity>
       </ScrollView>
+      
       <CustomAlert
         visible={customAlert.visible}
         title={customAlert.title}
@@ -369,54 +388,98 @@ const BasicDetails: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "black",
+    backgroundColor: "#121212",
   },
   scrollContainer: {
-    padding: 20,
-    alignItems: "center",
-    backgroundColor: "black",
+    paddingHorizontal: 20,
+    paddingBottom: 30,
   },
-  header: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "white",
-    marginBottom: 30,
+  headerSection: {
+    alignItems: 'center',
+    paddingTop: 20,
+    paddingBottom: 30,
   },
-  inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#1E1E1E",
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    marginBottom: 15,
-    width: "100%",
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#de822c',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  headerSubtitle: {
+    fontSize: 16,
+    color: '#A1A7B3',
+    textAlign: 'center',
+    lineHeight: 22,
+    paddingHorizontal: 20,
+  },
+  formSection: {
+    gap: 18,
+  },
+  ageInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#181A20',
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: "#121212",
-    minHeight: 56,
-    color: "white",
+    borderColor: '#23262F',
+    paddingHorizontal: 15,
+    paddingVertical: 18,
+  },
+  inputIconContainer: {
+    width: 24,
+    alignItems: 'center',
+    marginRight: 15,
+  },
+  ageInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#FFF',
+    fontWeight: '500',
+  },
+  interestsSection: {
+    marginVertical: 10,
+  },
+  sectionLabel: {
+    color: '#de822c',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  interestsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#181A20',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#23262F',
+    paddingHorizontal: 15,
+    paddingVertical: 18,
+    justifyContent: 'space-between',
+  },
+  interestsContent: {
+    flex: 1,
+  },
+  placeholderText: {
+    color: '#888',
+    fontSize: 16,
+    fontWeight: '500',
   },
   tagsContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
-    paddingVertical: 10,
     gap: 8,
   },
   tag: {
     backgroundColor: "#de822c",
-    borderRadius: 16,
-    paddingHorizontal: 8, // reduced horizontal padding
-    paddingVertical: 4,  // reduced vertical padding
-    marginHorizontal: 2,  // reduced horizontal margin
-    marginVertical: 3,    // reduced vertical margin
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
   tagText: {
     color: "#FFF",
     fontWeight: "bold",
-  },
-  input: {
-    color: "white",
-    width: "100%",
-    paddingLeft: 10,
+    fontSize: 12,
   },
   modalContainer: {
     flex: 1,
@@ -424,65 +487,78 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  modalContent: {
-    backgroundColor: "#1E1E1E",
-    padding: 20,
-    borderRadius: 10,
-    width: "80%",
-    paddingLeft: 20,
-  },
-  interestOption: {
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#de822c",
+  pickerModalContent: {
+    backgroundColor: "#23262F",
+    borderRadius: 18,
+    padding: 24,
+    minWidth: 260,
+    maxWidth: 340,
     alignItems: "center",
   },
-  pickerRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 15,
-    backgroundColor: "#1E1E1E",
-    paddingHorizontal: 15,
-    borderRadius: 10,
-    width: "100%",
-    marginBottom: 15,
-    minHeight: 56,
-    borderColor: "#121212",
-    borderWidth: 1,
-  },
-
-  interestText: {
-    color: "#FFF",
-    fontSize: 18,
-  },
-  selectedInterest: {
+  pickerModalLabel: {
     color: "#de822c",
+    fontSize: 18,
     fontWeight: "bold",
+    marginBottom: 18,
+  },
+  bubbleContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    justifyContent: "center",
+    marginBottom: 18,
+  },
+  bubbleTouchable: {
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  bubble: {
+    borderRadius: 20,
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+    minWidth: 60,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  bubbleUnselected: {
+    backgroundColor: "#111",
+    borderWidth: 1,
+    borderColor: "#444",
+  },
+  bubbleText: {
+    fontWeight: "bold",
+    fontSize: 15,
   },
   confirmButton: {
-    marginTop: 20,
     backgroundColor: "#de822c",
-    padding: 15,
-    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 12,
     alignItems: "center",
   },
   confirmButtonText: {
     color: "#FFF",
     fontWeight: "bold",
+    fontSize: 16,
   },
-  button: {
-    backgroundColor: "#de822c",
-    paddingVertical: 15,
-    borderRadius: 10,
-    width: "100%",
-    alignItems: "center",
-    marginTop: 20,
+  continueButton: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginTop: 30,
+    marginHorizontal: 20,
   },
-  buttonText: {
-    color: "#FFF",
-    fontWeight: "bold",
-    fontSize: 18,
+  continueButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 18,
+    paddingHorizontal: 30,
+  },
+  continueButtonText: {
+    color: '#FFF',
+    fontWeight: 'bold',
+    fontSize: 17,
+    marginRight: 8,
   },
 });
 

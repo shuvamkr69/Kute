@@ -210,7 +210,7 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
       : lastMessage?.senderId
       ? lastMessage.senderId === userId
         ? `You: ${lastMessage.message}`
-        : `${lastMessage.message}`
+        : `Them: ${lastMessage.message}`
       : "No messages yet";
 
     const formattedTime = lastMessage?.createdAt

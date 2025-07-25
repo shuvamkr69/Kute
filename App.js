@@ -1,15 +1,34 @@
 import React, { useState, useEffect } from "react";
-import { NavigationContainer } from "@react-navigation/native"; // Import NavigationContainer
+import { NavigationContainer } from "@react-navigation/native";
 import AppNavigation from "./src/navigation/AppNavigation";
 import { AuthProvider, useAuth } from "./src/navigation/AuthContext";
 import { RegistrationProvider } from "./src/navigation/RegistrationContext";
 import SplashScreenComponent from "./src/components/SplashScreen";
-import { registerForPushNotifications } from "./src/utils/notifications";
+import { registerForPushNotifications, triggerMatchVibration } from "./src/utils/notifications";
+import api from "./src/utils/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { decode as atob, encode as btoa } from 'base-64';
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-// import { ClerkProvider } from '@clerk/clerk-react';
-// import  * as SecureStore  from "expo-secure-store";
+import * as Notifications from "expo-notifications";
+
+// Configure how notifications are handled when the app is in the foreground
+Notifications.setNotificationHandler({
+  handleNotification: async (notification) => {
+    // Check if it's a match notification for enhanced handling
+    const isMatchNotification = notification.request.content.data?.type === "match";
+    
+    console.log("🔧 Notification handler called for:", notification.request.content.title);
+    console.log("🔧 Is match notification:", isMatchNotification);
+    
+    return {
+      shouldShowAlert: true, // Always show alert
+      shouldPlaySound: true, // Always play sound
+      shouldSetBadge: false,
+      // Force priority for match notifications
+      priority: isMatchNotification ? Notifications.AndroidImportance.MAX : Notifications.AndroidImportance.HIGH,
+    };
+  },
+});
 
 const tokenCache = {
   async getToken(key) {
@@ -34,6 +53,35 @@ const MainApp = () => {
   const { user, loading } = useAuth(); // Fetch user authentication state
   const [isSplashVisible, setIsSplashVisible] = useState(true);
   
+  useEffect(() => {
+    // Set up notification listeners
+    const notificationListener = Notifications.addNotificationReceivedListener(notification => {
+      console.log("🔔 Notification received while app is open:", notification);
+      console.log("🔍 Notification data:", notification.request.content.data);
+      
+      // Check if it's a match notification and trigger vibration
+      if (notification.request.content.data?.type === "match") {
+        console.log("🎉 Match notification received - triggering vibration!");
+        triggerMatchVibration();
+        console.log("✅ Vibration triggered for match notification");
+      }
+    });
+
+    const responseListener = Notifications.addNotificationResponseReceivedListener(response => {
+      console.log("👆 User tapped notification:", response);
+      
+      // Handle match notification tap - could navigate to match screen
+      if (response.notification.request.content.data?.type === "match") {
+        // You can add navigation logic here if needed
+        console.log("User tapped match notification!");
+      }
+    });
+
+    return () => {
+      Notifications.removeNotificationSubscription(notificationListener);
+      Notifications.removeNotificationSubscription(responseListener);
+    };
+  }, []);
 
   useEffect(() => {
 

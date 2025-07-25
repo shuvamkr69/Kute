@@ -37,18 +37,54 @@ const UserLiked = asyncHandler(async (req, res) => {
     const user = await User.findById(userId);
     const matchedUser = await User.findById(likedUserId);
 
-    // Send push notifications
-    await sendPushNotification(
-      matchedUser.pushToken, // 🟢 user who matched back
-      "🎉 It's a Match!",
-      `You matched with ${user.fullName}`
-    );
+    console.log("🎉 MATCH DETECTED! Sending notifications...");
+    console.log("👤 User 1:", user.fullName, "Push Token:", user.pushToken ? "✅" : "❌");
+    console.log("👤 User 2:", matchedUser.fullName, "Push Token:", matchedUser.pushToken ? "✅" : "❌");
 
-    await sendPushNotification(
-      user.pushToken, // 🟢 current user
-      "🎉 It's a Match!",
-      `You matched with ${matchedUser.fullName}`
-    );
+    // Send push notifications
+    if (matchedUser.pushToken) {
+      console.log("🔥 About to send notification to matched user...");
+      try {
+        const result1 = await sendPushNotification(
+          matchedUser.pushToken, // 🟢 user who matched back
+          "🎉 It's a Match!",
+          `You matched with ${user.fullName}`,
+          {
+            type: "match",
+            matchedUserId: userId,
+            matchedUserName: user.fullName,
+            matchedUserImage: user.avatar1
+          }
+        );
+        console.log("📤 Notification sent to matched user, result:", result1);
+      } catch (error) {
+        console.error("❌ Error sending notification to matched user:", error);
+      }
+    } else {
+      console.log("❌ No push token for matched user");
+    }
+
+    if (user.pushToken) {
+      console.log("🔥 About to send notification to current user...");
+      try {
+        const result2 = await sendPushNotification(
+          user.pushToken, // 🟢 current user
+          "🎉 It's a Match!",
+          `You matched with ${matchedUser.fullName}`,
+          {
+            type: "match",
+            matchedUserId: likedUserId,
+            matchedUserName: matchedUser.fullName,
+            matchedUserImage: matchedUser.avatar1
+          }
+        );
+        console.log("📤 Notification sent to current user, result:", result2);
+      } catch (error) {
+        console.error("❌ Error sending notification to current user:", error);
+      }
+    } else {
+      console.log("❌ No push token for current user");
+    }
 
     // ✅ Return match data directly for frontend MatchScreen
     return res.status(201).json(
@@ -154,17 +190,53 @@ export const UserSuperLiked = asyncHandler(async (req, res) => {
 
     const matchedUser = await User.findById(likedUserId);
 
-    await sendPushNotification(
-      matchedUser.pushToken,
-      "🎉 It's a Match!",
-      `You matched with ${currentUser.fullName}!`
-    );
+    console.log("🎉 SUPER LIKE MATCH DETECTED! Sending notifications...");
+    console.log("👤 User 1:", currentUser.fullName, "Push Token:", currentUser.pushToken ? "✅" : "❌");
+    console.log("👤 User 2:", matchedUser.fullName, "Push Token:", matchedUser.pushToken ? "✅" : "❌");
 
-    await sendPushNotification(
-      currentUser.pushToken,
-      "🎉 It's a Match!",
-      `You matched with ${matchedUser.fullName}!`
-    );
+    if (matchedUser.pushToken) {
+      console.log("🔥 About to send super like notification to matched user...");
+      try {
+        const result1 = await sendPushNotification(
+          matchedUser.pushToken,
+          "🎉 It's a Match!",
+          `You matched with ${currentUser.fullName}!`,
+          {
+            type: "match",
+            matchedUserId: userId,
+            matchedUserName: currentUser.fullName,
+            matchedUserImage: currentUser.avatar1
+          }
+        );
+        console.log("📤 Super Like notification sent to matched user, result:", result1);
+      } catch (error) {
+        console.error("❌ Error sending super like notification to matched user:", error);
+      }
+    } else {
+      console.log("❌ No push token for matched user (super like)");
+    }
+
+    if (currentUser.pushToken) {
+      console.log("🔥 About to send super like notification to current user...");
+      try {
+        const result2 = await sendPushNotification(
+          currentUser.pushToken,
+          "🎉 It's a Match!",
+          `You matched with ${matchedUser.fullName}!`,
+          {
+            type: "match",
+            matchedUserId: likedUserId,
+            matchedUserName: matchedUser.fullName,
+            matchedUserImage: matchedUser.avatar1
+          }
+        );
+        console.log("📤 Super Like notification sent to current user, result:", result2);
+      } catch (error) {
+        console.error("❌ Error sending super like notification to current user:", error);
+      }
+    } else {
+      console.log("❌ No push token for current user (super like)");
+    }
 
     return res.status(201).json(
       new ApiResponse(

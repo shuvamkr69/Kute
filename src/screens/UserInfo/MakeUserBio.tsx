@@ -17,6 +17,26 @@ import BackButton from "../../components/BackButton";
 import CustomAlert from "../../components/CustomAlert";
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import MaskedView from '@react-native-masked-view/masked-view';
+
+// Gradient Icon Component
+const GradientIcon = ({ name, size = 20 }: { name: any; size?: number }) => (
+  <MaskedView
+    style={{ width: size, height: size }}
+    maskElement={
+      <View style={{ flex: 1, backgroundColor: 'transparent', justifyContent: 'center', alignItems: 'center' }}>
+        <Ionicons name={name} size={size} color="black" />
+      </View>
+    }
+  >
+    <LinearGradient
+      colors={["#de822c", "#ff172e"]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={{ flex: 1 }}
+    />
+  </MaskedView>
+);
 
 /** Type Definitions */
 type Props = NativeStackScreenProps<any, "MakeBio">;
@@ -172,17 +192,23 @@ const MakeBio: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={styles.backButtonContainer}>
-      <BackButton title={"Bio"} />
+      <BackButton title={"Complete Your Profile"} />
       <SafeAreaView style={styles.container}>
-        <Text style={styles.header}>Your Story</Text>
-        <Text style={styles.subtitle}>
-          Share a glimpse of your world. What makes you, you?
-        </Text>
+        <View style={styles.headerSection}>
+          <Text style={styles.subtitle}>
+            Tell potential matches what makes you unique
+          </Text>
+        </View>
+
         <View style={styles.card}>
+          <View style={styles.inputHeader}>
+            <GradientIcon name="create-outline" size={18} />
+            <Text style={styles.inputLabel}>About Me</Text>
+          </View>
           <TextInput
             style={styles.input}
-            placeholder="Tell us about yourself..."
-            placeholderTextColor="#888"
+            placeholder="Share something interesting about yourself..."
+            placeholderTextColor="#666"
             value={bio}
             onChangeText={(text) => {
               if (text.length <= 500) setBio(text);
@@ -194,36 +220,57 @@ const MakeBio: React.FC<Props> = ({ navigation }) => {
             <Text style={[styles.charCount, bio.length === 500 && { color: "#FF3B30" }]}> 
               {bio.length}/500
             </Text>
-            <Text style={styles.tipText}>Tip: Be genuine and specific!</Text>
+            <View style={styles.tipContainer}>
+              <GradientIcon name="bulb-outline" size={14} />
+              <Text style={styles.tipText}>Be authentic & specific</Text>
+            </View>
           </View>
         </View>
-        <View style={styles.infoBox}>
-          <Text style={styles.infoTitle}>What to write:</Text>
-          <Text style={styles.infoText}>• Your passions and what excites you</Text>
-          <Text style={styles.infoText}>• What you're looking for</Text>
-          <Text style={styles.infoText}>• A fun fact or a quirky trait</Text>
-          <Text style={styles.infoText}>• What makes you unique</Text>
+
+        <View style={styles.quickTipsCard}>
+          <View style={styles.tipsHeader}>
+            <GradientIcon name="checkmark-done-outline" size={18} />
+            <Text style={styles.tipsTitle}>Quick Tips</Text>
+          </View>
+          <View style={styles.tipsGrid}>
+            {[
+              { icon: 'heart-outline', text: 'Your passions' },
+              { icon: 'search-outline', text: 'What you seek' },
+              { icon: 'star-outline', text: 'Fun facts' },
+              { icon: 'sparkles-outline', text: 'What makes you special' }
+            ].map((tip, index) => (
+              <View key={index} style={styles.tipItem}>
+                <GradientIcon name={tip.icon} size={14} />
+                <Text style={styles.tipItemText}>{tip.text}</Text>
+              </View>
+            ))}
+          </View>
         </View>
-      </SafeAreaView>
-      <TouchableOpacity
-        style={styles.buttonWrapper}
-        onPress={submitData}
-        disabled={isUploading}
-        activeOpacity={0.9}
-      >
-        <LinearGradient
-          colors={["#de822c", "#ff172e"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.buttonGradient}
+
+        <TouchableOpacity
+          style={styles.buttonWrapper}
+          onPress={submitData}
+          disabled={isUploading || !bio.trim()}
+          activeOpacity={0.9}
         >
-          {isUploading ? (
-            <ActivityIndicator color="#FFF" />
-          ) : (
-            <Text style={styles.buttonText}>Continue</Text>
-          )}
-        </LinearGradient>
-      </TouchableOpacity>
+          <LinearGradient
+            colors={isUploading || !bio.trim() ? ["#666", "#888"] : ["#de822c", "#ff172e"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.buttonGradient}
+          >
+            {isUploading ? (
+              <ActivityIndicator color="#FFF" size="small" />
+            ) : (
+              <>
+                <GradientIcon name="checkmark-circle" size={20} />
+                <Text style={styles.buttonText}>Complete Profile</Text>
+              </>
+            )}
+          </LinearGradient>
+        </TouchableOpacity>
+      </SafeAreaView>
+      
       <CustomAlert
         visible={customAlert.visible}
         title={customAlert.title}
@@ -245,14 +292,19 @@ const MakeBio: React.FC<Props> = ({ navigation }) => {
 
 /** Styles */
 const styles = StyleSheet.create({
+  backButtonContainer: {
+    flex: 1,
+    backgroundColor: "#121212",
+  },
   container: {
     flex: 1,
-    backgroundColor: "black",
-    alignItems: "center",
-    paddingVertical: 20,
-    paddingHorizontal: 0,
-    justifyContent: 'flex-start',
-    // Remove maxWidth and alignSelf for full width
+    backgroundColor: "#121212",
+    paddingHorizontal: 20,
+  },
+  headerSection: {
+    alignItems: 'center',
+    paddingTop: 10,
+    paddingBottom: 20,
   },
   header: {
     fontSize: 28,
@@ -275,26 +327,23 @@ const styles = StyleSheet.create({
   },
   card: {
     width: '100%',
-    // Remove maxWidth and alignSelf for full width
     backgroundColor: '#181A20',
     borderRadius: 18,
-    paddingVertical: 32,
-    paddingHorizontal: 8,
+    paddingVertical: 20,
+    paddingHorizontal: 20,
     shadowColor: '#de822c',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.13,
     shadowRadius: 18,
     elevation: 6,
-    marginTop: 8,
-    marginBottom: 18,
+    marginBottom: 16,
     borderWidth: 1.5,
-    borderColor: '#23242a',
-    alignItems: 'stretch',
+    borderColor: '#23262F',
   },
   input: {
     width: '100%',
-    height: 240,
-    backgroundColor: '#23242a',
+    height: 120,
+    backgroundColor: '#23262F',
     color: '#FFF',
     padding: 18,
     borderRadius: 14,
@@ -312,7 +361,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 15,
   },
   charCount: {
     fontSize: 13,
@@ -323,43 +372,108 @@ const styles = StyleSheet.create({
     color: '#de822c',
     fontSize: 13,
     fontWeight: '500',
-    marginLeft: 8,
   },
-  infoBox: {
+  inputHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+    gap: 8,
+  },
+  inputLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#FFFFFF",
+  },
+  tipContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  quickTipsCard: {
     backgroundColor: '#181A20',
-    borderRadius: 14,
-    padding: 18,
-    marginTop: 8,
-    marginBottom: 18,
-    width: '100%',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
     borderWidth: 1,
-    borderColor: '#23242a',
+    borderColor: '#23262F',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
-    alignItems: 'center', // Center children horizontally
+  },
+  tipsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+    gap: 8,
+  },
+  tipsTitle: {
+    color: '#de822c',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  tipsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+  },
+  tipItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#23262F",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 6,
+    flex: 1,
+    minWidth: "48%",
+  },
+  tipItemText: {
+    fontSize: 13,
+    color: "#FFFFFF",
+    fontWeight: "500",
+  },
+  infoBox: {
+    backgroundColor: '#181A20',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 30,
+    borderWidth: 1,
+    borderColor: '#23262F',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+  },
+  infoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
   },
   infoTitle: {
     color: '#de822c',
     fontWeight: 'bold',
-    fontSize: 15,
-    marginBottom: 6,
-    textAlign: 'center', // Center text
+    fontSize: 16,
+    marginLeft: 8,
+  },
+  infoItems: {
+    gap: 10,
+  },
+  infoItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   infoText: {
     color: '#A1A7B3',
     fontSize: 14,
-    marginBottom: 2,
-    marginLeft: 2,
-    textAlign: 'center', // Center text
+    marginLeft: 10,
+    flex: 1,
+    lineHeight: 20,
   },
   buttonWrapper: {
-    width: '90%',
-    alignSelf: 'center',
-    marginTop: 10,
-    borderRadius: 12,
+    borderRadius: 16,
     overflow: 'hidden',
+    marginBottom: 20,
     elevation: 3,
     shadowColor: '#de822c',
     shadowOffset: { width: 0, height: 2 },
@@ -367,23 +481,18 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   buttonGradient: {
-    width: '100%',
-    paddingVertical: 18,
-    borderRadius: 12,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: 18,
+    paddingHorizontal: 30,
   },
   buttonText: {
     color: "#FFF",
     fontWeight: "bold",
     fontSize: 17,
     letterSpacing: 0.2,
-    textAlign: 'center',
-  },
-  backButtonContainer: {
-    flex: 1,
-    backgroundColor: "#121212",
-    // Remove any width or centering constraints
+    marginRight: 8,
   },
 });
 

@@ -19,7 +19,9 @@ export default {
         "expo-notifications",
         {
           mode: "development",
-          iosDisplayInForeground: true
+          iosDisplayInForeground: true,
+          androidMode: "default",
+          androidCollapsedTitle: "#{unread_count} new notifications",
         }
       ],
       "react-native-video"

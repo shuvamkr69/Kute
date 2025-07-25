@@ -54,6 +54,20 @@ const registerUser = asyncHandler(async (req, res) => {
     pushToken,
     religion,
   } = req.body;
+  // Parse interests if it's a JSON string
+  let parsedInterests = interests;
+  if (typeof interests === "string") {
+    try {
+      parsedInterests = JSON.parse(interests);
+      if (!Array.isArray(parsedInterests)) {
+        throw new Error("Interests must be an array");
+      }
+    } catch (error) {
+      // If JSON parsing fails, try splitting by comma
+      parsedInterests = interests.split(",").map((i) => i.trim()).filter(i => i.length > 0);
+    }
+  }
+
   // Parse location string to array of numbers if needed
   let parsedLocation = location;
   if (typeof location === "string") {
@@ -86,6 +100,11 @@ const registerUser = asyncHandler(async (req, res) => {
   }
   if (!interests) {
     throw new ApiError(400, "Interests are required");
+  }
+
+  // Validate parsed interests
+  if (!Array.isArray(parsedInterests) || parsedInterests.length === 0) {
+    throw new ApiError(400, "Interests must be a non-empty array");
   }
   if (!relationshipType) {
     throw new ApiError(400, "Relationship type is required");
@@ -157,7 +176,7 @@ const registerUser = asyncHandler(async (req, res) => {
     age,
     gender,
     personality,
-    interests,
+    interests: parsedInterests,
     relationshipType,
     genderOrientation,
     bio: bio.trim(),
@@ -753,29 +772,43 @@ const editUserProfile = async (req, res) => {
     let parsedInterests = interests;
 
     if (req.body.interests) {
-      try {
-        parsedInterests = JSON.parse(req.body.interests);
-      } catch (e) {
+      if (typeof req.body.interests === "string") {
+        try {
+          parsedInterests = JSON.parse(req.body.interests);
+          if (!Array.isArray(parsedInterests)) {
+            throw new Error("Interests must be an array");
+          }
+        } catch (e) {
+          // If JSON parsing fails, try splitting by comma
+          parsedInterests = req.body.interests.split(",").map((i) => i.trim()).filter(i => i.length > 0);
+        }
+      } else if (Array.isArray(req.body.interests)) {
+        parsedInterests = req.body.interests;
+      } else {
         return res.status(400).json({ message: "Invalid interests format" });
       }
     }
+    
+    // Convert empty strings to null for enum fields to avoid validation errors
+    const processEnumField = (value) => (value === '' || value === undefined) ? null : value;
+    
     const updatedFields = {
-      relationshipType,
+      relationshipType: processEnumField(relationshipType),
       interests: parsedInterests,
       bio,
       height,
-      occupation,
+      occupation: processEnumField(occupation),
       workingAt,
       pronouns,
       genderOrientation,
       languages,
-      loveLanguage,
+      loveLanguage: processEnumField(loveLanguage),
       zodiac,
       familyPlanning,
       bodyType,
-      drinking,
-      smoking,
-      workout,
+      drinking: processEnumField(drinking),
+      smoking: processEnumField(smoking),
+      workout: processEnumField(workout),
       religion,
       isVerified,
     };
@@ -999,12 +1032,28 @@ const addProfileView = async (req, res) => {
     const { userId } = req.body; // The profile being viewed
     if (!userId) return res.status(400).json({ message: 'userId is required' });
     if (viewerId.toString() === userId) return res.status(400).json({ message: 'Cannot view your own profile' });
+    
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: 'User not found' });
-    // Only add if not already viewed in last 24h
-    const now = new Date();
-    user.profileViews = user.profileViews.filter(v => v.viewerId.toString() !== viewerId.toString() || (now - v.viewedAt) > 24*60*60*1000);
-    user.profileViews.push({ viewerId, viewedAt: now });
+    
+    // Check if this viewer has already viewed this profile
+    const existingViewIndex = user.profileViews.findIndex(
+      view => view.viewerId.toString() === viewerId.toString()
+    );
+    
+    if (existingViewIndex !== -1) {
+      // Increment the view count and update the viewedAt timestamp
+      user.profileViews[existingViewIndex].viewCount += 1;
+      user.profileViews[existingViewIndex].viewedAt = new Date();
+    } else {
+      // Add a new view record
+      user.profileViews.push({ 
+        viewerId, 
+        viewedAt: new Date(), 
+        viewCount: 1 
+      });
+    }
+    
     await user.save();
     res.status(200).json({ message: 'Profile view recorded' });
   } catch (e) {
@@ -1018,13 +1067,15 @@ const getViewedBy = async (req, res) => {
     const userId = req.user._id;
     const user = await User.findById(userId).populate('profileViews.viewerId', 'fullName avatar1');
     if (!user) return res.status(404).json([]);
-    // Sort by most recent
+    
+    // Sort by most recent and format with view counts
     const views = [...user.profileViews].sort((a, b) => b.viewedAt - a.viewedAt);
     const formatted = views.map(v => ({
       _id: v.viewerId._id,
       fullName: v.viewerId.fullName,
       profileImage: v.viewerId.avatar1 || 'https://via.placeholder.com/150',
       viewedAt: v.viewedAt,
+      viewCount: v.viewCount || 1, // Fallback for existing records without viewCount
     }));
     res.status(200).json(formatted);
   } catch (e) {

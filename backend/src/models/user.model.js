@@ -98,7 +98,7 @@ const userSchema = new Schema(
     relationshipType: {
       type: String,
       default: null,
-      enum: ["Long Term", "Casual", "Hookup", "Marriage"],
+      enum: ["Long Term", "Casual", "Hookup", "Marriage", "Not Set"],
     },
     bio: {
       type: String,
@@ -255,6 +255,10 @@ const userSchema = new Schema(
         viewedAt: {
           type: Date,
           default: Date.now,
+        },
+        viewCount: {
+          type: Number,
+          default: 1,
         },
       },
     ],

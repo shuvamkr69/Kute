@@ -29,6 +29,7 @@ interface ViewedByUser {
   _id: string;
   fullName: string;
   profileImage: string;
+  viewCount: number;
 }
 
 const Likes: React.FC<Props> = ({ navigation }) => {
@@ -89,6 +90,7 @@ const Likes: React.FC<Props> = ({ navigation }) => {
             _id: user._id,
             fullName: user.fullName,
             profileImage: user.profileImage || 'https://via.placeholder.com/150',
+            viewCount: user.viewCount || 1,
           })));
         })
         .catch(() => setViewedBy([]))
@@ -107,6 +109,7 @@ const Likes: React.FC<Props> = ({ navigation }) => {
               _id: user._id,
               fullName: user.fullName,
               profileImage: user.profileImage || 'https://via.placeholder.com/150',
+              viewCount: user.viewCount || 1,
             })));
           })
           .catch(() => setViewedBy([]))
@@ -180,6 +183,10 @@ const Likes: React.FC<Props> = ({ navigation }) => {
       <Text style={styles.viewedByName} numberOfLines={1} ellipsizeMode="tail">
         {item.fullName.split(' ')[0]}
       </Text>
+      <View style={styles.viewCountContainer}>
+        <Icon name="eye" size={16} color="#de822c" />
+        <Text style={styles.viewCountText}>{item.viewCount}</Text>
+      </View>
     </View>
   );
 
@@ -272,6 +279,7 @@ const Likes: React.FC<Props> = ({ navigation }) => {
                             _id: user._id,
                             fullName: user.fullName,
                             profileImage: user.profileImage || 'https://via.placeholder.com/150',
+                            viewCount: user.viewCount || 1,
                           })));
                         })
                         .catch(() => setViewedBy([]))
@@ -604,5 +612,20 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: 'bold',
     flex: 1,
+  },
+  viewCountContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(222, 130, 44, 0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginLeft: 8,
+  },
+  viewCountText: {
+    color: '#de822c',
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginLeft: 4,
   },
 });

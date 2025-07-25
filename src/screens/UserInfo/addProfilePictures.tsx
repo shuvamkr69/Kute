@@ -1,15 +1,39 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { 
   View, Text, TouchableOpacity, Image, Alert, StyleSheet, SafeAreaView, FlatList, ActivityIndicator, Modal, 
-  ScrollView
+  ScrollView, Dimensions
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import Icon from 'react-native-vector-icons/FontAwesome';
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import BackButton from '../../components/BackButton';
+import { LinearGradient } from 'expo-linear-gradient';
+import MaskedView from '@react-native-masked-view/masked-view';
 
 const MAX_PHOTOS = 6;
+const { width } = Dimensions.get('window');
+const ITEM_SIZE = (width - 60) / 3;
+
+// Gradient Icon Component
+const GradientIcon = ({ name, size = 20 }: { name: any; size?: number }) => (
+  <MaskedView
+    style={{ width: size, height: size }}
+    maskElement={
+      <View style={{ flex: 1, backgroundColor: 'transparent', justifyContent: 'center', alignItems: 'center' }}>
+        <Ionicons name={name} size={size} color="black" />
+      </View>
+    }
+  >
+    <LinearGradient
+      colors={["#de822c", "#ff172e"]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={{ flex: 1 }}
+    />
+  </MaskedView>
+);
 
 type Props = NativeStackScreenProps<any, 'AddProfilePictures'>;
 
@@ -140,272 +164,411 @@ const AddProfilePictures: React.FC<Props> = ({ navigation }) => {
   };
 
   return (
-    
     <View style={styles.backButtonContainer}>
-      <BackButton title={"Show yourself to the world"}/>
-<SafeAreaView style={styles.container}>
-      
+      <BackButton title={"Add Your Photos"} />
+      <SafeAreaView style={styles.container}>
+        <View style={styles.headerSection}>
+          <Text style={styles.headerSubtitle}>
+            Upload up to 6 photos to showcase yourself
+          </Text>
+        </View>
 
-      <FlatList
-        data={[...photos, ...new Array(MAX_PHOTOS - photos.length).fill(null)]}
-        keyExtractor={(item, index) => index.toString()}
-        numColumns={2} // Changed to 2 columns
-        renderItem={({ item, index }) => (
-          <TouchableOpacity
-            style={styles.photoContainer}
-            onPress={() => item ? removeImage(index) : openModal(index)}
+        <View style={styles.photosSection}>
+          <FlatList
+            data={[...photos, ...new Array(MAX_PHOTOS - photos.length).fill(null)]}
+            keyExtractor={(item, index) => index.toString()}
+            numColumns={3}
+            scrollEnabled={false}
+            contentContainerStyle={styles.gridContainer}
+            renderItem={({ item, index }) => (
+              <TouchableOpacity
+                style={[
+                  styles.photoContainer,
+                  index === 0 && styles.primaryPhoto,
+                  item && styles.hasPhoto
+                ]}
+                onPress={() => item ? removeImage(index) : openModal(index)}
+                activeOpacity={0.8}
+              >
+                {item ? (
+                  <>
+                    <Image source={{ uri: item }} style={styles.photo} />
+                    {index === 0 && (
+                      <LinearGradient
+                        colors={["#de822c", "#ff172e"]}
+                        style={styles.primaryBadge}
+                      >
+                        <Text style={styles.primaryBadgeText}>PRIMARY</Text>
+                      </LinearGradient>
+                    )}
+                    <TouchableOpacity 
+                      style={styles.removeIcon} 
+                      onPress={() => removeImage(index)}
+                    >
+                      <LinearGradient
+                        colors={["#FF3B30", "#FF1744"]}
+                        style={styles.removeIconGradient}
+                      >
+                        <Ionicons name="close" size={16} color="#FFF" />
+                      </LinearGradient>
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  <LinearGradient
+                    colors={['#23262F', '#181A20']}
+                    style={styles.addPhotoGradient}
+                  >
+                    <GradientIcon name="add" size={24} />
+                    <Text style={styles.addPhotoText}>
+                      {index === 0 ? 'Primary' : 'Add'}
+                    </Text>
+                  </LinearGradient>
+                )}
+              </TouchableOpacity>
+            )}
+          />
+        </View>
+
+        <View style={styles.guidelinesSection}>
+          <View style={styles.guidelinesHeader}>
+            <GradientIcon name="information-circle-outline" size={16} />
+            <Text style={styles.guidelinesTitle}>Quick Tips</Text>
+          </View>
+          <View style={styles.tipsGrid}>
+            {[
+              { icon: 'camera-outline', text: 'Clear photos' },
+              { icon: 'happy-outline', text: 'Show your face' },
+              { icon: 'star-outline', text: 'Be genuine' },
+              { icon: 'checkmark-outline', text: 'Recent pics' }
+            ].map((tip, index) => (
+              <View key={index} style={styles.tipBubble}>
+                <GradientIcon name={tip.icon} size={14} />
+                <Text style={styles.tipText}>{tip.text}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+
+
+
+        {/* Modal for Image Options */}
+        {modalVisible && selectedIndex !== null && (
+          <Modal
+            transparent={true}
+            visible={modalVisible}
+            animationType="fade"
+            onRequestClose={closeModal}
           >
-            {item ? (
-              <>
-                <Image source={{ uri: item }} style={styles.photo} />
-                <TouchableOpacity style={styles.removeIcon} onPress={() => removeImage(index)}>
-                  <Icon name="times-circle" size={24} color="red" />
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContainer}>
+                <Text style={styles.modalTitle}>Add Photo</Text>
+                <Text style={styles.modalSubtitle}>Choose how you'd like to add your photo</Text>
+                
+                <View style={styles.optionContainer}>
+                  <TouchableOpacity 
+                    style={styles.optionBox} 
+                    onPress={() => { pickImage(); closeModal(); }}
+                    activeOpacity={0.8}
+                  >
+                    <LinearGradient
+                      colors={['#23262F', '#181A20']}
+                      style={styles.optionGradient}
+                    >
+                      <GradientIcon name="images-outline" size={32} />
+                      <Text style={styles.optionText}>Gallery</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity 
+                    style={styles.optionBox} 
+                    onPress={() => { takePhoto(); closeModal(); }}
+                    activeOpacity={0.8}
+                  >
+                    <LinearGradient
+                      colors={['#23262F', '#181A20']}
+                      style={styles.optionGradient}
+                    >
+                      <GradientIcon name="camera-outline" size={32} />
+                      <Text style={styles.optionText}>Camera</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                </View>
+
+                <TouchableOpacity style={styles.cancelButton} onPress={closeModal}>
+                  <Text style={styles.cancelButtonText}>Cancel</Text>
                 </TouchableOpacity>
-              </>
+              </View>
+            </View>
+          </Modal>
+        )}
+
+        <TouchableOpacity 
+          style={[styles.nextButton, isUploading && styles.disabledButton]} 
+          onPress={savePhotosAndNavigate} 
+          disabled={isUploading}
+          activeOpacity={0.9}
+        >
+          <LinearGradient
+            colors={["#de822c", "#ff172e"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.nextButtonGradient}
+          >
+            {isUploading ? (
+              <ActivityIndicator color="#FFF" size="small" />
             ) : (
               <>
-                <Icon name="plus" size={30} color="white" />
+                <Text style={styles.nextButtonText}>Continue</Text>
+                <Ionicons name="arrow-forward" size={20} color="#FFF" />
               </>
             )}
-    </TouchableOpacity>
-  )}
-/>
-
-{/* Rules Section */}
-<ScrollView style={styles.rulesContainer} contentContainerStyle={styles.rulesContent}>
-  <Text style={{ color: '#de822c', fontSize: 18, marginBottom: 10, fontWeight: 'bold' }}>Photo Guidelines</Text>
-  {/* Rule 1 */}
-  <View style={styles.ruleItem}>
-    <Text style={styles.emoji}>•</Text>
-    <Text style={styles.ruleText}>Upload clear and recent photos.</Text>
-  </View>
-  
-  <View style={styles.ruleItem}>
-    <Text style={styles.emoji}>•</Text>
-    <Text style={styles.ruleText}>Avoid using heavily filtered or blurry images.</Text>
-  </View>
-
-  {/* Rule 2 */}
-  <View style={styles.ruleItem}>
-    <Text style={styles.emoji}>•</Text>
-    <Text style={styles.ruleText}>Show your face clearly in the primary photo.</Text>
-  </View>
-  
-  <View style={styles.ruleItem}>
-    <Text style={styles.emoji}>•</Text>
-    <Text style={styles.ruleText}>Don't upload group photos without marking yourself.</Text>
-  </View>
-
-  {/* Rule 3 */}
-  <View style={styles.ruleItem}>
-    <Text style={styles.emoji}>•</Text>
-    <Text style={styles.ruleText}>Be yourself! Genuine photos work best.</Text>
-  </View>
-  
-  <View style={styles.ruleItem}>
-    <Text style={styles.emoji}>•</Text>
-    <Text style={styles.ruleText}>No explicit or inappropriate content.</Text>
-  </View>
-</ScrollView>
-
-
-
-
-      {/* Modal for Image Options */}
-      {modalVisible && selectedIndex !== null && (
-        <Modal
-          transparent={true}
-          visible={modalVisible}
-          animationType="fade"
-          onRequestClose={closeModal}
-        >
-          <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <View style={styles.optionContainer}>
-              {/* Gallery Option */}
-              <TouchableOpacity style={styles.optionBox} onPress={() => { pickImage(); closeModal(); }}>
-                <Icon name="image" size={40} color="white" />
-                <Text style={styles.optionText}>Gallery</Text>
-              </TouchableOpacity>
-
-              {/* Camera Option */}
-              <TouchableOpacity style={styles.optionBox} onPress={() => { takePhoto(); closeModal(); }}>
-                <Icon name="camera" size={40} color="white" />
-                <Text style={styles.optionText}>Camera</Text>
-              </TouchableOpacity>
-            </View>
-
-            <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
-              <Text style={styles.closeButtonText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-
-          </View>
-        </Modal>
-      )}
-
-      <TouchableOpacity 
-        style={[styles.uploadButton, isUploading && styles.disabledButton]} 
-        onPress={savePhotosAndNavigate} 
-        disabled={isUploading}
-      >
-        {isUploading ? (
-          <ActivityIndicator color="#FFF" />
-        ) : (
-          <Text style={styles.buttonText}>Next</Text>
-        )}
-      </TouchableOpacity>
-    </SafeAreaView>
-
+          </LinearGradient>
+        </TouchableOpacity>
+      </SafeAreaView>
     </View>
-    
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: 'black',
-    alignItems: 'center',
-  },
   backButtonContainer: {
     flex: 1,
-    backgroundColor: 'black',
+    backgroundColor: '#121212',
+  },
+  container: {
+    flex: 1,
+    backgroundColor: '#121212',
+    paddingHorizontal: 20,
+  },
+  headerSection: {
+    alignItems: 'center',
+    paddingTop: 10,
+    paddingBottom: 20,
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#de822c',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  headerSubtitle: {
+    fontSize: 16,
+    color: '#A1A7B3',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  photosSection: {
+    flex: 1,
+    marginBottom: 16,
+  },
+  gridContainer: {
+    paddingVertical: 8,
   },
   photoContainer: {
-    width: 140, // Adjusted width to fit 2 containers in a row
-    height: 160,
-    borderRadius: 10,
-    backgroundColor: '#1E1E1E',
-    margin: 10,
-    marginTop: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 0.5,
-    elevation: 5,
-    shadowColor: '#de822c',
-    shadowOpacity: 1,
+    width: ITEM_SIZE,
+    height: ITEM_SIZE * 1.2,
+    borderRadius: 12,
+    backgroundColor: '#181A20',
+    margin: 4,
+    borderWidth: 2,
+    borderColor: '#23262F',
+    overflow: 'hidden',
+    elevation: 3,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    borderColor: 'white',
-    position: 'relative',
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  primaryPhoto: {
+    borderColor: '#de822c',
+    borderWidth: 3,
+  },
+  hasPhoto: {
+    borderColor: '#34C759',
   },
   photo: {
     width: '100%',
     height: '100%',
-    borderRadius: 10,
+  },
+  primaryBadge: {
+    position: 'absolute',
+    top: 6,
+    left: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  primaryBadgeText: {
+    color: '#FFF',
+    fontSize: 9,
+    fontWeight: 'bold',
   },
   removeIcon: {
     position: 'absolute',
-    top: 5,
-    right: 5,
-    backgroundColor: 'rgba(0,0,0,0.6)', 
+    top: 6,
+    right: 6,
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  removeIconGradient: {
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 10,
+  },
+  addPhotoGradient: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 8,
+  },
+  addPhotoText: {
+    color: '#A1A7B3',
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 6,
+    textAlign: 'center',
+  },
+  guidelinesSection: {
+    backgroundColor: '#181A20',
     borderRadius: 12,
-    padding: 2,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#23262F',
+  },
+  guidelinesHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  guidelinesTitle: {
+    color: '#de822c',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 6,
+  },
+  tipsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  tipBubble: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#23262F',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 5,
+    flex: 1,
+    minWidth: '48%',
+  },
+  tipText: {
+    fontSize: 12,
+    color: '#FFFFFF',
+    fontWeight: '500',
+  },
+  guidelinesScroll: {
+    maxHeight: 120,
+  },
+  guidelineItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  guidelineText: {
+    color: '#A1A7B3',
+    fontSize: 14,
+    marginLeft: 10,
+    flex: 1,
+    lineHeight: 20,
   },
   modalOverlay: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
   },
   modalContainer: {
-    backgroundColor: '#2C2C2C',
-    padding: 20,
-    borderRadius: 10,
+    backgroundColor: '#181A20',
+    borderRadius: 20,
+    padding: 30,
     alignItems: 'center',
-    width: 300,
+    width: width * 0.85,
+    borderWidth: 1,
+    borderColor: '#23262F',
   },
-  
-  button: {
-    backgroundColor: 'white',
-    padding: 12,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginVertical: 5,
-    width: '100%',
-  },
-  closeButton: {
-    marginTop: 20,
-    padding: 10,
-  },
-  closeButtonText: {
-    fontSize: 16,
-    color: '#FFF',
-  },
-  uploadButton: {
-    backgroundColor: '#de822c',
-    paddingVertical: 15,
-    borderRadius: 10,
-    width: '100%',
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  disabledButton: {
-    opacity: 0.5,
-  },
-  buttonText: {
-    color: '#FFF',
+  modalTitle: {
+    fontSize: 22,
     fontWeight: 'bold',
-    fontSize: 16,
+    color: '#de822c',
+    marginBottom: 8,
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: '#A1A7B3',
+    textAlign: 'center',
+    marginBottom: 25,
   },
   optionContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginVertical: 20,
-    gap: 20,
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 20,
   },
-  
   optionBox: {
-    width: 120,
-    height: 120,
-    backgroundColor: '#1E1E1E',
-    borderRadius: 10,
-    justifyContent: 'center',
+    flex: 1,
+    marginHorizontal: 8,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  optionGradient: {
+    paddingVertical: 25,
+    paddingHorizontal: 20,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'white',
+    borderColor: '#de822c',
+    borderRadius: 16,
   },
-  
   optionText: {
     color: '#FFF',
-    marginTop: 10,
+    marginTop: 12,
     fontSize: 16,
+    fontWeight: '600',
   },
-
-  rulesContainer: {
-    marginTop: 20,
-    maxHeight: 150,
-    width: '100%',
-    backgroundColor: '#1E1E1E',
-    borderRadius: 10,
-    padding: 15,
-    borderWidth: 1,
-    borderColor: 'white',
+  cancelButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 30,
   },
-  
-  rulesContent: {
-    paddingBottom: 10,
+  cancelButtonText: {
+    color: '#A1A7B3',
+    fontSize: 16,
+    fontWeight: '500',
   },
-  
-  ruleItem: {
+  nextButton: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    marginBottom: 20,
+  },
+  nextButtonGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    justifyContent: 'center',
+    paddingVertical: 18,
+    paddingHorizontal: 30,
   },
-  
-  emoji: {
-    fontSize: 20,
-    marginRight: 10,
-    color: 'white',
-  },
-  
-  ruleText: {
+  nextButtonText: {
     color: '#FFF',
-    fontSize: 14,
-    flex: 1,
+    fontWeight: 'bold',
+    fontSize: 17,
+    marginRight: 8,
   },
-  
-  
+  disabledButton: {
+    opacity: 0.6,
+  },
 });
 
 export default AddProfilePictures;
