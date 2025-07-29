@@ -31,6 +31,8 @@ import CustomAlert from "../components/CustomAlert";
 
 const VerificationImage = require("../assets/icons/verified-logo.png");
 
+import { formatDistance } from "../utils/locationUtils";
+
 const screenHeight = Dimensions.get("window").height;
 const topBarHeight = 55; // Your top bar height
 const bottomTabHeight = Platform.OS === "ios" ? 70 : 55; // Your bottom tab height
@@ -56,6 +58,7 @@ interface Profile {
   bio: string;
   images: string[];
   distance: number | null;
+  isBoosted?: boolean; // Add boost status
   drinking: boolean;
   smoking: string;
   workout: string;
@@ -208,8 +211,6 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
   const fetchProfiles = async () => {
     try {
-      const myLocation = await AsyncStorage.getItem("location");
-      const locationArray = myLocation ? JSON.parse(myLocation) : null;
       const response = await api.get("/api/v1/users/");
       const formattedProfiles = response.data.map((profile: any) => {
         // Defensive: ensure images is always an array
@@ -230,14 +231,8 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           interests: Array.isArray(profile.interests)
             ? profile.interests.join(", ")
             : profile.interests || "No interests listed",
-          distance: profile.location
-            ? haversineDistance(
-                locationArray[0],
-                locationArray[1],
-                profile.location[0],
-                profile.location[1]
-              )
-            : null,
+          distance: profile.distance, // Use backend-calculated distance
+          isBoosted: profile.isBoosted, // Include boost status from backend
           occupation: profile.occupation,
           workingAt: profile.workingAt,
           pronouns: profile.pronouns,
@@ -254,6 +249,10 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           ActivePremiumPlan: profile.ActivePremiumPlan,
         };
       });
+      // ✅ Profiles are already sorted by backend in ascending distance order:
+      // 1. Boosted users within 500km (closest first)
+      // 2. All other users sorted by distance (1km, 1.6km, 2km, etc.)
+      console.log('Received profiles in distance order:', formattedProfiles.slice(0, 3).map(p => `${p.fullName}: ${p.distance?.toFixed(1) || 'unknown'} km`));
       setProfiles(formattedProfiles);
     } catch (error) {
       console.error("Error fetching profiles:", error);
@@ -676,27 +675,35 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
                         {profile.fullName?.split(" ")[0] || "User"}{" "}
                         {profile.age}
                       </Text>
-                      {profile.verifiedUser && (
-                        <Image
-                          source={VerificationImage}
-                          style={[
-                            styles.verificationImage,
-                            {
-                              tintColor: profile.verifiedUser
-                                ? null
-                                : "#B0B0B0",
-                              opacity: profile.verifiedUser ? 1 : 0.5,
-                            },
-                          ]}
-                        />
-                      )}
+                      <View style={styles.badgeContainer}>
+                        {profile.verifiedUser && (
+                          <Image
+                            source={VerificationImage}
+                            style={[
+                              styles.verificationImage,
+                              {
+                                tintColor: profile.verifiedUser
+                                  ? null
+                                  : "#B0B0B0",
+                                opacity: profile.verifiedUser ? 1 : 0.5,
+                              },
+                            ]}
+                          />
+                        )}
+                        {profile.isBoosted && (
+                          <View style={styles.boostBadge}>
+                            <Ionicons name="flash" size={14} color="#FFD700" />
+                            <Text style={styles.boostBadgeText}>BOOST</Text>
+                          </View>
+                        )}
+                      </View>
                     </View>
                     <Text style={styles.relationship}>
                       {profile.relationshipType || ""}
                     </Text>
                     <Text style={styles.modalLocation}>
                       <Text style={styles.distance}>
-                        {Math.round(profile.distance) + " km away"}
+                        {formatDistance(profile.distance)}
                       </Text>
                     </Text>
                     <Text style={styles.name}>{""}</Text>
@@ -871,6 +878,14 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
                       </View>
                     </View>
 
+                    {/* Boost Indicator */}
+                    {selectedProfile.isBoosted && (
+                      <View style={styles.modalBoostIndicator}>
+                        <Ionicons name="flash" size={16} color="#FFD700" />
+                        <Text style={styles.modalBoostText}>This profile is boosted</Text>
+                      </View>
+                    )}
+
                     {/* Gender and Relationship */}
                     <View style={styles.modalInfoRow}>
                       {selectedProfile.gender && (
@@ -891,7 +906,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
                     <View style={styles.modalDistanceContainer}>
                       <Ionicons name="location" size={16} color="#FF8A00" />
                       <Text style={styles.modalDistanceText}>
-                        {Math.round(selectedProfile.distance)} km away
+                        {formatDistance(selectedProfile.distance)}
                       </Text>
                     </View>
 
@@ -1643,6 +1658,45 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#FFFFFF",
     fontWeight: "600",
+  },
+  badgeContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  boostBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 215, 0, 0.15)",
+    borderWidth: 1,
+    borderColor: "#FFD700",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 12,
+    gap: 4,
+  },
+  boostBadgeText: {
+    fontSize: 10,
+    fontWeight: "bold",
+    color: "#FFD700",
+  },
+  modalBoostIndicator: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 215, 0, 0.15)",
+    borderWidth: 1,
+    borderColor: "#FFD700",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+    marginBottom: 12,
+    alignSelf: 'flex-start',
+  },
+  modalBoostText: {
+    fontSize: 12,
+    fontWeight: "bold",
+    color: "#FFD700",
   },
 });
 

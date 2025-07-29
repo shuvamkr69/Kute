@@ -54,8 +54,8 @@ export default {
       },
       FACE_API_KEY: process.env.FACE_API_KEY,
       FACE_API_SECRET: process.env.FACE_API_SECRET,
-      googleAndroidClientId: process.env.GOOGLE_ANDROID_CLIENT_ID,
-      googleExpoClientId: process.env.GOOGLE_EXPO_CLIENT_ID,
+      googleAndroidClientId:process.env.GOOGLE_ANDROID_CLIENT_ID,
+      googleExpoClientId:process.env.GOOGLE_EXPO_CLIENT_ID
     }
   }
 };

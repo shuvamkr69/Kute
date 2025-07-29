@@ -8,6 +8,7 @@ import api from '../utils/api';
 import GoogleLoginButton from '../components/GoogleLoginButton';
 import Constants from 'expo-constants';
 import CustomAlert from '../components/CustomAlert';
+import { useAuth } from '../navigation/AuthContext';
 const googleLogo = require('../assets/icons/googleLogoIcon.png');
 
 const logo = require('../assets/icons/logo.webp');
@@ -15,6 +16,7 @@ const logo = require('../assets/icons/logo.webp');
 type Props = NativeStackScreenProps<any, 'Register'>;
 
 const RegisterScreen: React.FC<Props> = ({ navigation }) => {
+  const { signIn } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -51,7 +53,11 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
 
   // Add Google login handler
   const handleGoogleLogin = async (token: string) => {
+    let user: any = null; // Declare user variable in outer scope
+    
     try {
+      console.log("🚀 Starting Google login process");
+      
       // Fetch user info from Google
       const userInfoRes = await fetch(
         'https://www.googleapis.com/userinfo/v2/me',
@@ -59,28 +65,214 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
-      const user = await userInfoRes.json();
-      // Call backend to login or register
+      
+      if (!userInfoRes.ok) {
+        throw new Error("Failed to fetch user info from Google");
+      }
+      
+      user = await userInfoRes.json(); // Assign to outer scope variable
+      console.log("📧 Google user info received:", {
+        email: user.email,
+        name: user.name,
+        picture: user.picture ? "Picture available" : "No picture"
+      });
+      
+      if (!user.email) {
+        throw new Error("No email received from Google account");
+      }
+      
+      // Call backend to check if user exists
+      console.log("🔗 Calling backend Google login endpoint");
       const response = await api.post('/api/v1/users/googleLogin', {
         email: user.email,
         name: user.name,
         avatar: user.picture,
         token,
       });
+      
+      console.log("📊 Backend response status:", response.status);
+      console.log("📊 Backend response data:", JSON.stringify(response.data, null, 2));
+      
+      // Check if response has expected structure
+      if (!response.data) {
+        throw new Error("Invalid response format from server");
+      }
+      
       if (response.status === 200) {
+        // User exists and login successful
+        console.log("✅ Existing user login successful");
+        
+        if (!response.data.data) {
+          throw new Error("Invalid response: missing data field");
+        }
+        
         const { accessToken, refreshToken, user: backendUser } = response.data.data;
+        
+        if (!accessToken || !refreshToken) {
+          throw new Error("Authentication failed: Missing tokens from server");
+        }
+        
+        console.log(`📧 Logged in user: ${backendUser.email}`);
+        console.log(`🔐 Login method: ${backendUser.loginMethod}`);
+        console.log(`✅ Profile complete: ${backendUser.isProfileComplete}`);
+        
+        // Store authentication data
         await AsyncStorage.setItem('user', JSON.stringify(backendUser));
         await AsyncStorage.setItem('accessToken', accessToken);
         await AsyncStorage.setItem('refreshToken', refreshToken);
-        await AsyncStorage.setItem('avatar', backendUser.avatar1);
-        await AsyncStorage.setItem('location', JSON.stringify(backendUser.location));
-        navigation.reset({ index: 0, routes: [{ name: 'HomeTabs' }] });
+        await AsyncStorage.setItem('avatar', backendUser.avatar1 || user.picture || '');
+        await AsyncStorage.setItem('location', JSON.stringify(backendUser.location || [0, 0]));
+        
+        // Clear any temp data since user is logging in
+        await AsyncStorage.removeItem('tempUserData');
+        
+        // Update AuthContext state
+        await signIn();
+        
+        // Check if profile needs completion (shouldn't happen for existing users, but just in case)
+        if (backendUser.isProfileComplete === false || !backendUser.age || !backendUser.gender) {
+          console.log("📝 Profile incomplete for existing user, redirecting to BasicDetails");
+          navigation.navigate('BasicDetails');
+        } else {
+          console.log("🏠 Profile complete, redirecting to home");
+          navigation.reset({ index: 0, routes: [{ name: 'HomeTabs' }] });
+        }
+      } else if (response.status === 202) {
+        // User doesn't exist - start registration flow
+        console.log("📝 New Google user, starting registration flow");
+        
+        if (!response.data.data || !response.data.data.googleUserInfo) {
+          throw new Error("Invalid response: missing Google user info");
+        }
+        
+        const { googleUserInfo } = response.data.data;
+        
+        // Store Google user data in AsyncStorage for registration flow
+        const tempGoogleUserData = {
+          fullName: googleUserInfo.name || user.name || 'Google User',
+          email: googleUserInfo.email || user.email,
+          password: '', // Google users don't have a password
+          avatar: googleUserInfo.avatar || user.picture || '',
+          loginMethod: 'google',
+          googleToken: token
+        };
+        
+        console.log("💾 Storing new Google user data in AsyncStorage:", {
+          fullName: tempGoogleUserData.fullName,
+          email: tempGoogleUserData.email,
+          avatar: tempGoogleUserData.avatar ? "Avatar available" : "No avatar",
+          loginMethod: tempGoogleUserData.loginMethod
+        });
+        
+        await AsyncStorage.setItem('tempUserData', JSON.stringify(tempGoogleUserData));
+        
+        // Navigate to BasicDetails for registration
+        console.log("🚀 Navigating to BasicDetails for registration");
+        navigation.navigate('BasicDetails');
       } else {
-        setCustomAlert({ visible: true, title: 'Error', message: 'Unexpected response from server' });
+        console.error("❌ Unexpected response status:", response.status);
+        throw new Error(`Unexpected response status: ${response.status}`);
       }
     } catch (error: any) {
-      console.error('Google login error:', error);
-      setCustomAlert({ visible: true, title: 'Login Failed', message: 'Could not complete Google login.' });
+      console.error("❌ Google login error:", error);
+      
+      // Enhanced error handling
+      let errorMessage = "Could not complete Google login.";
+      let shouldNavigateToRegistration = false;
+      
+      if (error.response) {
+        // Server responded with error
+        console.error("❌ Server response error:", error.response.status, error.response.data);
+        
+        const responseData = error.response.data;
+        const serverMessage = responseData?.message || responseData?.error;
+        
+        console.log("🔍 Debugging server response:", {
+          status: error.response.status,
+          data: responseData,
+          message: serverMessage,
+          fullResponse: JSON.stringify(responseData, null, 2)
+        });
+        
+        // Check for specific error messages that indicate new user OR any 500 error (since backend returns 500 for new users)
+        if (serverMessage && (
+          serverMessage.includes("not found") || 
+          serverMessage.includes("Invalid Google access token") ||
+          error.response.status === 500
+        )) {
+          console.log("📝 Treating as new user registration scenario (status: " + error.response.status + ", message: " + serverMessage + ")");
+          shouldNavigateToRegistration = true;
+        }
+        
+        if (serverMessage) {
+          errorMessage = serverMessage;
+        } else {
+          switch (error.response.status) {
+            case 400:
+              errorMessage = "Invalid Google login data provided";
+              break;
+            case 401:
+              errorMessage = "Google authentication failed. Please try again.";
+              break;
+            case 500:
+              errorMessage = serverMessage || "Server error during Google login";
+              break;
+            default:
+              errorMessage = `Server error: ${error.response.status}`;
+          }
+        }
+        
+        // If this is actually a "user not found" case disguised as an error,
+        // handle it as a registration flow
+        if (shouldNavigateToRegistration && user && user.email) {
+          console.log("🚀 Treating as new user registration flow");
+          
+          try {
+            // Store Google user data in AsyncStorage for registration flow
+            const tempGoogleUserData = {
+              fullName: user.name || 'Google User',
+              email: user.email,
+              password: '', // Google users don't have a password
+              avatar: user.picture || '',
+              loginMethod: 'google',
+              googleToken: token
+            };
+            
+            console.log("💾 Storing new Google user data in AsyncStorage:", {
+              fullName: tempGoogleUserData.fullName,
+              email: tempGoogleUserData.email,
+              avatar: tempGoogleUserData.avatar ? "Avatar available" : "No avatar",
+              loginMethod: tempGoogleUserData.loginMethod
+            });
+            
+            await AsyncStorage.setItem('tempUserData', JSON.stringify(tempGoogleUserData));
+            
+            // Navigate to BasicDetails for registration
+            console.log("🚀 Navigating to BasicDetails for registration");
+            navigation.navigate('BasicDetails');
+            return; // Exit early to avoid showing error alert
+          } catch (storageError) {
+            console.error("❌ Failed to store temp user data:", storageError);
+            errorMessage = "Failed to prepare user data for registration";
+          }
+        } else if (shouldNavigateToRegistration && (!user || !user.email)) {
+          console.error("❌ Cannot proceed with registration - missing user data");
+          errorMessage = "Missing user information from Google. Please try again.";
+        }
+        
+      } else if (error.request) {
+        console.error("❌ Network error:", error.request);
+        errorMessage = "No response from server. Check your internet connection.";
+      } else if (error.message) {
+        console.error("❌ General error:", error.message);
+        errorMessage = error.message;
+      }
+      
+      setCustomAlert({ 
+        visible: true, 
+        title: 'Google Login Failed', 
+        message: errorMessage 
+      });
     }
   };
 

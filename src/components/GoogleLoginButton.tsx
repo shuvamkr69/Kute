@@ -12,7 +12,9 @@ const googleLogo = require("../assets/icons/googleLogoIcon.png");
 
 const GoogleLoginButton = ({ onLogin }: { onLogin: (token: string) => void }) => {
   // Always use the Expo proxy for redirect URI
-  const redirectUri = AuthSession.makeRedirectUri({ useProxy: true } as any);
+  const redirectUri = AuthSession.makeRedirectUri({ 
+    native: "com.dating.kute:/oauth2redirect/google",
+    useProxy: true } as any);
   console.log('Expo Redirect URI:', redirectUri);
   // This ensures Expo uses its proxy (https://auth.expo.io/...) — required for Google OAuth
   // const redirectUri = AuthSession.makeRedirectUri({
@@ -29,10 +31,17 @@ const GoogleLoginButton = ({ onLogin }: { onLogin: (token: string) => void }) =>
     if (response?.type === "success") {
       const { authentication } = response;
       if (authentication?.accessToken) {
+        console.log("✅ Google OAuth success, calling onLogin");
         onLogin(authentication.accessToken);
+      } else {
+        console.log("❌ No access token received from Google");
+        Alert.alert("Google Login Failed", "No access token received from Google.");
       }
     } else if (response?.type === "error") {
-      Alert.alert("Google Login Failed", "Something went wrong during login.");
+      console.error("❌ Google OAuth error:", response.error);
+      Alert.alert("Google Login Failed", `OAuth error: ${response.error?.message || "Unknown error"}`);
+    } else if (response?.type === "cancel") {
+      console.log("ℹ️ Google OAuth cancelled by user");
     }
   }, [response]);
 

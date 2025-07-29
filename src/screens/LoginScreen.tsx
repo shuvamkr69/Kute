@@ -96,6 +96,8 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
   const handleGoogleLogin = async (accessToken: string) => {
     try {
+      console.log("🚀 Starting Google login process");
+      
       // Get user info from Google
       const userInfoRes = await fetch(
         "https://www.googleapis.com/userinfo/v2/me",
@@ -103,26 +105,43 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
           headers: { Authorization: `Bearer ${accessToken}` },
         }
       );
+      
+      if (!userInfoRes.ok) {
+        throw new Error("Failed to fetch user info from Google");
+      }
+      
       const user = await userInfoRes.json();
-      if (!user.email) throw new Error("No email from Google");
-      // Call backend to login/register
+      console.log("📧 Google user email:", user.email);
+      
+      if (!user.email) {
+        throw new Error("No email received from Google account");
+      }
+
+      // Call backend to login or register
+      console.log("🔗 Calling backend Google login endpoint");
       const response = await api.post("/api/v1/users/googleLogin", {
         email: user.email,
         name: user.name,
         avatar: user.picture,
         token: accessToken,
       });
+      
       if (response.status === 200) {
+        console.log("✅ Backend login successful");
         const { accessToken: jwt, refreshToken, user: backendUser } = response.data.data;
+        
         if (!jwt || !refreshToken) {
-          setCustomAlert({ visible: true, title: "Error", message: "Authentication failed: Missing tokens" });
-          return;
+          throw new Error("Authentication failed: Missing tokens from server");
         }
+        
+        // Store authentication data
         await AsyncStorage.setItem("user", JSON.stringify(backendUser));
         await AsyncStorage.setItem("accessToken", jwt);
         await AsyncStorage.setItem("refreshToken", refreshToken);
-        await AsyncStorage.setItem("avatar", backendUser.avatar1);
-        await AsyncStorage.setItem("location", JSON.stringify(backendUser.location));
+        await AsyncStorage.setItem("avatar", backendUser.avatar1 || "");
+        await AsyncStorage.setItem("location", JSON.stringify(backendUser.location || [0, 0]));
+        
+        // Register for push notifications
         const pushToken = await registerForPushNotifications();
         if (pushToken) {
           const storedToken = await AsyncStorage.getItem("pushToken");
@@ -130,17 +149,60 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
             try {
               await api.post("/api/v1/users/updatePushToken", { pushToken });
               await AsyncStorage.setItem("pushToken", pushToken);
-            } catch (error) {}
+            } catch (error) {
+              console.log("⚠️ Failed to update push token:", error);
+            }
           }
         }
+        
         await signIn();
-        navigation.reset({ index: 0, routes: [{ name: "HomeTabs" }] });
+        
+        // Check if profile needs completion
+        if (backendUser.isProfileComplete === false) {
+          console.log("📝 Profile incomplete, redirecting to BasicDetails");
+          navigation.reset({ index: 0, routes: [{ name: "BasicDetails" }] });
+        } else {
+          console.log("🏠 Profile complete, redirecting to home");
+          navigation.reset({ index: 0, routes: [{ name: "HomeTabs" }] });
+        }
       } else {
-        setCustomAlert({ visible: true, title: "Error", message: "Unexpected response from server" });
+        throw new Error("Unexpected response from server");
       }
     } catch (error: any) {
-      console.error("Google login error:", error);
-      setCustomAlert({ visible: true, title: "Login Failed", message: error.message || "Could not complete Google login." });
+      console.error("❌ Google login error:", error);
+      
+      // Enhanced error handling
+      let errorMessage = "Could not complete Google login.";
+      
+      if (error.response) {
+        // Server responded with error
+        const serverMessage = error.response.data?.message;
+        if (serverMessage) {
+          errorMessage = serverMessage;
+        } else {
+          switch (error.response.status) {
+            case 400:
+              errorMessage = "Invalid login data provided";
+              break;
+            case 401:
+              errorMessage = "Google authentication failed";
+              break;
+            case 500:
+              errorMessage = "Server error during login";
+              break;
+          }
+        }
+      } else if (error.request) {
+        errorMessage = "No response from server. Check your connection.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      setCustomAlert({ 
+        visible: true, 
+        title: 'Google Login Failed', 
+        message: errorMessage 
+      });
     }
   };
 

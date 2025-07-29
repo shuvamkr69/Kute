@@ -24,7 +24,7 @@ import * as Notifications from "expo-notifications";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { Feather, FontAwesome, Ionicons } from "@expo/vector-icons";
 import * as IntentLauncher from "expo-intent-launcher";
-import { Video, ResizeMode } from 'expo-av';
+import { Video, ResizeMode } from "expo-av";
 
 type Props = NativeStackScreenProps<any, "Settings">;
 
@@ -38,10 +38,14 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
   const [isPremium, setIsPremium] = useState(false);
   const [visibility, setVisibility] = useState(false);
   const [loadingAnon, setLoadingAnon] = useState(false);
-  const DARK_MODE_KEY = 'darkMode';
+  const DARK_MODE_KEY = "darkMode";
   const [showMeme, setShowMeme] = useState(false);
   const [memeVideo, setMemeVideo] = useState<any>(null); // Use any for require()
-  const [customAlert, setCustomAlert] = useState({ visible: false, title: '', message: '' });
+  const [customAlert, setCustomAlert] = useState({
+    visible: false,
+    title: "",
+    message: "",
+  });
 
   const fetchUserStatus = async () => {
     try {
@@ -55,7 +59,11 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
 
   const handleToggleAnonymous = async () => {
     if (!isPremium) {
-      setCustomAlert({ visible: true, title: "Premium Required", message: "Anonymous browsing is available only for premium users." });
+      setCustomAlert({
+        visible: true,
+        title: "Premium Required",
+        message: "Anonymous browsing is available only for premium users.",
+      });
       return;
     }
 
@@ -65,7 +73,11 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
       setVisibility(response.data.data.anonymousBrowsing);
     } catch (err) {
       console.error(err);
-      setCustomAlert({ visible: true, title: "Error", message: "Failed to update anonymous browsing setting." });
+      setCustomAlert({
+        visible: true,
+        title: "Error",
+        message: "Failed to update anonymous browsing setting.",
+      });
     } finally {
       setLoadingAnon(false);
     }
@@ -80,7 +92,11 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
       navigation.navigate("Login");
     } catch (error) {
       console.error("Logout Error:", error);
-      setCustomAlert({ visible: true, title: "Error", message: "Failed to logout. Please try again." });
+      setCustomAlert({
+        visible: true,
+        title: "Error",
+        message: "Failed to logout. Please try again.",
+      });
     }
   };
 
@@ -88,13 +104,22 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
     try {
       const response = await api.post("/api/v1/users/deactivate");
       console.log("Account Deactivated:", response.data);
-      setCustomAlert({ visible: true, title: "Account Deactivated", message: "Your account has been temporarily deactivated. You can reactivate it by logging in again." });
+      setCustomAlert({
+        visible: true,
+        title: "Account Deactivated",
+        message:
+          "Your account has been temporarily deactivated. You can reactivate it by logging in again.",
+      });
       await AsyncStorage.clear();
       signOut();
       navigation.navigate("Login");
     } catch (error) {
       console.error("Deactivation Error:", error);
-      setCustomAlert({ visible: true, title: "Error", message: "Failed to deactivate account." });
+      setCustomAlert({
+        visible: true,
+        title: "Error",
+        message: "Failed to deactivate account.",
+      });
     }
   };
 
@@ -109,11 +134,19 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
           IntentLauncher.ActivityAction.LOCATION_SOURCE_SETTINGS
         );
       } else {
-        setCustomAlert({ visible: true, title: "Unsupported", message: "Please enable location from iOS settings manually." });
+        setCustomAlert({
+          visible: true,
+          title: "Unsupported",
+          message: "Please enable location from iOS settings manually.",
+        });
       }
     } catch (error) {
       console.error("Error opening location settings:", error);
-      setCustomAlert({ visible: true, title: "Error", message: "Unable to open location settings." });
+      setCustomAlert({
+        visible: true,
+        title: "Error",
+        message: "Unable to open location settings.",
+      });
     }
   };
 
@@ -123,15 +156,28 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
         await Linking.openSettings(); // Opens your app's notification settings
       } catch (err) {
         console.error("Error opening settings:", err);
-        setCustomAlert({ visible: true, title: "Error", message: "Could not open settings. Please try manually." });
+        setCustomAlert({
+          visible: true,
+          title: "Error",
+          message: "Could not open settings. Please try manually.",
+        });
       }
     } else {
-      setCustomAlert({ visible: true, title: "Unsupported", message: "Opening settings is only supported on Android." });
+      setCustomAlert({
+        visible: true,
+        title: "Unsupported",
+        message: "Opening settings is only supported on Android.",
+      });
     }
   };
 
   const handleAccountOptions = async () => {
-    setCustomAlert({ visible: true, title: "Manage Account", message: "Would you like to delete your account permanently or deactivate it temporarily? Deactivating will hide your profile until you reactivate it." });
+    setCustomAlert({
+      visible: true,
+      title: "Manage Account",
+      message:
+        "Would you like to delete your account permanently or deactivate it temporarily? Deactivating will hide your profile until you reactivate it.",
+    });
   };
 
   React.useEffect(() => {
@@ -167,6 +213,7 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
           <TouchableOpacity
             style={styles.option}
             onPress={() => navigation.navigate("EditProfile")}
+            activeOpacity={0.9}
           >
             <View style={styles.optionRow}>
               <Feather
@@ -182,6 +229,7 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
           <TouchableOpacity
             onPress={handlePasswordChange}
             style={styles.option}
+            activeOpacity={0.9}
           >
             <View style={styles.optionRow}>
               <Ionicons
@@ -211,6 +259,7 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
             onPress={() => {
               navigation.navigate("PhotoVerification");
             }}
+            activeOpacity={0.9}
           >
             <View style={styles.optionRow}>
               <Ionicons
@@ -241,6 +290,7 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
             <TouchableOpacity
               onPress={handleLocation}
               style={styles.locationButton}
+              activeOpacity={0.9}
             >
               <Text style={styles.locationButtonText}>
                 {location ? "Settings" : "Settings"}
@@ -248,7 +298,16 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.optionWithSwitch}>
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              paddingVertical: 12,
+              alignItems: "center",
+              borderBottomWidth: 1,
+              borderBottomColor: "#333",
+            }}
+          >
             <View style={styles.optionRow}>
               <Feather
                 name="eye-off"
@@ -381,7 +440,7 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
             isLooping={false}
             shouldPlay
             isMuted
-            onPlaybackStatusUpdate={status => {
+            onPlaybackStatusUpdate={(status) => {
               if (status.isLoaded && status.didJustFinish) setShowMeme(false);
             }}
           />
@@ -512,19 +571,19 @@ const styles = StyleSheet.create({
     height: 160,
   },
   fullscreenOverlay: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'black',
+    backgroundColor: "black",
     zIndex: 9999,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   fullscreenVideo: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
 });
 

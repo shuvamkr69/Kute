@@ -22,7 +22,7 @@ const filterSchema = new mongoose.Schema(
         "Queer",
       ],
     },
-    distance: { type: Number, default: 0 },
+    distance: { type: Number, default: 1000 },
     location: { type: String },
     verifiedUser: { type: Boolean, default: false },
     personality: {

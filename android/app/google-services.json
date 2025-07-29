@@ -1,26 +1,44 @@
 {
   "project_info": {
-    "project_number": "573297699882",
-    "project_id": "matchwithkute",
-    "storage_bucket": "matchwithkute.firebasestorage.app"
+    "project_number": "910102094264",
+    "project_id": "kutewebapp",
+    "storage_bucket": "kutewebapp.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:573297699882:android:23e6015e4a1e050a98e753",
+        "mobilesdk_app_id": "1:910102094264:android:ff99fe1d64245e926f2f4d",
         "android_client_info": {
           "package_name": "com.dating.kute"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "910102094264-bvktd51k3b2k7u16610edjvt90065vou.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.dating.kute",
+            "certificate_hash": "4e8fb0a9c8a3958dd28a67446df5d4199ba55c2e"
+          }
+        },
+        {
+          "client_id": "910102094264-84hp9mfifu1l0jts2fmsil6r3plbslb8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
-          "current_key": "AIzaSyCpnOWBlZcTW58VY_4c3HtrNKdR1C_yItQ"
+          "current_key": "AIzaSyDpK9EQe87agE8N10EWSRu3Mg6r6u8_O6A"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "910102094264-84hp9mfifu1l0jts2fmsil6r3plbslb8.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

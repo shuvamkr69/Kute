@@ -266,6 +266,10 @@ const userSchema = new Schema(
       type: Number,
       default: 0,
     },
+    isProfileComplete: {
+      type: Boolean,
+      default: true,  // Default true for email users, set false for Google users
+    },
   },
   { timestamps: true }
 );

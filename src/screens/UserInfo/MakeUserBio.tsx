@@ -96,7 +96,19 @@ const MakeBio: React.FC<Props> = ({ navigation }) => {
       const formData = new FormData();
       formData.append("email", userData.email);
       formData.append("fullName", userData.fullName);
-      formData.append("password", userData.password);
+      
+      // Handle Google users differently - they don't have passwords
+      if (userData.loginMethod === 'google') {
+        formData.append("loginMethod", "google");
+        if (userData.googleToken) {
+          formData.append("googleToken", userData.googleToken);
+        }
+        // Don't append password for Google users
+      } else {
+        formData.append("password", userData.password);
+        formData.append("loginMethod", "email");
+      }
+      
       formData.append("age", String(userData.age));
       formData.append("gender", userData.gender);
       formData.append("personality", userData.personality);
@@ -122,17 +134,36 @@ const MakeBio: React.FC<Props> = ({ navigation }) => {
         } as any);
       });
 
-      const response = await api.post("/api/v1/users/register", formData, {
+      // Determine which endpoint to use based on login method
+      const endpoint = userData.loginMethod === 'google' 
+        ? "/api/v1/users/completeGoogleProfile" 
+        : "/api/v1/users/register";
+
+      const response = await api.post(endpoint, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      if (response.status === 201) {
-        // Registration successful, now login automatically
+      if (response.status === 201 || response.status === 200) {
+        // Registration/Profile completion successful, now handle login
         try {
-          const loginResponse = await api.post("/api/v1/users/login", {
-            email: userData.email,
-            password: userData.password,
-          });
+          let loginResponse;
+          
+          if (userData.loginMethod === 'google') {
+            // For Google users, use the Google login endpoint
+            loginResponse = await api.post("/api/v1/users/googleLogin", {
+              email: userData.email,
+              name: userData.fullName,
+              avatar: userData.avatar,
+              token: userData.googleToken,
+            });
+          } else {
+            // For regular users, use regular login
+            loginResponse = await api.post("/api/v1/users/login", {
+              email: userData.email,
+              password: userData.password,
+            });
+          }
+          
           if (loginResponse.status === 200) {
             const { accessToken, refreshToken, user } = loginResponse.data.data;
             if (!accessToken || !refreshToken) {
@@ -143,6 +174,10 @@ const MakeBio: React.FC<Props> = ({ navigation }) => {
             await AsyncStorage.setItem("refreshToken", refreshToken);
             await AsyncStorage.setItem("avatar", user.avatar1);
             await AsyncStorage.setItem("location", JSON.stringify(user.location));
+            
+            // Clear temp data since profile is complete
+            await AsyncStorage.removeItem("tempUserData");
+            
             // Register push token and update if needed
             const token = await registerForPushNotifications();
             if (token) {

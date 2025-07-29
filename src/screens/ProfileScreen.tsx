@@ -336,10 +336,10 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
       const now = new Date();
       const diff = boostActiveUntil.getTime() - now.getTime();
 
-      if (diff < 0) {
+      if (diff <= 0) {
         // If boostActiveUntil is still in the future (from backend), but device time is ahead, show a warning or 'Boost active'
         // We'll keep the boostTimer visible until the backend says boost is over (i.e., boostActiveUntil is not set on next fetch)
-        setBoostTimer('Boost active');
+        setBoostTimer('Boost inactive');
         // Do NOT clear boostActiveUntil here; let backend control it
         // Optionally, you could show a warning if you want
         // setBoostTimer('Boost active (check device time)');

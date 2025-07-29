@@ -10,6 +10,7 @@ import { Message } from "../models/message.model.js";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
 import bcrypt from "bcryptjs";
+import fetch from "node-fetch";
 
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
@@ -393,6 +394,8 @@ const changePassword = asyncHandler(async (req, res) => {
   });
 });
 
+import {haversineDistance, isValidLocationArray} from '../utils/distanceCalculator.js';
+
 const homescreenProfiles = async (req, res) => {
   const currentUserId = req.user._id;
   // Get blocked users
@@ -408,7 +411,14 @@ const homescreenProfiles = async (req, res) => {
     if (!currentUser) {
       return res.status(404).json({ message: "User not found" });
     }
-    const { gender, genderOrientation } = currentUser;
+    const { gender, genderOrientation, location: currentUserLocation } = currentUser;
+
+    // Validate current user has location data
+    if (!isValidLocationArray(currentUserLocation)) {
+      console.log('⚠️ Current user has no valid location data:', currentUserLocation);
+    } else {
+      console.log('✅ Current user location:', currentUserLocation);
+    }
 
     const likes = await Like.find({ userId: currentUserId });
     const excludedIds = likes.map((like) => like.likedUserId.toString());
@@ -504,17 +514,82 @@ const homescreenProfiles = async (req, res) => {
       $nin: [...excludedIds, ...blockedIds, currentUserId.toString()],
     };
 
-    // Fetch filtered users
+    // Fetch filtered users (remove initial sorting)
     const users = await User.find(filter)
-      .sort({ boostActiveUntil: -1 }) // Boosted users first
-      .limit(50);
+      .limit(200); // Increase limit to allow for better distance sorting
 
     if (!users.length) {
       return res.status(404).json({ message: "No profiles found" });
     }
 
+    // Calculate distance for each user and add distance field
+    const usersWithDistance = users.map((user) => {
+      let distance = null;
+      
+      // Calculate distance if both users have valid location data
+      if (isValidLocationArray(currentUserLocation) && isValidLocationArray(user.location)) {
+        distance = haversineDistance(
+          currentUserLocation[0], // current user latitude
+          currentUserLocation[1], // current user longitude
+          user.location[0],       // other user latitude
+          user.location[1]        // other user longitude
+        );
+        
+        // Round distance to 2 decimal places for consistency
+        if (distance !== null) {
+          distance = Math.round(distance * 100) / 100;
+        }
+      }
+
+      return {
+        ...user.toObject(),
+        distance: distance,
+        isBoosted: user.boostActiveUntil && user.boostActiveUntil > new Date()
+      };
+    });
+
+    // Apply distance filter if specified, default to 1000km if no filter set
+    const maxDistance = userFilter?.distance || 1000;
+    const distanceFilteredUsers = usersWithDistance.filter((user) => {
+      // If user has no location data, include them anyway
+      if (user.distance === null) return true;
+      // Filter by distance (default 1000km if no filter specified)
+      return user.distance <= maxDistance;
+    });
+
+    console.log(`Applied distance filter: ${maxDistance}km - Users after distance filter: ${distanceFilteredUsers.length}`);
+
+    // Sort users: Boosted users first (within 500km), then by distance ascending
+    const sortedUsers = distanceFilteredUsers.sort((a, b) => {
+      const now = new Date();
+      
+      // Check if users are boosted and within 500km
+      const aIsBoostedNearby = a.isBoosted && a.distance !== null && a.distance <= 500;
+      const bIsBoostedNearby = b.isBoosted && b.distance !== null && b.distance <= 500;
+      
+      // Priority 1: Boosted users within 500km come first
+      if (aIsBoostedNearby && !bIsBoostedNearby) return -1;
+      if (!aIsBoostedNearby && bIsBoostedNearby) return 1;
+      
+      // Priority 2: If both or neither are boosted nearby, sort by distance ascending (closest first)
+      if (a.distance === null && b.distance === null) return 0;
+      if (a.distance === null) return 1; // Users without location go to end
+      if (b.distance === null) return -1; // Users without location go to end
+      
+      return a.distance - b.distance; // Ascending order: 1km, 1.6km, 2km, etc.
+    });
+
+    // Add debug logging to verify sorting
+    console.log(`Sample sorted users (first 5) within ${maxDistance}km:`);
+    sortedUsers.slice(0, 5).forEach((user, index) => {
+      console.log(`${index + 1}. ${user.fullName} - Distance: ${user.distance ? user.distance + 'km' : 'unknown'} - Boosted: ${user.isBoosted}`);
+    });
+
+    // Limit to 50 results after sorting
+    const finalUsers = sortedUsers.slice(0, 50);
+
     // Format the response
-    const formattedUsers = users.map((user) => ({
+    const formattedUsers = finalUsers.map((user) => ({
       _id: user._id,
       name: user.fullName,
       email: user.email,
@@ -525,6 +600,8 @@ const homescreenProfiles = async (req, res) => {
       bio: user.bio,
       location: user.location,
       country: user.country,
+      distance: user.distance, // Include calculated distance
+      isBoosted: user.isBoosted, // Include boost status
       images: [
         user.avatar1,
         user.avatar2,
@@ -930,18 +1007,74 @@ const googleLoginUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Email and Name are required");
   }
 
+  if (!token) {
+    throw new ApiError(400, "Google access token is required");
+  }
+
+  // Verify Google token by fetching user info
+  try {
+    const googleResponse = await fetch(
+      `https://www.googleapis.com/oauth2/v1/userinfo?access_token=${token}`
+    );
+    
+    if (!googleResponse.ok) {
+      throw new ApiError(401, "Invalid Google access token");
+    }
+
+    const googleUser = await googleResponse.json();
+    
+    // Verify email matches
+    if (googleUser.email !== email) {
+      throw new ApiError(401, "Email mismatch with Google account");
+    }
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    throw new ApiError(401, "Failed to verify Google token");
+  }
+
   let user = await User.findOne({ email });
 
-  // If user doesn't exist, create a basic user profile
+  // If user doesn't exist, return user info for registration flow
   if (!user) {
-    user = await User.create({
-      fullName: name,
-      email,
-      avatar1: avatar,
-      loginMethod: "google",
-      genderOrientation: "Prefer not to say", // required field fallback
-      religion: "Prefer not to say", // required field fallback
-    });
+    return res
+      .status(202) // 202 Accepted - user needs to complete registration
+      .json(
+        new ApiResponse(
+          202,
+          { 
+            userExists: false,
+            googleUserInfo: {
+              email,
+              name,
+              avatar
+            }
+          },
+          "Google user not found, registration required"
+        )
+      );
+  }
+
+  // User exists - proceed with login
+  // Update user to support Google login if they originally registered with email
+  let userUpdated = false;
+  
+  // If user was originally registered with email/password, add Google login method
+  if (user.loginMethod !== "google") {
+    user.loginMethod = "google";
+    userUpdated = true;
+  }
+  
+  // Update avatar if provided and user doesn't have one
+  if (avatar && !user.avatar1) {
+    user.avatar1 = avatar;
+    userUpdated = true;
+  }
+  
+  // Save user if any updates were made
+  if (userUpdated) {
+    await user.save();
   }
 
   const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
@@ -953,8 +1086,155 @@ const googleLoginUser = asyncHandler(async (req, res) => {
     .json(
       new ApiResponse(
         200,
-        { user, accessToken, refreshToken },
+        { user, accessToken, refreshToken, userExists: true },
         "Google login successful"
+      )
+    );
+});
+
+const completeGoogleProfile = asyncHandler(async (req, res) => {
+  const {
+    email,
+    fullName,
+    age,
+    gender,
+    personality,
+    interests,
+    relationshipType,
+    bio,
+    genderOrientation,
+    location,
+    country,
+    pushToken,
+    religion,
+    occupation,
+    loveLanguage,
+    googleToken
+  } = req.body;
+
+  if (!email) {
+    throw new ApiError(400, "Email is required");
+  }
+
+  // Check if Google user already exists
+  let user = await User.findOne({ email });
+  
+  // Parse location array
+  let locationArray = [0, 0]; // Default location
+  if (location) {
+    try {
+      locationArray = JSON.parse(location);
+      if (!Array.isArray(locationArray) || locationArray.length !== 2) {
+        locationArray = [0, 0];
+      }
+    } catch (error) {
+      console.error("Error parsing location:", error);
+      locationArray = [0, 0];
+    }
+  }
+
+  // Parse interests array
+  let interestsArray = [];
+  if (interests) {
+    try {
+      interestsArray = JSON.parse(interests);
+      if (!Array.isArray(interestsArray)) {
+        interestsArray = [];
+      }
+    } catch (error) {
+      console.error("Error parsing interests:", error);
+      interestsArray = [];
+    }
+  }
+
+  // If user doesn't exist, create new Google user with complete profile
+  if (!user) {
+    const newUserData = {
+      fullName: fullName || 'Google User',
+      email,
+      age: parseInt(age),
+      gender,
+      personality,
+      interests: interestsArray,
+      relationshipType,
+      bio,
+      genderOrientation,
+      location: locationArray,
+      country,
+      pushToken,
+      religion,
+      occupation,
+      loveLanguage,
+      loginMethod: "google",
+      isProfileComplete: true, // Profile is complete upon creation
+    };
+
+    // Handle avatar uploads for new user
+    const avatarFields = ['avatar1', 'avatar2', 'avatar3', 'avatar4', 'avatar5', 'avatar6'];
+    avatarFields.forEach((field, index) => {
+      if (req.files && req.files[field] && req.files[field][0]) {
+        newUserData[field] = req.files[field][0].path;
+      }
+    });
+
+    user = await User.create(newUserData);
+
+    return res
+      .status(201)
+      .json(
+        new ApiResponse(
+          201,
+          { user },
+          "Google user profile created successfully"
+        )
+      );
+  }
+
+  // User exists - update existing profile
+  const updateData = {
+    fullName: fullName || user.fullName,
+    age: parseInt(age),
+    gender,
+    personality,
+    interests: interestsArray,
+    relationshipType,
+    bio,
+    genderOrientation,
+    location: locationArray,
+    country,
+    pushToken,
+    religion,
+    occupation,
+    loveLanguage,
+    isProfileComplete: true, // Mark profile as complete
+  };
+
+  // Handle avatar uploads
+  const avatarFields = ['avatar1', 'avatar2', 'avatar3', 'avatar4', 'avatar5', 'avatar6'];
+  avatarFields.forEach((field, index) => {
+    if (req.files && req.files[field] && req.files[field][0]) {
+      updateData[field] = req.files[field][0].path;
+    }
+  });
+
+  // Update the user
+  const updatedUser = await User.findByIdAndUpdate(
+    user._id,
+    updateData,
+    { new: true, runValidators: true }
+  );
+
+  if (!updatedUser) {
+    throw new ApiError(500, "Failed to update Google user profile");
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        { user: updatedUser },
+        "Google user profile completed successfully"
       )
     );
 });
@@ -1114,6 +1394,7 @@ export {
   activateBoost,
   distanceFetcher,
   googleLoginUser,
+  completeGoogleProfile,
   toggleAnonymousBrowsing,
   blockUser,
   unblockUser,

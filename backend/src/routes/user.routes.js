@@ -4,6 +4,7 @@ import {
   blockedUsers,
   blockUser,
   changePassword,
+  completeGoogleProfile,
   deleteAccount,
   distanceFetcher,
   editUserProfile,
@@ -35,6 +36,8 @@ import { otherProfile } from "../controllers/user.controller.js";
 const UserRouter = Router();
 
 UserRouter.post("/googleLogin", googleLoginUser); //google login
+
+UserRouter.post("/completeGoogleProfile", upload, completeGoogleProfile); //complete google user profile
 
 UserRouter.post("/register", upload, registerUser); //register
 

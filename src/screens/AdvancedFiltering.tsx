@@ -76,7 +76,7 @@ const interestOptions = [
 ];
 const personalityOptions = ["Extrovert", "Ambivert", "Introvert", "Any"];
 
-const distanceSteps = [0, 200, 400, 600, 800, 1000];
+const distanceSteps = [0, 1000, 2000, 4000, 6000, 8000, 10000];
 function getNearestStep(value) {
   return distanceSteps.reduce((prev, curr) => Math.abs(curr - value) < Math.abs(prev - value) ? curr : prev);
 }
@@ -85,7 +85,7 @@ const AdvancedFilteringScreen = ({ navigation }) => {
   const [genderPreference, setGenderPreference] = useState("Everyone");
   const [relationshipType, setRelationshipType] = useState("");
   const [genderOrientation, setGenderOrientation] = useState("");
-  const [distance, setDistance] = useState(0);
+  const [distance, setDistance] = useState(1000); // Default to 1000km
   const [location, setLocation] = useState("");
   const [verifiedUser, setVerifiedUser] = useState(false);
   const [personality, setPersonality] = useState<string>("Any");
@@ -97,7 +97,7 @@ const AdvancedFilteringScreen = ({ navigation }) => {
   const [zodiac, setZodiac] = useState("");
   const [isPremium, setIsPremium] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [sliderValue, setSliderValue] = useState(distance);
+  const [sliderValue, setSliderValue] = useState(1000); // Default to 1000km
 
   // Example: Simulate boost active for demo
   useEffect(() => {
@@ -191,7 +191,7 @@ const AdvancedFilteringScreen = ({ navigation }) => {
       setGenderPreference(savedFilters.genderPreference || "Everyone");
       setRelationshipType(savedFilters.relationshipType || "");
       setGenderOrientation(savedFilters.genderOrientation || "");
-      setDistance(savedFilters.distance || 0);
+      setDistance(savedFilters.distance || 1000);
       setLocation(savedFilters.location || "");
       setVerifiedUser(savedFilters.verifiedUser || false);
       setPersonality(savedFilters.personality || "");
@@ -219,7 +219,7 @@ const AdvancedFilteringScreen = ({ navigation }) => {
   const resetFilters = () => {
     setRelationshipType("Any");
     setGenderOrientation("Straight");
-    setDistance(100);
+    setDistance(1000);
     setVerifiedUser(false);
     setPersonality("Any");
     setWorkout("Any");
@@ -339,7 +339,7 @@ const AdvancedFilteringScreen = ({ navigation }) => {
                 <Slider
                   style={{ width: "100%", height: 40 }}
                   minimumValue={0}
-                  maximumValue={1000}
+                  maximumValue={10000}
                   step={1}
                   value={getNearestStep(sliderValue)}
                   onValueChange={val => {
