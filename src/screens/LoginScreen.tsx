@@ -166,7 +166,11 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
           navigation.reset({ index: 0, routes: [{ name: "HomeTabs" }] });
         }
       } else {
-        throw new Error("Unexpected response from server");
+        // setCustomAlert({visible: true, title: "Error", message: "No user found with this email. Please register."});
+        navigation.navigate("Register", {
+          email: user.email,
+          name: user.name,
+        });
       }
     } catch (error: any) {
       console.error("❌ Google login error:", error);

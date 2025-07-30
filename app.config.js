@@ -33,6 +33,9 @@ export default {
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
         googleServicesFile: "./GoogleService-Info.plist"
+      },
+      config: {
+        googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY
       }
     },
     android: {
@@ -43,7 +46,12 @@ export default {
         googleServicesFile: "./google-services.json"
       },
       package: "com.dating.kute",
-      permissions: ["NOTIFICATIONS"]
+      permissions: ["NOTIFICATIONS"],
+      config: {
+        googleMaps: {
+          apiKey: process.env.GOOGLE_MAPS_API_KEY
+        }
+      }
     },
     web: {
       favicon: "./assets/favicon.png"
@@ -55,7 +63,8 @@ export default {
       FACE_API_KEY: process.env.FACE_API_KEY,
       FACE_API_SECRET: process.env.FACE_API_SECRET,
       googleAndroidClientId:process.env.GOOGLE_ANDROID_CLIENT_ID,
-      googleExpoClientId:process.env.GOOGLE_EXPO_CLIENT_ID
+      googleExpoClientId:process.env.GOOGLE_EXPO_CLIENT_ID,
+      GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY
     }
   }
 };

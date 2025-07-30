@@ -124,6 +124,12 @@ dependencies {
 
     // Force ExoPlayer UI dependency to ensure drawable resources are available
     implementation 'com.google.android.exoplayer:exoplayer-ui:2.18.1'
+    
+    // Google Play Services Location for expo-location compatibility
+    // Using consistent versions to avoid interface/class conflicts
+    implementation 'com.google.android.gms:play-services-location:21.0.1'
+    implementation 'com.google.android.gms:play-services-maps:18.2.0'
+    implementation 'com.google.android.gms:play-services-base:18.2.0'
 }
 
 apply from: new File([

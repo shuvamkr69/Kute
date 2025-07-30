@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -58,6 +58,29 @@ const BasicDetails: React.FC<Props> = ({ navigation }) => {
   const [occupation, setOccupation] = useState("");
   const [loveLanguage, setloveLanguage] = useState("");
   const [customAlert, setCustomAlert] = useState({ visible: false, title: '', message: '' });
+
+  // Load existing temp data on component mount
+  useEffect(() => {
+    const loadExistingData = async () => {
+      try {
+        const tempUserData = await AsyncStorage.getItem("tempUserData");
+        if (tempUserData) {
+          const userData = JSON.parse(tempUserData);
+          console.log("📋 BasicDetails loaded existing temp data:", {
+            fullName: userData.fullName,
+            email: userData.email,
+            loginMethod: userData.loginMethod || 'email',
+            hasAvatar: !!userData.avatar,
+            hasGoogleToken: !!userData.googleToken
+          });
+        }
+      } catch (error) {
+        console.error("❌ Error loading temp data in BasicDetails:", error);
+      }
+    };
+    
+    loadExistingData();
+  }, []);
 
   const genderOptions = ["Male", "Female", "Other"];
   const personalityType = ["Introvert", "Ambivert", "Extrovert"];
