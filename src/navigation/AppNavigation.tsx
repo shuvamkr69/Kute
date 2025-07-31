@@ -110,7 +110,16 @@ export default function AppNavigation() {
             <Stack.Screen name="Leaderboard" component={LeaderboardScreen} />
 
           {/* Events screens */}
-          <Stack.Screen name="EventSelectionScreen" component={EventSelection} />
+          <Stack.Screen 
+            name="EventSelectionScreen" 
+            component={EventSelection} 
+            options={{
+              animation: 'slide_from_bottom',
+              animationDuration: 300,
+              gestureEnabled: true,
+              gestureDirection: 'vertical',
+            }}
+          />
           <Stack.Screen name="ChamberOfSecrets" component={ChamberOfSecrets} />
 
 

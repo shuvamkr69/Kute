@@ -32,6 +32,14 @@ interface ViewedByUser {
   viewCount: number;
 }
 
+interface LikedMeUser {
+  _id: string;
+  fullName: string;
+  profileImage: string;
+  superLiked: boolean;
+  likedAt: string;
+}
+
 const Likes: React.FC<Props> = ({ navigation }) => {
   const [likedUsers, setLikedUsers] = useState<LikedUser[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -39,10 +47,12 @@ const Likes: React.FC<Props> = ({ navigation }) => {
   const [selectedUser, setSelectedUser] = useState<LikedUser | null>(null);
   const [showOptions, setShowOptions] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
-  const [tab, setTab] = useState<'matches' | 'viewedBy'>('matches');
+  const [tab, setTab] = useState<'matches' | 'viewedBy' | 'likedMe'>('matches');
   const [viewedBy, setViewedBy] = useState<ViewedByUser[]>([]);
+  const [likedMe, setLikedMe] = useState<LikedMeUser[]>([]);
   const [premiumPlan, setPremiumPlan] = useState<string | null>(null);
   const [viewedLoading, setViewedLoading] = useState(false);
+  const [likedMeLoading, setLikedMeLoading] = useState(false);
   const [customAlert, setCustomAlert] = useState({ visible: false, title: '', message: '', onConfirm: undefined as undefined | (() => void), confirmText: '', cancelText: '' });
   const [showUnmatchAlert, setShowUnmatchAlert] = useState(false);
   const [pendingUnmatchUser, setPendingUnmatchUser] = useState<LikedUser | null>(null);
@@ -84,7 +94,7 @@ const Likes: React.FC<Props> = ({ navigation }) => {
   useEffect(() => {
     if (tab === 'viewedBy') {
       setViewedLoading(true);
-      api.get('/api/v1/users/viewedBy') // <-- Replace with your actual endpoint
+      api.get('/api/v1/users/viewedBy')
         .then(res => {
           setViewedBy(res.data.map((user: any) => ({
             _id: user._id,
@@ -98,7 +108,26 @@ const Likes: React.FC<Props> = ({ navigation }) => {
     }
   }, [tab]);
 
-  // Add focus effect to refresh viewedBy when returning to Likes screen
+  // Fetch users who liked me
+  useEffect(() => {
+    if (tab === 'likedMe') {
+      setLikedMeLoading(true);
+      api.get('/api/v1/users/usersWhoLikedMe')
+        .then(res => {
+          setLikedMe(res.data.map((user: any) => ({
+            _id: user._id,
+            fullName: user.fullName,
+            profileImage: user.profileImage || 'https://via.placeholder.com/150',
+            superLiked: user.superLiked || false,
+            likedAt: user.likedAt,
+          })));
+        })
+        .catch(() => setLikedMe([]))
+        .finally(() => setLikedMeLoading(false));
+    }
+  }, [tab]);
+
+  // Add focus effect to refresh data when returning to Likes screen
   useFocusEffect(
     React.useCallback(() => {
       if (tab === 'viewedBy') {
@@ -114,6 +143,20 @@ const Likes: React.FC<Props> = ({ navigation }) => {
           })
           .catch(() => setViewedBy([]))
           .finally(() => setViewedLoading(false));
+      } else if (tab === 'likedMe') {
+        setLikedMeLoading(true);
+        api.get('/api/v1/users/usersWhoLikedMe')
+          .then(res => {
+            setLikedMe(res.data.map((user: any) => ({
+              _id: user._id,
+              fullName: user.fullName,
+              profileImage: user.profileImage || 'https://via.placeholder.com/150',
+              superLiked: user.superLiked || false,
+              likedAt: user.likedAt,
+            })));
+          })
+          .catch(() => setLikedMe([]))
+          .finally(() => setLikedMeLoading(false));
       }
     }, [tab])
   );
@@ -190,6 +233,74 @@ const Likes: React.FC<Props> = ({ navigation }) => {
     </View>
   );
 
+  // Render function for users who liked me
+  const renderLikedMeItem = ({ item }: { item: LikedMeUser }) => {
+    const hasPremium = premiumPlan && premiumPlan !== 'null' && premiumPlan !== '';
+    
+    return (
+      <View style={styles.likedMeCard}>
+        <View style={styles.likedMeImageContainer}>
+          <Image 
+            source={{ uri: item.profileImage }} 
+            style={[
+              styles.likedMeImage,
+              !hasPremium && styles.blurredImage
+            ]} 
+          />
+          {!hasPremium && (
+            <BlurView intensity={80} tint="dark" style={styles.imageBlur}>
+              <View style={styles.blurOverlayImage} />
+            </BlurView>
+          )}
+          {item.superLiked && (
+            <View style={styles.superLikeBadge}>
+              <Icon name="star" size={12} color="#00B4FF" />
+            </View>
+          )}
+        </View>
+        <View style={styles.likedMeContent}>
+          <Text style={styles.likedMeName} numberOfLines={1} ellipsizeMode="tail">
+            {hasPremium ? item.fullName.split(' ')[0] : '•••••'}
+          </Text>
+          {hasPremium ? (
+            <TouchableOpacity 
+              style={styles.likeBackButton}
+              onPress={async () => {
+                try {
+                  await api.post('/api/v1/users/userLiked', { likedUserId: item._id });
+                  // Remove from likedMe list since they're now matched
+                  setLikedMe(prev => prev.filter(user => user._id !== item._id));
+                  // Optionally add to matches or show success message
+                  setCustomAlert({ 
+                    visible: true, 
+                    title: "It's a Match!", 
+                    message: `You matched with ${item.fullName.split(' ')[0]}!`,
+                    onConfirm: undefined,
+                    confirmText: '',
+                    cancelText: 'Great!'
+                  });
+                } catch (error) {
+                  setCustomAlert({ 
+                    visible: true, 
+                    title: "Error", 
+                    message: "Failed to like back. Please try again.",
+                    onConfirm: undefined,
+                    confirmText: '',
+                    cancelText: 'OK'
+                  });
+                }
+              }}
+            >
+              <Text style={styles.likeBackText}>Like them back?</Text>
+            </TouchableOpacity>
+          ) : (
+            <Text style={styles.premiumText}>Get Premium to see</Text>
+          )}
+        </View>
+      </View>
+    );
+  };
+
   // Render fallback UI if offline or error
   if (isOffline) {
     return (
@@ -211,6 +322,12 @@ const Likes: React.FC<Props> = ({ navigation }) => {
           onPress={() => setTab('matches')}
         >
           <Text style={[styles.tabText, tab === 'matches' && styles.tabTextActive]}>Matches</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, tab === 'likedMe' && styles.tabActive]}
+          onPress={() => setTab('likedMe')}
+        >
+          <Text style={[styles.tabText, tab === 'likedMe' && styles.tabTextActive]}>Liked You</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, tab === 'viewedBy' && styles.tabActive]}
@@ -251,6 +368,121 @@ const Likes: React.FC<Props> = ({ navigation }) => {
           }
           key="matches-list"
         />
+      ) : tab === 'likedMe' ? (
+        <View style={{ flex: 1 }}>
+          {premiumPlan && premiumPlan !== 'null' && premiumPlan !== '' ? (
+            likedMeLoading ? (
+              <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                <Text style={{ color: '#fff' }}>Loading...</Text>
+              </View>
+            ) : (
+              <FlatList
+                data={likedMe}
+                keyExtractor={(item) => item._id}
+                renderItem={renderLikedMeItem}
+                numColumns={1}
+                contentContainerStyle={[
+                  styles.list,
+                  likedMe.length === 0 && { flex: 1, justifyContent: 'center' },
+                ]}
+                refreshControl={
+                  <RefreshControl
+                    refreshing={likedMeLoading}
+                    onRefresh={() => {
+                      setLikedMeLoading(true);
+                      api.get('/api/v1/users/usersWhoLikedMe')
+                        .then(res => {
+                          setLikedMe(res.data.map((user: any) => ({
+                            _id: user._id,
+                            fullName: user.fullName,
+                            profileImage: user.profileImage || 'https://via.placeholder.com/150',
+                            superLiked: user.superLiked || false,
+                            likedAt: user.likedAt,
+                          })));
+                        })
+                        .catch(() => setLikedMe([]))
+                        .finally(() => setLikedMeLoading(false));
+                    }}
+                    colors={['#de822c']}
+                  />
+                }
+                ListEmptyComponent={
+                  <View style={styles.emptyStateContainer}>
+                    <Image
+                      source={require('../assets/icons/broken-heart.png')}
+                      style={{ width: 150, height: 150, marginBottom: 20 }}
+                    />
+                    <Text style={styles.noLikes}>
+                      No one has liked you yet. Keep swiping!
+                    </Text>
+                  </View>
+                }
+                key="liked-me-list"
+              />
+            )
+          ) : (
+            <FlatList
+              data={likedMe}
+              keyExtractor={(item) => item._id}
+              renderItem={renderLikedMeItem}
+              numColumns={1}
+              contentContainerStyle={[
+                styles.list,
+                likedMe.length === 0 && { flex: 1, justifyContent: 'center' },
+              ]}
+              refreshControl={
+                <RefreshControl
+                  refreshing={likedMeLoading}
+                  onRefresh={() => {
+                    setLikedMeLoading(true);
+                    api.get('/api/v1/users/usersWhoLikedMe')
+                      .then(res => {
+                        setLikedMe(res.data.map((user: any) => ({
+                          _id: user._id,
+                          fullName: user.fullName,
+                          profileImage: user.profileImage || 'https://via.placeholder.com/150',
+                          superLiked: user.superLiked || false,
+                          likedAt: user.likedAt,
+                        })));
+                      })
+                      .catch(() => setLikedMe([]))
+                      .finally(() => setLikedMeLoading(false));
+                  }}
+                  colors={['#de822c']}
+                />
+              }
+              ListEmptyComponent={
+                likedMeLoading ? (
+                  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                    <Text style={{ color: '#fff' }}>Loading...</Text>
+                  </View>
+                ) : (
+                  <View style={styles.emptyStateContainer}>
+                    <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill}>
+                      <View style={styles.blurOverlay}>
+                        <Image
+                          source={require('../assets/icons/heart-white.png')}
+                          style={{ width: 150, height: 150, marginBottom: 20, tintColor: '#de822c' }}
+                        />
+                        <Text style={styles.blurTitle}>See Who Likes You</Text>
+                        <Text style={styles.blurDesc}>
+                          Discover who's interested in you! Upgrade to Premium to see everyone who liked your profile.
+                        </Text>
+                        <TouchableOpacity
+                          style={styles.premiumButton}
+                          onPress={() => navigation.navigate('Premium')}
+                        >
+                          <Text style={styles.premiumButtonText}>Get Premium</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </BlurView>
+                  </View>
+                )
+              }
+              key="liked-me-blurred-list"
+            />
+          )}
+        </View>
       ) : (
         <View style={{ flex: 1 }}>
           {premiumPlan === 'Standard' || premiumPlan === 'Diamond' ? (
@@ -627,5 +859,88 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
     marginLeft: 4,
+  },
+  // Liked Me styles
+  likedMeCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#181A20',
+    borderRadius: 12,
+    marginBottom: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    width: '100%',
+    minHeight: 80,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  likedMeImageContainer: {
+    position: 'relative',
+    marginRight: 16,
+  },
+  likedMeImage: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#333',
+  },
+  blurredImage: {
+    opacity: 0.3,
+  },
+  imageBlur: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 28,
+    overflow: 'hidden',
+  },
+  blurOverlayImage: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+  superLikeBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    backgroundColor: '#00B4FF',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#181A20',
+  },
+  likedMeContent: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  likedMeName: {
+    color: '#fff',
+    fontSize: 17,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  likeBackButton: {
+    backgroundColor: '#de822c',
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    alignSelf: 'flex-start',
+  },
+  likeBackText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  premiumText: {
+    color: '#B0B0B0',
+    fontSize: 14,
+    fontStyle: 'italic',
   },
 });

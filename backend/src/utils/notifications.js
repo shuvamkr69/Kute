@@ -9,6 +9,9 @@ export const sendPushNotification = async (expoPushToken, title, body, data = {}
   }
 
   const isMatchNotification = data.type === "match";
+  const isMessageNotification = data.type === "message";
+  const isLikeNotification = data.type === "like_received";
+  const isSuperLikeNotification = data.type === "super_like_received";
   
   const message = {
     to: expoPushToken,
@@ -21,13 +24,33 @@ export const sendPushNotification = async (expoPushToken, title, body, data = {}
       type: data.type || "general" // Add notification type
     },
     priority: "high", // Ensures notification is delivered immediately
-    channelId: isMatchNotification ? "match" : "default", // Use match channel for match notifications
+    channelId: isMatchNotification 
+      ? "match" 
+      : isMessageNotification 
+        ? "message" 
+        : (isLikeNotification || isSuperLikeNotification) 
+          ? "likes" 
+          : "default",
     android: {
       sound: "default",
-      vibrationPattern: isMatchNotification ? [0, 500, 300, 500, 300, 700] : [0, 250, 250, 250],
+      vibrationPattern: isMatchNotification 
+        ? [0, 500, 300, 500, 300, 700] 
+        : isMessageNotification 
+          ? [0, 250, 250, 250]
+          : isSuperLikeNotification
+            ? [0, 300, 150, 300, 150, 500, 300]
+            : isLikeNotification
+              ? [0, 200, 100, 200]
+              : [0, 250, 250, 250],
       priority: "max",
       sticky: false,
-      channelId: isMatchNotification ? "match" : "default",
+      channelId: isMatchNotification 
+        ? "match" 
+        : isMessageNotification 
+          ? "message" 
+          : (isLikeNotification || isSuperLikeNotification) 
+            ? "likes" 
+            : "default",
     },
     ios: {
       sound: "default",
@@ -43,6 +66,7 @@ export const sendPushNotification = async (expoPushToken, title, body, data = {}
     console.log("📬 Title:", title);
     console.log("📝 Body:", body);
     console.log("🎯 Type:", data.type || "general");
+    console.log("📡 Channel:", isMatchNotification ? "match" : isMessageNotification ? "message" : "default");
     
     const response = await fetch("https://exp.host/--/api/v2/push/send", {
       method: "POST",

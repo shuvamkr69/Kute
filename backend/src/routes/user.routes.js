@@ -20,17 +20,20 @@ import {
   unblockUser,
   unmatchUser,
   updatePushToken,
+  clearPushToken,
   userProfile,
   reportUser,
   addProfileView,
   getViewedBy,
   getLeaderboard,
+  rejectUser,
+  rewindLastReject,
 } from "../controllers/user.controller.js";
 import { loginUser } from "../controllers/user.controller.js";
 import { logoutUser } from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
-import { getLikedUsers } from "../controllers/liked.controller.js";
+import { getLikedUsers, getUsersWhoLikedMe } from "../controllers/liked.controller.js";
 import { otherProfile } from "../controllers/user.controller.js";
 
 const UserRouter = Router();
@@ -53,6 +56,8 @@ UserRouter.route("/logout").post(
 
 UserRouter.get("/userLiked", verifyJWT, getLikedUsers); //liking a user
 
+UserRouter.get("/usersWhoLikedMe", verifyJWT, getUsersWhoLikedMe); //get users who liked me but I haven't liked back
+
 UserRouter.route("/me").get(
   //get my profile
   verifyJWT,
@@ -74,6 +79,12 @@ UserRouter.route("/updatePushToken").post(
   //update push token
   verifyJWT,
   updatePushToken
+);
+
+UserRouter.route("/clearPushToken").patch(
+  //clear push token on logout
+  verifyJWT,
+  clearPushToken
 );
 
 UserRouter.route("/powerUps").get(
@@ -162,5 +173,8 @@ UserRouter.post("/report-user", verifyJWT, reportUser);
 UserRouter.post('/profileViewed', verifyJWT, addProfileView);
 UserRouter.get('/viewedBy', verifyJWT, getViewedBy);
 UserRouter.get('/leaderboard', getLeaderboard);
+
+UserRouter.post('/reject', verifyJWT, rejectUser);
+UserRouter.post('/rewind', verifyJWT, rewindLastReject);
 
 export default UserRouter;

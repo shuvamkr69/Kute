@@ -40,28 +40,35 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
       return;
     }
     try {
-      const loginResponse = await api.post("/api/v1/users/login", { email, password });
+      // Get push token before login
+      const pushToken = await registerForPushNotifications();
+      console.log("🔄 Logging in with push token:", pushToken ? "✅ Present" : "❌ Missing");
+
+      const loginResponse = await api.post("/api/v1/users/login", { 
+        email, 
+        password,
+        pushToken // Include push token in login request
+      });
+      
       if (loginResponse.status === 200) {
         const { accessToken, refreshToken, user } = loginResponse.data.data;
         if (!accessToken || !refreshToken) {
           setCustomAlert({ visible: true, title: "Error", message: "Authentication failed: Missing tokens" });
           return;
         }
+        
         await AsyncStorage.setItem("user", JSON.stringify(user));
         await AsyncStorage.setItem("accessToken", accessToken);
         await AsyncStorage.setItem("refreshToken", refreshToken);
         await AsyncStorage.setItem("avatar", user.avatar1);
         await AsyncStorage.setItem("location", JSON.stringify(user.location));
-        const token = await registerForPushNotifications();
-        if (token) {
-          const storedToken = await AsyncStorage.getItem("pushToken");
-          if (storedToken !== token) {
-            try {
-              await api.post("/api/v1/users/updatePushToken", { pushToken: token });
-              await AsyncStorage.setItem("pushToken", token);
-            } catch (error) {}
-          }
+        
+        // Store push token locally
+        if (pushToken) {
+          await AsyncStorage.setItem("pushToken", pushToken);
+          console.log("✅ Push token stored locally during login");
         }
+        
         await signIn();
         navigation.reset({ index: 0, routes: [{ name: "HomeTabs" }] });
       } else {
@@ -98,6 +105,10 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
     try {
       console.log("🚀 Starting Google login process");
       
+      // Get push token before Google login
+      const pushToken = await registerForPushNotifications();
+      console.log("🔄 Google login with push token:", pushToken ? "✅ Present" : "❌ Missing");
+      
       // Get user info from Google
       const userInfoRes = await fetch(
         "https://www.googleapis.com/userinfo/v2/me",
@@ -124,6 +135,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
         name: user.name,
         avatar: user.picture,
         token: accessToken,
+        pushToken // Include push token in Google login request
       });
       
       if (response.status === 200) {
@@ -141,18 +153,10 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
         await AsyncStorage.setItem("avatar", backendUser.avatar1 || "");
         await AsyncStorage.setItem("location", JSON.stringify(backendUser.location || [0, 0]));
         
-        // Register for push notifications
-        const pushToken = await registerForPushNotifications();
+        // Store push token locally
         if (pushToken) {
-          const storedToken = await AsyncStorage.getItem("pushToken");
-          if (storedToken !== pushToken) {
-            try {
-              await api.post("/api/v1/users/updatePushToken", { pushToken });
-              await AsyncStorage.setItem("pushToken", pushToken);
-            } catch (error) {
-              console.log("⚠️ Failed to update push token:", error);
-            }
-          }
+          await AsyncStorage.setItem("pushToken", pushToken);
+          console.log("✅ Push token stored locally during Google login");
         }
         
         await signIn();

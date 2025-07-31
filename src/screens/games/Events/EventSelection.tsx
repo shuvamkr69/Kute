@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, Image, Dimensions, FlatList, Text, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, Image, Dimensions, FlatList, Text, TouchableOpacity, ImageBackground } from 'react-native';
 import BackButton from '../../../components/BackButton';
 import { BlurView } from 'expo-blur';
 import AppNavigation from '../../../navigation/AppNavigation';
@@ -72,43 +72,62 @@ const EventSelection = () => {
     const pages = chunkArray(eventImages, 4);
 
     return (
-        <View style={styles.backButtonContainer}>
-            <BackButton title="Events" />
-            <FlatList
-                data={pages}
-                horizontal
-                pagingEnabled
-                showsHorizontalScrollIndicator={false}
-                keyExtractor={(_, i) => i.toString()}
-                renderItem={({ item }) => (
-                    <View style={styles.page}>
-                        {/* 2x2 grid */}
-                        <View style={styles.row}>
-                            {renderImage(item[0], 0, navigation)}
-                            {renderImage(item[1], 1, navigation)}
+        <ImageBackground 
+            source={require('../../../../assets/gameScreenImages/events-screen-dark-stone-bg.png')}
+            style={styles.container}
+            resizeMode="cover"
+        >
+            <View style={styles.backButtonContainer}>
+                <View style={styles.backButtonOverlay}>
+                    <BackButton title="Events" />
+                </View>
+                <FlatList
+                    data={pages}
+                    horizontal
+                    pagingEnabled
+                    showsHorizontalScrollIndicator={false}
+                    keyExtractor={(_, i) => i.toString()}
+                    renderItem={({ item }) => (
+                        <View style={styles.page}>
+                            {/* 2x2 grid */}
+                            <View style={styles.row}>
+                                {renderImage(item[0], 0, navigation)}
+                                {renderImage(item[1], 1, navigation)}
+                            </View>
+                            <View style={styles.row}>
+                                {renderImage(item[2], 2, navigation)}
+                                {renderImage(item[3], 3, navigation)}
+                            </View>
                         </View>
-                        <View style={styles.row}>
-                            {renderImage(item[2], 2, navigation)}
-                            {renderImage(item[3], 3, navigation)}
-                        </View>
-                    </View>
-                )}
-            />
-        </View>
+                    )}
+                />
+            </View>
+        </ImageBackground>
     );
 };
 
 const styles = StyleSheet.create({
-    backButtonContainer:
-    {
+    container: {
         flex: 1,
+    },
+    backButtonContainer: {
+        flex: 1,
+    },
+    backButtonOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 10,
+        backgroundColor: 'rgba(0, 0, 0, 0.3)', // Subtle dark overlay for visibility
+        paddingBottom: 10,
     },
     page: {
         width,
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#000', // Pure black background
+        backgroundColor: 'transparent', // Make transparent to show background image
     },
     row: {
         flexDirection: 'row',
