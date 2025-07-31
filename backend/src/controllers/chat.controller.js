@@ -1,7 +1,9 @@
 // controllers/chatController.js
 import { Conversation } from "../models/conversation.model.js";
 import { Message } from "../models/message.model.js";
+import { User } from "../models/user.model.js";
 import { getIO } from "../utils/socket.js";
+import { sendPushNotification } from "../utils/notifications.js";
 
 
 /**
@@ -131,6 +133,56 @@ export const sendMessage = async (req, res) => {
           }
         : undefined,
     });
+
+    // ✅ Send push notification to the recipient
+    try {
+      // Get conversation with participants
+      const conversation = await Conversation.findById(conversationId).populate({
+        path: 'participants',
+        select: 'fullName avatar1 pushToken'
+      });
+
+      if (conversation && conversation.participants) {
+        // Find the recipient (not the sender)
+        const recipient = conversation.participants.find(
+          participant => participant._id.toString() !== senderId.toString()
+        );
+
+        // Find the sender for sender info
+        const sender = conversation.participants.find(
+          participant => participant._id.toString() === senderId.toString()
+        );
+
+        if (recipient && recipient.pushToken && sender) {
+          // Send push notification
+          await sendPushNotification(
+            recipient.pushToken,
+            `${sender.fullName}`, // Title: sender's name
+            text, // Body: the message text
+            {
+              type: "message",
+              conversationId: conversationId,
+              senderId: senderId,
+              senderName: sender.fullName,
+              senderAvatar: sender.avatar1,
+              messageId: populatedMsg._id.toString()
+            }
+          );
+          console.log(`✅ Push notification sent to ${recipient.fullName}`);
+        } else {
+          if (!recipient) {
+            console.log("❌ No recipient found in conversation");
+          } else if (!recipient.pushToken) {
+            console.log("❌ Recipient has no push token");
+          } else if (!sender) {
+            console.log("❌ Sender not found in conversation");
+          }
+        }
+      }
+    } catch (notificationError) {
+      console.error("❌ Error sending push notification:", notificationError);
+      // Don't fail the message sending if notification fails
+    }
 
     res.status(201).json({
       _id: populatedMsg._id,

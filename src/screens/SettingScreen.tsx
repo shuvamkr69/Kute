@@ -85,13 +85,21 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
 
   const confirmLogout = async () => {
     try {
-      const response = await api.post("/api/v1/users/logout");
-      console.log("Logout Response:", response.data);
-      await AsyncStorage.clear();
-      signOut();
-      navigation.navigate("Login");
+      console.log("🔄 Starting logout process...");
+      
+      // Use the enhanced signOut from AuthContext which handles:
+      // 1. Clearing push token from backend
+      // 2. Clearing all local storage
+      // 3. Updating auth state
+      await signOut();
+      
+      console.log("✅ Logout completed successfully");
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "Login" }],
+      });
     } catch (error) {
-      console.error("Logout Error:", error);
+      console.error("❌ Logout Error:", error);
       setCustomAlert({
         visible: true,
         title: "Error",
@@ -102,19 +110,30 @@ const SettingScreen: React.FC<Props> = ({ navigation }) => {
 
   const handleDeactivateAccount = async () => {
     try {
+      console.log("🔄 Starting account deactivation...");
       const response = await api.post("/api/v1/users/deactivate");
       console.log("Account Deactivated:", response.data);
+      
       setCustomAlert({
         visible: true,
         title: "Account Deactivated",
         message:
           "Your account has been temporarily deactivated. You can reactivate it by logging in again.",
       });
-      await AsyncStorage.clear();
-      signOut();
-      navigation.navigate("Login");
+      
+      // Use the enhanced signOut from AuthContext which handles:
+      // 1. Clearing push token from backend
+      // 2. Clearing all local storage
+      // 3. Updating auth state
+      await signOut();
+      
+      console.log("✅ Account deactivated and logout completed");
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "Login" }],
+      });
     } catch (error) {
-      console.error("Deactivation Error:", error);
+      console.error("❌ Deactivation Error:", error);
       setCustomAlert({
         visible: true,
         title: "Error",

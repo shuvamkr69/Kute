@@ -462,8 +462,23 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
-  const userPassed = (index: number) => {
-    // console.log("User passed:", profiles[index]?._id);
+  const userPassed = async (index: number) => {
+    try {
+      const rejectedProfile = profiles[index];
+      if (rejectedProfile) {
+        // Store the rejected user for potential rewind
+        setLastRejectedUser(rejectedProfile);
+        
+        // Call the reject API
+        await api.post("/api/v1/users/reject", { 
+          rejectedUserId: rejectedProfile._id 
+        });
+        
+        console.log("User rejected:", rejectedProfile._id);
+      }
+    } catch (error) {
+      console.error("Error rejecting user:", error);
+    }
   };
 
   const haversineDistance = (
@@ -500,6 +515,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const [reportReason, setReportReason] = useState("");
   const [customAlert, setCustomAlert] = useState({ visible: false, title: '', message: '' });
+  const [lastRejectedUser, setLastRejectedUser] = useState<Profile | null>(null);
 
   const handleShareProfile = async () => {
     if (!selectedProfile) return;
@@ -518,6 +534,66 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
       });
     } catch (error) {
       setCustomAlert({ visible: true, title: "Error", message: error.message || "Failed to share profile." });
+    }
+  };
+
+  const handleRewind = async () => {
+    try {
+      const response = await api.post('/api/v1/users/rewind');
+      
+      if (response.data?.success) {
+        const rewindedUser = response.data.data.rewindedUser;
+        
+        if (rewindedUser) {
+          // Create a complete profile object from the rewinded user data
+          const rewindedProfile: Profile = {
+            _id: rewindedUser._id,
+            fullName: rewindedUser.fullName || "User",
+            age: rewindedUser.age || 0,
+            images: Array.isArray(rewindedUser.images) && rewindedUser.images.length > 0 
+              ? rewindedUser.images 
+              : (rewindedUser.avatar ? [rewindedUser.avatar] : ["https://via.placeholder.com/400x600/AAAAAA/FFFFFF?text=No+Image"]),
+            gender: rewindedUser.gender || '',
+            location: rewindedUser.location || '',
+            interests: Array.isArray(rewindedUser.interests) 
+              ? rewindedUser.interests.join(", ") 
+              : rewindedUser.interests || '',
+            relationshipType: rewindedUser.relationshipType || '',
+            bio: rewindedUser.bio || "No bio available.",
+            distance: rewindedUser.distance || null,
+            drinking: false,
+            smoking: '',
+            workout: '',
+            familyPlanning: '',
+            verifiedUser: '',
+            zodiac: '',
+          };
+          
+          // Add the rewinded profile to the beginning of the profiles array
+          setProfiles((prev) => [rewindedProfile, ...prev]);
+          setCustomAlert({ 
+            visible: true, 
+            title: "Rewind Successful! ↺", 
+            message: `${rewindedUser.fullName} is back in your deck!` 
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Rewind error:", error);
+      const errorMessage = error.response?.data?.message || "Failed to rewind";
+      
+      if (error.response?.data?.requiresPremium) {
+        // Navigate directly to premium screen without showing alert
+        navigation.navigate("Premium", { from: "rewind" });
+      } else if (error.response?.status === 404) {
+        setCustomAlert({ 
+          visible: true, 
+          title: "No Recent Swipes", 
+          message: "No recent rejections found to rewind. Swipe left on someone first!" 
+        });
+      } else {
+        setCustomAlert({ visible: true, title: "Error", message: errorMessage });
+      }
     }
   };
 
@@ -627,6 +703,24 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
                 : ["https://via.placeholder.com/400x600/AAAAAA/FFFFFF?text=No+Image"];
               return (
                 <View style={styles.card} key={profile._id}>
+                  {/* Rewind Button - Top Left Corner - Only show on top card */}
+                  {isTopCard && (
+                    <TouchableOpacity 
+                      style={styles.rewindButton}
+                      onPress={handleRewind}
+                      activeOpacity={0.8}
+                    >
+                      <LinearGradient
+                        colors={["#de822c", "#ff172e"]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={styles.rewindButtonGradient}
+                      >
+                        <Ionicons name="refresh" size={18} color="#FFFFFF" />
+                      </LinearGradient>
+                    </TouchableOpacity>
+                  )}
+                  
                   <TouchableOpacity
                     onPress={async () => {
                       LayoutAnimation.configureNext(
@@ -1697,6 +1791,24 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "bold",
     color: "#FFD700",
+  },
+  rewindButton: {
+    position: "absolute",
+    top: 16,
+    left: 16,
+    zIndex: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  rewindButtonGradient: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
 

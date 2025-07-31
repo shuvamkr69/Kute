@@ -216,7 +216,7 @@ const registerUser = asyncHandler(async (req, res) => {
 });
 
 const loginUser = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, pushToken } = req.body;
 
   if (!email) {
     throw new ApiError(400, "Email is required");
@@ -232,6 +232,13 @@ const loginUser = asyncHandler(async (req, res) => {
 
   if (!isPasswordValid) {
     throw new ApiError(401, "Invalid credentials");
+  }
+
+  // Update push token if provided during login
+  if (pushToken) {
+    console.log("🔄 Updating push token during login:", pushToken);
+    await User.findByIdAndUpdate(user._id, { pushToken });
+    console.log("✅ Push token updated during login for user:", user._id);
   }
 
   const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
@@ -509,9 +516,16 @@ const homescreenProfiles = async (req, res) => {
       }
     }
 
-    // ✅ Exclude already liked/matched users + self
+    // Get current user's rejected users that haven't expired
+    const currentUserWithRejections = await User.findById(currentUserId).select('rejectedUsers');
+    const now = new Date();
+    const rejectedIds = currentUserWithRejections?.rejectedUsers
+      ?.filter(rejection => rejection.expiresAt > now)
+      ?.map(rejection => rejection.userId.toString()) || [];
+
+    // ✅ Exclude already liked/matched users + blocked users + rejected users + self
     filter._id = {
-      $nin: [...excludedIds, ...blockedIds, currentUserId.toString()],
+      $nin: [...excludedIds, ...blockedIds, ...rejectedIds, currentUserId.toString()],
     };
 
     // Fetch filtered users (remove initial sorting)
@@ -916,15 +930,34 @@ const updatePushToken = async (req, res) => {
     return res.status(400).json({ message: "Push token is required" });
   }
   try {
-    console.log("Push Token:", pushToken);
+    console.log("🔄 Updating Push Token:", pushToken);
     const currentUserId = req.user._id; // Get logged-in user's ID
     await User.findByIdAndUpdate(currentUserId, { pushToken }).select(
       "-password -refreshToken -__v -createdAt -updatedAt"
     );
 
+    console.log("✅ Push token updated successfully for user:", currentUserId);
     res.json({ success: true, message: "Push token updated successfully" });
   } catch (error) {
+    console.error("❌ Failed to update push token:", error);
     res.status(500).json({ message: "Failed to update push token" });
+  }
+};
+
+const clearPushToken = async (req, res) => {
+  try {
+    console.log("🔄 Clearing push token for user logout...");
+    const currentUserId = req.user._id; // Get logged-in user's ID
+    
+    await User.findByIdAndUpdate(currentUserId, { 
+      $unset: { pushToken: 1 } // Remove pushToken field
+    }).select("-password -refreshToken -__v -createdAt -updatedAt");
+
+    console.log("✅ Push token cleared successfully for user:", currentUserId);
+    res.json({ success: true, message: "Push token cleared successfully" });
+  } catch (error) {
+    console.error("❌ Failed to clear push token:", error);
+    res.status(500).json({ message: "Failed to clear push token" });
   }
 };
 
@@ -1001,7 +1034,7 @@ const activateBoost = asyncHandler(async (req, res) => {
 });
 
 const googleLoginUser = asyncHandler(async (req, res) => {
-  const { email, name, avatar, token } = req.body;
+  const { email, name, avatar, token, pushToken } = req.body;
 
   if (!email || !name) {
     throw new ApiError(400, "Email and Name are required");
@@ -1070,6 +1103,14 @@ const googleLoginUser = asyncHandler(async (req, res) => {
   if (avatar && !user.avatar1) {
     user.avatar1 = avatar;
     userUpdated = true;
+  }
+
+  // Update push token if provided during Google login
+  if (pushToken) {
+    console.log("🔄 Updating push token during Google login:", pushToken);
+    user.pushToken = pushToken;
+    userUpdated = true;
+    console.log("✅ Push token updated during Google login for user:", user._id);
   }
   
   // Save user if any updates were made
@@ -1375,6 +1416,169 @@ const getLeaderboard = async (req, res) => {
   }
 };
 
+// POST /api/v1/users/reject - Reject a user for 2 days
+const rejectUser = async (req, res) => {
+  try {
+    const currentUserId = req.user._id;
+    const { rejectedUserId } = req.body;
+
+    if (!rejectedUserId) {
+      return res.status(400).json({
+        success: false,
+        message: "Rejected user ID is required"
+      });
+    }
+
+    // Check if the rejected user exists
+    const rejectedUser = await User.findById(rejectedUserId);
+    if (!rejectedUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    // Get current user
+    const currentUser = await User.findById(currentUserId);
+    if (!currentUser) {
+      return res.status(404).json({
+        success: false,
+        message: "Current user not found"
+      });
+    }
+
+    // Check if user is already rejected (and not expired)
+    const existingRejection = currentUser.rejectedUsers.find(
+      (rejection) => 
+        rejection.userId.toString() === rejectedUserId && 
+        new Date() < rejection.expiresAt
+    );
+
+    if (existingRejection) {
+      return res.status(400).json({
+        success: false,
+        message: "User is already rejected"
+      });
+    }
+
+    // Remove any expired rejections first
+    currentUser.rejectedUsers = currentUser.rejectedUsers.filter(
+      (rejection) => new Date() < rejection.expiresAt
+    );
+
+    // Add new rejection with 2-day expiry
+    const expiryDate = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000); // 2 days from now
+    
+    currentUser.rejectedUsers.push({
+      userId: rejectedUserId,
+      rejectedAt: new Date(),
+      expiresAt: expiryDate
+    });
+
+    await currentUser.save();
+
+    console.log(`User ${currentUserId} rejected user ${rejectedUserId} until ${expiryDate}`);
+
+    return res.status(200).json({
+      success: true,
+      message: "User rejected successfully",
+      data: {
+        rejectedUserId,
+        expiresAt: expiryDate
+      }
+    });
+
+  } catch (error) {
+    console.error("Error rejecting user:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+};
+
+// POST /api/v1/users/rewind - Rewind last rejected user (Premium feature)
+const rewindLastReject = async (req, res) => {
+  try {
+    const currentUserId = req.user._id;
+    
+    // Get current user
+    const currentUser = await User.findById(currentUserId);
+    if (!currentUser) {
+      return res.status(404).json({
+        success: false,
+        message: "Current user not found"
+      });
+    }
+
+    // Check if user has premium
+    if (!currentUser.ActivePremiumPlan || currentUser.ActivePremiumPlan === 'null' || currentUser.ActivePremiumPlan === '') {
+      return res.status(403).json({
+        success: false,
+        message: "Premium subscription required for rewind feature",
+        requiresPremium: true
+      });
+    }
+
+    // Get the most recent rejection that hasn't expired
+    const now = new Date();
+    const validRejections = currentUser.rejectedUsers.filter(
+      rejection => rejection.expiresAt > now
+    ).sort((a, b) => b.rejectedAt - a.rejectedAt); // Sort by most recent first
+
+    if (validRejections.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No recent rejections found to rewind"
+      });
+    }
+
+    const lastRejection = validRejections[0];
+    const rewindedUserId = lastRejection.userId;
+
+    // Remove the rejection from the user's rejectedUsers array
+    currentUser.rejectedUsers = currentUser.rejectedUsers.filter(
+      rejection => rejection.userId.toString() !== rewindedUserId.toString()
+    );
+
+    await currentUser.save();
+
+    // Get the rewinded user's basic info to return
+    const rewindedUser = await User.findById(rewindedUserId).select(
+      'fullName avatar1 age gender bio relationshipType interests images location distance'
+    );
+
+    console.log(`User ${currentUserId} rewinded rejection of user ${rewindedUserId}`);
+
+    return res.status(200).json({
+      success: true,
+      message: "Last rejection rewinded successfully",
+      data: {
+        rewindedUserId,
+        rewindedUser: rewindedUser ? {
+          _id: rewindedUser._id,
+          fullName: rewindedUser.fullName,
+          avatar: rewindedUser.avatar1,
+          age: rewindedUser.age,
+          gender: rewindedUser.gender,
+          bio: rewindedUser.bio,
+          relationshipType: rewindedUser.relationshipType,
+          interests: rewindedUser.interests,
+          images: rewindedUser.images || [rewindedUser.avatar1],
+          location: rewindedUser.location,
+          distance: rewindedUser.distance
+        } : null
+      }
+    });
+
+  } catch (error) {
+    console.error("Error rewinding last reject:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
+  }
+};
 
 export {
   generateAccessAndRefreshTokens,
@@ -1390,6 +1594,7 @@ export {
   userProfile,
   editUserProfile,
   updatePushToken,
+  clearPushToken,
   powerUps,
   activateBoost,
   distanceFetcher,
@@ -1406,4 +1611,6 @@ export {
   addProfileView,
   getViewedBy,
   getLeaderboard,
+  rejectUser,
+  rewindLastReject,
 };

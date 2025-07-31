@@ -14,18 +14,24 @@ import * as Notifications from "expo-notifications";
 // Configure how notifications are handled when the app is in the foreground
 Notifications.setNotificationHandler({
   handleNotification: async (notification) => {
-    // Check if it's a match notification for enhanced handling
-    const isMatchNotification = notification.request.content.data?.type === "match";
+    // Check notification type for enhanced handling
+    const notificationType = notification.request.content.data?.type;
+    const isMatchNotification = notificationType === "match";
+    const isMessageNotification = notificationType === "message";
     
     console.log("🔧 Notification handler called for:", notification.request.content.title);
-    console.log("🔧 Is match notification:", isMatchNotification);
+    console.log("🔧 Notification type:", notificationType);
     
     return {
       shouldShowAlert: true, // Always show alert
       shouldPlaySound: true, // Always play sound
       shouldSetBadge: false,
-      // Force priority for match notifications
-      priority: isMatchNotification ? Notifications.AndroidImportance.MAX : Notifications.AndroidImportance.HIGH,
+      // Set priority based on notification type
+      priority: isMatchNotification 
+        ? Notifications.AndroidImportance.MAX 
+        : isMessageNotification 
+          ? Notifications.AndroidImportance.HIGH 
+          : Notifications.AndroidImportance.DEFAULT,
     };
   },
 });
@@ -50,7 +56,7 @@ if (!global.btoa) {
 
 
 const MainApp = () => {
-  const { user, loading } = useAuth(); // Fetch user authentication state
+  const { isSignedIn, loading } = useAuth(); // Fetch user authentication state
   const [isSplashVisible, setIsSplashVisible] = useState(true);
   
   useEffect(() => {
@@ -64,16 +70,31 @@ const MainApp = () => {
         console.log("🎉 Match notification received - triggering vibration!");
         triggerMatchVibration();
         console.log("✅ Vibration triggered for match notification");
+      } else if (notification.request.content.data?.type === "message") {
+        console.log("💬 Message notification received:", {
+          from: notification.request.content.data.senderName,
+          message: notification.request.content.title
+        });
       }
     });
 
     const responseListener = Notifications.addNotificationResponseReceivedListener(response => {
       console.log("👆 User tapped notification:", response);
       
-      // Handle match notification tap - could navigate to match screen
-      if (response.notification.request.content.data?.type === "match") {
-        // You can add navigation logic here if needed
+      const data = response.notification.request.content.data;
+      
+      // Handle match notification tap
+      if (data?.type === "match") {
         console.log("User tapped match notification!");
+        // You can add navigation logic here if needed
+      } else if (data?.type === "message") {
+        console.log("User tapped message notification:", {
+          conversationId: data.conversationId,
+          senderId: data.senderId,
+          senderName: data.senderName
+        });
+        // Note: Navigation logic can be added here if needed
+        // Example: navigate to chat screen with conversationId
       }
     });
 
@@ -84,26 +105,56 @@ const MainApp = () => {
   }, []);
 
   useEffect(() => {
-
     const updatePushToken = async () => {
+      // Only update push token if user is signed in
+      if (!isSignedIn) {
+        console.log("🚫 User not signed in, skipping push token update");
+        return;
+      }
+
       const token = await registerForPushNotifications();
 
       if (token) {
         const storedToken = await AsyncStorage.getItem("pushToken");
         const userToken = await AsyncStorage.getItem("accessToken"); // Get JWT
-        console.log("User JWT:", userToken);
-        console.log("Push Token:", token);
-        console.log("env:", process.env)
-        if (storedToken !== token) {
-          // Send to backend only if changed
-          await api.patch("/api/v1/users/updatePushToken", { pushToken: token });
-          await AsyncStorage.setItem("pushToken", token);
+        console.log("User JWT:", userToken ? "✅ Present" : "❌ Missing");
+        console.log("Current Push Token:", token);
+        console.log("Stored Push Token:", storedToken);
+        
+        if (storedToken !== token && userToken) {
+          // Send to backend only if token changed and user is authenticated
+          try {
+            console.log("🔄 Push token changed, updating backend...");
+            await api.patch("/api/v1/users/updatePushToken", { pushToken: token });
+            await AsyncStorage.setItem("pushToken", token);
+            console.log("✅ Push token updated successfully");
+          } catch (error) {
+            console.error("❌ Error updating push token:", error);
+          }
+        } else if (!userToken) {
+          console.log("🚫 No user token, cannot update push token");
+        } else {
+          console.log("ℹ️ Push token unchanged, no update needed");
         }
+      } else {
+        console.log("❌ Failed to get push token from device");
       }
     };
 
+    // Update push token when user changes or every 30 seconds if user is signed in
     updatePushToken();
-  }, []);
+    
+    let interval;
+    if (isSignedIn) {
+      interval = setInterval(updatePushToken, 30000); // Check every 30 seconds
+    }
+
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [isSignedIn]); // Re-run when sign-in status changes
 
   useEffect(() => {
     

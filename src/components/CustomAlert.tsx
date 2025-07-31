@@ -22,7 +22,7 @@ const CustomAlert: React.FC<CustomAlertProps> = ({
   onClose,
   onConfirm,
   confirmText = 'Confirm',
-  cancelText = 'Cancel',
+  cancelText = 'OK',
   confirmTextStyle,
 }) => {
   return (

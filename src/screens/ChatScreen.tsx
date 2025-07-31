@@ -217,7 +217,16 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
     new Set()
   );
   const [selectionMode, setSelectionMode] = useState<boolean>(false);
-  const [customAlert, setCustomAlert] = useState({ visible: false, title: '', message: '' });
+  const [customAlert, setCustomAlert] = useState<{
+    visible: boolean;
+    title: string;
+    message: string;
+    onConfirm?: () => void;
+  }>({ 
+    visible: false, 
+    title: '', 
+    message: '' 
+  });
   const [searchText, setSearchText] = useState("");
   const [searchBarVisible, setSearchBarVisible] = useState(false);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
@@ -227,6 +236,36 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
   const [wallpaperModalVisible, setWallpaperModalVisible] = useState(false);
 
   const flatListRef = useRef<FlatList<Message>>(null);
+  
+  // Safe scrollToIndex helper to prevent out-of-range errors
+  const safeScrollToIndex = (index: number, animated: boolean = true) => {
+    if (!flatListRef.current) return;
+    
+    try {
+      // Get the current data length (either filtered or full messages)
+      const currentDataLength = searchBarVisible && searchText.trim().length > 0 
+        ? filteredMessages.length 
+        : messages.length;
+      
+      // Validate index is within bounds
+      if (index >= 0 && index < currentDataLength) {
+        flatListRef.current.scrollToIndex({ index, animated });
+      } else {
+        console.warn(`ScrollToIndex out of range: index ${index}, data length ${currentDataLength}`);
+        // Fallback to scrollToEnd
+        flatListRef.current.scrollToEnd({ animated });
+      }
+    } catch (error) {
+      console.warn("Error in safeScrollToIndex:", error);
+      // Final fallback
+      try {
+        flatListRef.current.scrollToEnd({ animated });
+      } catch (e) {
+        console.warn("Error in fallback scrollToEnd:", e);
+      }
+    }
+  };
+
   const menuAnim = useRef(new Animated.Value(400)).current; // Start off-screen right
   useEffect(() => {
     if (menuVisible) {
@@ -307,6 +346,15 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
       socket.off("messageDeleted");
     };
   }, []);
+
+  // Scroll to end when messages are initially loaded
+  useEffect(() => {
+    if (messages.length > 0 && !loading) {
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: false });
+      }, 100);
+    }
+  }, [messages.length, loading]);
 
   // Load saved wallpaper
   useEffect(() => {
@@ -543,17 +591,14 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
       return;
     }
 
-    await api.post("/api/v1/users/block", {
-  blockedUserId: likedUserId,
-});
-setIsBlockedByMe(true); // ⬅️ Update state here
-setCustomAlert({ visible: true, title: "Blocked", message: "This user has been blocked." });
-navigation.goBack();
-
-
     switch (option) {
       case "delete":
-        setCustomAlert({ visible: true, title: "Delete All Chats", message: "All chats will only be deleted for you. The other user will still be able to view your conversations." });
+        setCustomAlert({ 
+          visible: true, 
+          title: "Delete All Chats", 
+          message: "All chats will only be deleted for you. The other user will still be able to view your conversations.",
+          onConfirm: confirmDeleteAllChats
+        });
         break;
 
       case "mute":
@@ -561,8 +606,56 @@ navigation.goBack();
         break;
 
       case "block":
-        setCustomAlert({ visible: true, title: "Block User", message: "Are you sure you want to block this user? You will no longer see their messages." });
+        setCustomAlert({ 
+          visible: true, 
+          title: "Block User", 
+          message: "Are you sure you want to block this user? You will no longer see their messages.",
+          onConfirm: confirmBlockUser
+        });
         break;
+    }
+  };
+
+  const confirmDeleteAllChats = async () => {
+    try {
+      if (conversationId) {
+        await api.delete(`/api/v1/users/messages/${conversationId}`);
+        setMessages([]);
+        setCustomAlert({ 
+          visible: true, 
+          title: "Deleted", 
+          message: "All chats have been deleted for you." 
+        });
+      }
+    } catch (error) {
+      console.error("Error deleting chats:", error);
+      setCustomAlert({ 
+        visible: true, 
+        title: "Error", 
+        message: "Failed to delete chats. Please try again." 
+      });
+    }
+  };
+
+  const confirmBlockUser = async () => {
+    try {
+      await api.post("/api/v1/users/block", {
+        blockedUserId: likedUserId,
+      });
+      setIsBlockedByMe(true);
+      setCustomAlert({ 
+        visible: true, 
+        title: "Blocked", 
+        message: "This user has been blocked." 
+      });
+      navigation.goBack();
+    } catch (error) {
+      console.error("Error blocking user:", error);
+      setCustomAlert({ 
+        visible: true, 
+        title: "Error", 
+        message: "Failed to block user. Please try again." 
+      });
     }
   };
 
@@ -841,12 +934,12 @@ navigation.goBack();
   // Scroll to first search result
   useEffect(() => {
     if (searchBarVisible && searchText.trim().length > 0 && filteredMessages.length > 0) {
-      const firstIndex = messages.findIndex((msg) => msg.text.toLowerCase().includes(searchText.toLowerCase()));
-      if (firstIndex !== -1 && flatListRef.current) {
-        flatListRef.current.scrollToIndex({ index: firstIndex, animated: true });
-      }
+      // When searching, scroll to the first result in the filtered list
+      setTimeout(() => {
+        safeScrollToIndex(0, true);
+      }, 100);
     }
-  }, [searchText, searchBarVisible]);
+  }, [searchText, searchBarVisible, filteredMessages.length]);
 
   // Show scroll-to-bottom button logic
   const handleScroll = (event) => {
@@ -862,10 +955,12 @@ navigation.goBack();
       flatListRef.current.scrollToEnd({ animated: true });
       // Fallback: ensure scroll to last index after a short delay
       setTimeout(() => {
-        try {
-          flatListRef.current?.scrollToIndex({ index: messages.length - 1, animated: true });
-        } catch (e) {
-          // ignore out of range
+        const currentDataLength = searchBarVisible && searchText.trim().length > 0 
+          ? filteredMessages.length 
+          : messages.length;
+        
+        if (currentDataLength > 0) {
+          safeScrollToIndex(currentDataLength - 1, true);
         }
       }, 100);
     }
@@ -887,24 +982,19 @@ navigation.goBack();
 
   // Handler to jump to a message
   const jumpToMessage = (msgId: string) => {
-    const idx = messages.findIndex((msg) => msg._id === msgId);
-    if (idx !== -1 && flatListRef.current) {
-      setSearchResultsModalVisible(false);
-      setSearchBarVisible(false);
-      setSearchText("");
-      setSearchSubmitted(false);
-      setTimeout(() => {
-        // Only scroll if index is valid for the FlatList data
-        if (idx < messages.length) {
-          try {
-            flatListRef.current.scrollToIndex({ index: idx, animated: true });
-          } catch (e) {
-            // fallback: scroll to end
-            flatListRef.current.scrollToEnd({ animated: true });
-          }
-        }
-      }, 350); // Wait for modal to close and FlatList to re-render
-    }
+    // First close search and reset to show all messages
+    setSearchResultsModalVisible(false);
+    setSearchBarVisible(false);
+    setSearchText("");
+    setSearchSubmitted(false);
+    
+    setTimeout(() => {
+      // Now find the index in the full messages array (no filtering)
+      const idx = messages.findIndex((msg) => msg._id === msgId);
+      if (idx !== -1) {
+        safeScrollToIndex(idx, true);
+      }
+    }, 350); // Wait for modal to close and FlatList to re-render
   };
 
   return (
@@ -1244,6 +1334,7 @@ navigation.goBack();
         title={customAlert.title}
         message={customAlert.message}
         onClose={() => setCustomAlert((prev) => ({ ...prev, visible: false }))}
+        onConfirm={customAlert.onConfirm}
       />
     </KeyboardAvoidingView>
   );
@@ -1622,7 +1713,7 @@ const styles = StyleSheet.create({
     fontWeight: '400', // less bold
     textAlign: 'right',
     marginTop: 2,
-    marginRight: 2,
+    marginRight: 7,
     marginBottom: 4,
   },
   // Wallpaper Modal Styles

@@ -9,6 +9,8 @@ import GoogleLoginButton from '../components/GoogleLoginButton';
 import Constants from 'expo-constants';
 import CustomAlert from '../components/CustomAlert';
 import { useAuth } from '../navigation/AuthContext';
+import { useRoute } from '@react-navigation/native';
+
 const googleLogo = require('../assets/icons/googleLogoIcon.png');
 
 const logo = require('../assets/icons/logo.webp');
@@ -16,13 +18,25 @@ const logo = require('../assets/icons/logo.webp');
 type Props = NativeStackScreenProps<any, 'Register'>;
 
 const RegisterScreen: React.FC<Props> = ({ navigation }) => {
+
+  const route = useRoute();
+
   const { signIn } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const logoAnim = React.useRef(new Animated.Value(0)).current;
   const [buttonPressed, setButtonPressed] = useState(false);
+
   const [customAlert, setCustomAlert] = useState({ visible: false, title: '', message: '' });
+
+  // Get params from navigation (from LoginScreen Google login)
+  const routeParams = route.params as { email?: string; name?: string } | undefined;
+  const googleEmail = routeParams?.email;
+  const googleName = routeParams?.name;
+
+ 
+
   React.useEffect(() => {
     Animated.timing(logoAnim, {
       toValue: 1,
@@ -31,19 +45,61 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
     }).start();
     // Log Expo owner for debugging
     console.log('Expo Owner:', Constants.expoConfig?.owner);
-  }, []);
+    
+    // Initialize form fields with Google login data if available
+    if (googleEmail) {
+      setEmail(googleEmail);
+    }
+    if (googleName) {
+      setName(googleName);
+    }
+  }, [googleEmail, googleName]);
+
+  React.useEffect(() => {
+    (async () => {
+      // Store Google login data for BasicDetails if available
+      if (googleEmail) {
+        await AsyncStorage.setItem('googleEmail', googleEmail);
+      }
+      if (googleName) {
+        await AsyncStorage.setItem('googleName', googleName);
+      }
+    })();
+  }, [googleEmail, googleName]);
+  
 
   const handleRegister = async () => {
-    if (!name || !email || !password) {
-      setCustomAlert({ visible: true, title: 'Error', message: 'Please fill in all fields' });
+    // Check if this is from Google login (has Google data but no password requirement)
+    const isFromGoogleLogin = googleEmail && googleName;
+    
+    if (!name || !email) {
+      setCustomAlert({ visible: true, title: 'Error', message: 'Please fill in name and email' });
       return;
     }
-    if (password.length < 6) {
+    
+    if (!isFromGoogleLogin && !password) {
+      setCustomAlert({ visible: true, title: 'Error', message: 'Password is required' });
+      return;
+    }
+    
+    if (!isFromGoogleLogin && password.length < 6) {
       setCustomAlert({ visible: true, title: 'Error', message: 'Password must be at least 6 characters' });
       return;
     }
+    
     try {
-      await AsyncStorage.setItem('tempUserData', JSON.stringify({ fullName: name, email, password }));
+      const tempUserData = {
+        fullName: name,
+        email,
+        password: isFromGoogleLogin ? '' : password, // No password for Google users
+        loginMethod: isFromGoogleLogin ? 'google' : 'email',
+        ...(isFromGoogleLogin && {
+          avatar: '', // Will be set later if available
+          googleToken: '' // Will be set by Google login flow
+        })
+      };
+      
+      await AsyncStorage.setItem('tempUserData', JSON.stringify(tempUserData));
       navigation.navigate('BasicDetails');
     } catch (error) {
       console.log(error);
@@ -288,7 +344,12 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
           </View>
           <View style={styles.card}>
             <Text style={styles.tagline}>Create your <Text style={styles.taglineAccent}>Account</Text></Text>
-            <View style={styles.inputContainer}>
+            {googleEmail && (
+              <Text style={styles.googleInfoText}>
+                Continuing with Google account
+              </Text>
+            )}
+            <View style={[styles.inputContainer, googleName ? styles.prefilledContainer : null]}>
               <Ionicons name="person-outline" size={22} color="#FF7A3D" style={styles.icon} />
               <TextInput
                 style={styles.input}
@@ -299,30 +360,40 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
                 autoCapitalize="words"
               />
             </View>
-            <View style={styles.inputContainer}>
+            <View style={[styles.inputContainer, googleEmail ? styles.prefilledContainer : null]}>
               <Ionicons name="mail-outline" size={22} color="#FF7A3D" style={styles.icon} />
               <TextInput
-                style={styles.input}
+                style={[styles.input, googleEmail ? styles.readOnlyInput : null]}
                 placeholder="Email"
                 placeholderTextColor="#B0B0B0"
                 keyboardType="email-address"
                 value={email}
                 onChangeText={setEmail}
                 autoCapitalize="none"
+                editable={!googleEmail}
               />
             </View>
-            <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={22} color="#FF7A3D" style={styles.icon} />
-              <TextInput
-                style={styles.input}
-                placeholder="Password"
-                placeholderTextColor="#B0B0B0"
-                secureTextEntry={true}
-                value={password}
-                onChangeText={setPassword}
-                autoCapitalize="none"
-              />
-            </View>
+            {/* Only show password field if not coming from Google login */}
+            {!googleEmail && (
+              <View style={styles.inputContainer}>
+                <Ionicons name="lock-closed-outline" size={22} color="#FF7A3D" style={styles.icon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Password"
+                  placeholderTextColor="#B0B0B0"
+                  secureTextEntry={true}
+                  value={password}
+                  onChangeText={setPassword}
+                  autoCapitalize="none"
+                />
+              </View>
+            )}
+            {/* Show info text if coming from Google login */}
+            {googleEmail && (
+              <Text style={styles.infoText}>
+                Continuing with Google account - no password required
+              </Text>
+            )}
             <Pressable
               style={({ pressed }) => [
                 styles.button,
@@ -341,13 +412,18 @@ const RegisterScreen: React.FC<Props> = ({ navigation }) => {
                 <Text style={styles.buttonText}>Register</Text>
               </LinearGradient>
             </Pressable>
-            <View style={styles.divider} />
-            <View style={styles.googleRow}>
-              <Text style={styles.googleRowText}>Or continue with</Text>
-              <View style={{ alignItems: 'center', marginBottom: 18 }}>
-                <GoogleLoginButton onLogin={handleGoogleLogin} />
-              </View>
-            </View>
+            {/* Only show Google login option if not already coming from Google */}
+            {!googleEmail && (
+              <>
+                <View style={styles.divider} />
+                <View style={styles.googleRow}>
+                  <Text style={styles.googleRowText}>Or continue with</Text>
+                  <View style={{ alignItems: 'center', marginBottom: 18 }}>
+                    <GoogleLoginButton onLogin={handleGoogleLogin} />
+                  </View>
+                </View>
+              </>
+            )}
             <Text style={styles.loginPrompt}>
               Already have an account?{' '}
               <Text style={styles.loginLink} onPress={() => navigation.navigate('Login')}>
@@ -553,6 +629,29 @@ const styles = StyleSheet.create({
   googleLogoOnlyImg: {
     width: 28,
     height: 28,
+  },
+  infoText: {
+    color: '#A1A7B3',
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 16,
+    marginTop: 8,
+    fontStyle: 'italic',
+  },
+  readOnlyInput: {
+    opacity: 0.7,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+  },
+  googleInfoText: {
+    color: '#4CAF50',
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 16,
+    fontWeight: '500',
+  },
+  prefilledContainer: {
+    borderColor: 'rgba(76, 175, 80, 0.3)',
+    backgroundColor: 'rgba(76, 175, 80, 0.05)',
   },
 });
 

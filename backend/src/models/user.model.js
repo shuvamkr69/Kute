@@ -241,6 +241,26 @@ const userSchema = new Schema(
         default: [],
       },
     ],
+    rejectedUsers: [
+      {
+        userId: {
+          type: Schema.Types.ObjectId,
+          ref: "User",
+          required: true,
+        },
+        rejectedAt: {
+          type: Date,
+          default: Date.now,
+        },
+        expiresAt: {
+          type: Date,
+          default: function() {
+            // Set expiry to 2 days from now
+            return new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+          },
+        },
+      },
+    ],
     anonymousBrowsing: {
       type: Boolean,
       default: false,

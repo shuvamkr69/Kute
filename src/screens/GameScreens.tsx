@@ -8,6 +8,9 @@ import {
   Dimensions,
   Text,
   Alert,
+  InteractionManager,
+  Vibration,
+  Animated,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { getUserId } from '../utils/constants';
@@ -33,13 +36,37 @@ const GameCard = ({
 }: {
   img: any;
   onPress: () => void;
-}) => (
-  <TouchableOpacity activeOpacity={0.9} onPress={onPress}>
-    <View style={styles.card}>
-      <ImageBackground source={img} style={styles.img} imageStyle={{ borderRadius: 28 }} />
-    </View>
-  </TouchableOpacity>
-);
+}) => {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 0.98,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  return (
+    <TouchableOpacity 
+      activeOpacity={1} 
+      onPress={onPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      style={styles.touchableCard}
+    >
+      <Animated.View style={[styles.card, { transform: [{ scale: scaleAnim }] }]}>
+        <ImageBackground source={img} style={styles.img} imageStyle={{ borderRadius: 28 }} />
+      </Animated.View>
+    </TouchableOpacity>
+  );
+};
 
 const GamesScreen: React.FC<Props> = ({ navigation }) => {
   const [activeIndex, setActiveIndex] = useState(0);
@@ -51,7 +78,13 @@ const GamesScreen: React.FC<Props> = ({ navigation }) => {
   const viewConfigRef = useRef({ viewAreaCoveragePercentThreshold: 50 });
 
   const handlePlay = async (route: string) => {
-    navigation.navigate(route);
+    // Add subtle haptic feedback for better UX
+    Vibration.vibrate(10);
+    
+    // Use InteractionManager to defer navigation until after the touch interaction
+    InteractionManager.runAfterInteractions(() => {
+      navigation.navigate(route);
+    });
   };
 
   return (
@@ -67,6 +100,15 @@ const GamesScreen: React.FC<Props> = ({ navigation }) => {
         showsHorizontalScrollIndicator={false}
         onViewableItemsChanged={onViewRef.current}
         viewabilityConfig={viewConfigRef.current}
+        removeClippedSubviews={true}
+        initialNumToRender={1}
+        maxToRenderPerBatch={2}
+        windowSize={3}
+        getItemLayout={(data, index) => ({
+          length: CARD_WIDTH,
+          offset: CARD_WIDTH * index,
+          index,
+        })}
         renderItem={({ item }) => (
           <GameCard
             img={item.img}
@@ -147,6 +189,10 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     backgroundColor: '#de822c',
     marginHorizontal: 6,
+  },
+
+  touchableCard: {
+    flex: 1,
   },
 });
 

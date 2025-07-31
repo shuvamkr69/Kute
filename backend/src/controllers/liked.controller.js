@@ -106,6 +106,35 @@ const UserLiked = asyncHandler(async (req, res) => {
     );
   }
 
+  // If no match yet, send "like received" notification to the liked user
+  const user = await User.findById(userId);
+  const likedUser = await User.findById(likedUserId);
+
+  if (likedUser && likedUser.pushToken) {
+    console.log("💝 Sending 'like received' notification...");
+    console.log("👤 Sender:", user.fullName, "Push Token:", user.pushToken ? "✅" : "❌");
+    console.log("👤 Receiver:", likedUser.fullName, "Push Token:", likedUser.pushToken ? "✅" : "❌");
+
+    try {
+      const result = await sendPushNotification(
+        likedUser.pushToken,
+        "💝 Someone likes you!",
+        `You have a new like! Check your matches to see who it is.`,
+        {
+          type: "like_received",
+          fromUserId: userId,
+          fromUserName: user.fullName,
+          fromUserImage: user.avatar1
+        }
+      );
+      console.log("📤 Like notification sent successfully, result:", result);
+    } catch (error) {
+      console.error("❌ Error sending like notification:", error);
+    }
+  } else {
+    console.log("❌ No push token for liked user or user not found");
+  }
+
   // 👇 fallback if no match
   res.status(201).json(
     new ApiResponse(
@@ -122,27 +151,30 @@ export const getLikedUsers = async (req, res) => {
   try {
     const userId = req.user.id; // Extract logged-in user ID from auth middleware
 
-    // Find all users who liked the logged-in user
-    const likedUsers = await Like.find({ likedUserId: userId }).populate(
+    // Find all users who liked the logged-in user AND where it's a mutual match (matched: true)
+    const mutualMatches = await Like.find({ 
+      likedUserId: userId,
+      matched: true // Only show mutual matches
+    }).populate(
       "userId",
       "fullName avatar1"
     );
 
-    if (!likedUsers.length) {
+    if (!mutualMatches.length) {
       return res.status(200).json([]);
     }
 
     // Format response
-    const formattedUsers = likedUsers.map(({ userId }) => ({
+    const formattedUsers = mutualMatches.map(({ userId }) => ({
       _id: userId._id,
       fullName: userId.fullName,
       profileImage: userId.avatar1 || "https://via.placeholder.com/150",
     }));
-    // console.log("Formatted Users:", formattedUsers);
+    // console.log("Formatted Mutual Matches:", formattedUsers);
 
     res.status(200).json(formattedUsers);
   } catch (error) {
-    console.error("Error fetching liked users:", error);
+    console.error("Error fetching mutual matches:", error);
     res.status(500).json({ error: "Server error" });
   }
 };
@@ -257,6 +289,34 @@ export const UserSuperLiked = asyncHandler(async (req, res) => {
     );
   }
 
+  // If no match yet, send "super like received" notification to the liked user
+  const superLikedUser = await User.findById(likedUserId);
+
+  if (superLikedUser && superLikedUser.pushToken) {
+    console.log("⭐ Sending 'super like received' notification...");
+    console.log("👤 Sender:", currentUser.fullName, "Push Token:", currentUser.pushToken ? "✅" : "❌");
+    console.log("👤 Receiver:", superLikedUser.fullName, "Push Token:", superLikedUser.pushToken ? "✅" : "❌");
+
+    try {
+      const result = await sendPushNotification(
+        superLikedUser.pushToken,
+        "⭐ You got a Super Like!",
+        `${currentUser.fullName} super liked you! They're really interested in getting to know you.`,
+        {
+          type: "super_like_received",
+          fromUserId: currentUser._id,
+          fromUserName: currentUser.fullName,
+          fromUserImage: currentUser.avatar1
+        }
+      );
+      console.log("📤 Super Like notification sent successfully, result:", result);
+    } catch (error) {
+      console.error("❌ Error sending super like notification:", error);
+    }
+  } else {
+    console.log("❌ No push token for super liked user or user not found");
+  }
+
   return res.status(201).json(
     new ApiResponse(
       201,
@@ -268,5 +328,36 @@ export const UserSuperLiked = asyncHandler(async (req, res) => {
   );
 });
 
+
+// Get users who liked me but I haven't liked back yet
+export const getUsersWhoLikedMe = async (req, res) => {
+  try {
+    const userId = req.user.id; // Extract logged-in user ID from auth middleware
+
+    // Find all users who liked me but I haven't liked back yet
+    const usersWhoLikedMe = await Like.find({ 
+      likedUserId: userId,
+      matched: false // Not matched yet means I haven't liked them back
+    }).populate("userId", "fullName avatar1");
+
+    if (!usersWhoLikedMe.length) {
+      return res.status(200).json([]);
+    }
+
+    // Format response with complete user data
+    const formattedUsers = usersWhoLikedMe.map(({ userId, superLiked, createdAt }) => ({
+      _id: userId._id,
+      fullName: userId.fullName,
+      profileImage: userId.avatar1 || "https://via.placeholder.com/150",
+      superLiked: superLiked,
+      likedAt: createdAt
+    }));
+
+    res.status(200).json(formattedUsers);
+  } catch (error) {
+    console.error("Error fetching users who liked me:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+};
 
 export { UserLiked };

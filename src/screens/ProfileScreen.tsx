@@ -512,7 +512,7 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
         </View>
 
         <Text style={styles.username}>
-          {name} {age}
+          {name.split(" ")[0]} {" "}
           {/* Verification Image - Replaces the Verification Icon */}
           <Image
             source={VerificationImage}

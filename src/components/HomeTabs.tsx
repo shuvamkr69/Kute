@@ -15,7 +15,6 @@ import GamesScreen from "../screens/GameScreens";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import ChatsScreen from "../screens/AllChats";
 import api from "../utils/api";
-import GradientIcon from "./GradientIcon";
 
 type Props = NativeStackScreenProps<any, "HomeTabs">;
 
@@ -146,20 +145,21 @@ const HomeTabs: React.FC<Props> = ({ navigation }) => {
             </View>
             {/* Leaderboard Ionicon */}
             <TouchableOpacity onPress={() => navigation.navigate('Leaderboard')} style={{ marginRight: 15 }}>
-              <GradientIcon name="trophy-outline" size={22} style={{ textShadowColor: '#000', textShadowRadius: 4 }} />
+              <Ionicons name="trophy-outline" size={22} color="#fff" style={{ textShadowColor: '#000', textShadowRadius: 4 }} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => navigation.navigate("AdvancedFiltering")} style={{ marginRight: 15 }}>
-              <GradientIcon
-                name="search-outline"
-                size={23}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => navigation.navigate("Settings")}>
-              <GradientIcon
-                name="settings-outline"
-                size={23}
-              />
-            </TouchableOpacity>
+            <Ionicons
+              name="search-outline"
+              size={23}
+              color="white"
+              style={{ marginRight: 15 }}
+              onPress={() => navigation.navigate("AdvancedFiltering")}
+            />
+            <Ionicons
+              name="settings-outline"
+              size={23}
+              color="white"
+              onPress={() => navigation.navigate("Settings")}
+            />
           </View>
         </View>
       </SafeAreaView>
@@ -193,16 +193,11 @@ const HomeTabs: React.FC<Props> = ({ navigation }) => {
               Profile: "person-outline",
             };
 
-            return focused ? (
-              <GradientIcon
-                name={icons[route.name]}
-                size={28}
-              />
-            ) : (
+            return (
               <Ionicons
                 name={icons[route.name]}
                 size={28}
-                color="#8F8F8F"
+                color={focused ? "#de822c" : "#8F8F8F"}
               />
             );
           },
