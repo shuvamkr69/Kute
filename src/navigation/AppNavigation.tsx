@@ -120,7 +120,16 @@ export default function AppNavigation() {
               gestureDirection: 'vertical',
             }}
           />
-          <Stack.Screen name="ChamberOfSecrets" component={ChamberOfSecrets} />
+          <Stack.Screen 
+            name="ChamberOfSecrets" 
+            component={ChamberOfSecrets}
+            options={{
+              animation: 'slide_from_right',
+              animationDuration: 350,
+              gestureEnabled: true,
+              gestureDirection: 'horizontal',
+            }}
+          />
 
 
 

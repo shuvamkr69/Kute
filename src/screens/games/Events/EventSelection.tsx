@@ -1,8 +1,7 @@
-import React from 'react';
-import { View, StyleSheet, Image, Dimensions, FlatList, Text, TouchableOpacity, ImageBackground } from 'react-native';
+import React, { useState } from 'react';
+import { View, StyleSheet, Image, Dimensions, FlatList, Text, TouchableOpacity, ImageBackground, ActivityIndicator } from 'react-native';
 import BackButton from '../../../components/BackButton';
 import { BlurView } from 'expo-blur';
-import AppNavigation from '../../../navigation/AppNavigation';
 import { useNavigation } from '@react-navigation/native';
 
 const { width } = Dimensions.get('window');
@@ -26,20 +25,35 @@ const BLUR_IMAGES = [
   require('../../../../assets/gameScreenImages/couples-quiz.png'),
 ];
 
-const renderImage = (img: any, idx: number, navigation: any) => (
+const renderImage = (img: any, idx: number, navigation: any, isNavigating: boolean, setIsNavigating: (value: boolean) => void) => (
   <TouchableOpacity
     key={idx}
     style={styles.imageContainer}
     activeOpacity={0.8}
-    onPress={idx === 0 && img ? () => navigation.navigate('ChamberOfSecrets') : undefined}
-    disabled={!(idx === 0 && img)}
+    onPress={idx === 0 && img ? async () => {
+      if (isNavigating) return; // Prevent multiple taps
+      setIsNavigating(true);
+      // Small delay to show the press effect
+      setTimeout(() => {
+        navigation.navigate('ChamberOfSecrets');
+        setIsNavigating(false);
+      }, 100);
+    } : undefined}
+    disabled={!(idx === 0 && img) || isNavigating}
   >
     {img ? (
-      <Image
-        source={img}
-        style={styles.image}
-        resizeMode="cover"
-      />
+      <>
+        <Image
+          source={img}
+          style={styles.image}
+          resizeMode="cover"
+        />
+        {isNavigating && idx === 0 && (
+          <View style={styles.loadingOverlay}>
+            <ActivityIndicator size="large" color="#fff" />
+          </View>
+        )}
+      </>
     ) : (
       <View style={styles.image}>
         <Image
@@ -68,6 +82,8 @@ const chunkArray = (arr: any[], size: number) => {
 
 const EventSelection = () => {
     const navigation = useNavigation();
+    const [isNavigating, setIsNavigating] = useState(false);
+    
     // Split images into pages of 4
     const pages = chunkArray(eventImages, 4);
 
@@ -91,12 +107,12 @@ const EventSelection = () => {
                         <View style={styles.page}>
                             {/* 2x2 grid */}
                             <View style={styles.row}>
-                                {renderImage(item[0], 0, navigation)}
-                                {renderImage(item[1], 1, navigation)}
+                                {renderImage(item[0], 0, navigation, isNavigating, setIsNavigating)}
+                                {renderImage(item[1], 1, navigation, isNavigating, setIsNavigating)}
                             </View>
                             <View style={styles.row}>
-                                {renderImage(item[2], 2, navigation)}
-                                {renderImage(item[3], 3, navigation)}
+                                {renderImage(item[2], 2, navigation, isNavigating, setIsNavigating)}
+                                {renderImage(item[3], 3, navigation, isNavigating, setIsNavigating)}
                             </View>
                         </View>
                     )}
@@ -174,6 +190,17 @@ const styles = StyleSheet.create({
         textShadowOffset: { width: 0, height: 2 },
         textShadowRadius: 6,
         opacity: 0.95,
+    },
+    loadingOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: 20,
     },
 });
 

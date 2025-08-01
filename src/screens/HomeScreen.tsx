@@ -103,7 +103,6 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const [dotAnimation] = useState(new Animated.Value(0));
   const [distance, setDistance] = useState<number | null>(null);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
-  const [isSuperLikeSwipe, setIsSuperLikeSwipe] = useState(false);
   const [dailyLikes, setDailyLikes] = useState(0);
   const [likeLimit, setLikeLimit] = useState(DAILY_FREE_LIKES);
   const [premiumPlan, setPremiumPlan] = useState<string | null>(null);
@@ -126,41 +125,36 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     }).start(() => setIsModalAnimated(false));
   };
 
-  let borderColor: string | Animated.AnimatedInterpolation<any>;
-  let borderWidth: number | Animated.AnimatedInterpolation<any>;
-  if (isSuperLikeSwipe) {
-    borderColor = "#00B4FF";
-    borderWidth = 5;
-  } else {
-    borderColor = swipeX.interpolate({
-      inputRange: [
-        -SWIPE_THRESHOLD,
-        -SWIPE_THRESHOLD * 0.2,
-        0,
-        SWIPE_THRESHOLD * 0.2,
-        SWIPE_THRESHOLD
-      ],
-      outputRange: [
-        "#FF0000",
-        "transparent",
-        "transparent",
-        "transparent",
-        "#00FF00"
-      ],
-      extrapolate: "clamp",
-    });
-    borderWidth = swipeX.interpolate({
-      inputRange: [
-        -SWIPE_THRESHOLD,
-        -SWIPE_THRESHOLD * 0.2,
-        0,
-        SWIPE_THRESHOLD * 0.2,
-        SWIPE_THRESHOLD
-      ],
-      outputRange: [5, 0, 0, 0, 5],
-      extrapolate: "clamp",
-    });
-  }
+  // Only show borders for horizontal swipes (like/reject), no border for super like
+  const borderColor = swipeX.interpolate({
+    inputRange: [
+      -SWIPE_THRESHOLD,
+      -SWIPE_THRESHOLD * 0.2,
+      0,
+      SWIPE_THRESHOLD * 0.2,
+      SWIPE_THRESHOLD
+    ],
+    outputRange: [
+      "#FF0000",
+      "transparent",
+      "transparent",
+      "transparent",
+      "#00FF00"
+    ],
+    extrapolate: "clamp",
+  });
+  
+  const borderWidth = swipeX.interpolate({
+    inputRange: [
+      -SWIPE_THRESHOLD,
+      -SWIPE_THRESHOLD * 0.2,
+      0,
+      SWIPE_THRESHOLD * 0.2,
+      SWIPE_THRESHOLD
+    ],
+    outputRange: [5, 0, 0, 0, 5],
+    extrapolate: "clamp",
+  });
 
   const [swipeFeedback, setSwipeFeedback] = useState<{
     visible: boolean;
@@ -589,7 +583,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         setCustomAlert({ 
           visible: true, 
           title: "No Recent Swipes", 
-          message: "No recent rejections found to rewind. Swipe left on someone first!" 
+          message: "You can only rewind someone you have swiped left on" 
         });
       } else {
         setCustomAlert({ visible: true, title: "Error", message: errorMessage });
@@ -625,12 +619,6 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
             onSwiping={(x, y) => {
               swipeX.setValue(x);
               swipeY.setValue(y);
-              setIsSuperLikeSwipe(y < -SWIPE_VERTICAL_THRESHOLD * 0.8);
-
-              const isNowSuperLikeSwipe = y < -SWIPE_VERTICAL_THRESHOLD * 0.8;
-              if (isNowSuperLikeSwipe !== isSuperLikeSwipe) {
-                setIsSuperLikeSwipe(isNowSuperLikeSwipe);
-              }
 
               // Detect upward swipe for Super Like (adjust -50 threshold as needed)
               if (y < -SWIPE_VERTICAL_THRESHOLD) {
@@ -686,6 +674,8 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
               // Always remove the first card and force Swiper to re-render
               setProfiles((prev) => prev.slice(1));
               setSwiperKey((k) => k + 1);
+              
+              // Reset feedback
               Animated.spring(feedbackAnim, {
                 toValue: 0,
                 useNativeDriver: true,
@@ -741,10 +731,8 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
                         style={[
                           styles.profileImageWrapper,
                           isTopCard && {
-                            borderColor: isSuperLikeSwipe
-                              ? "#00B4FF"
-                              : borderColor,
-                            borderWidth: isSuperLikeSwipe ? 5 : borderWidth,
+                            borderColor: borderColor,
+                            borderWidth: borderWidth,
                           },
                         ]}
                       >
@@ -850,6 +838,28 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
                     justifyContent: "flex-start",
                     marginTop: 30,
                     marginLeft: 30,
+                  },
+                },
+              },
+              top: {
+                title: "SUPER LIKE",
+                style: {
+                  label: {
+                    backgroundColor: "#00B4FF",
+                    borderColor: "#00B4FF",
+                    color: "white",
+                    borderWidth: 2,
+                    fontSize: 28,
+                    fontWeight: "bold",
+                    paddingHorizontal: 30,
+                    paddingVertical: 15,
+                    borderRadius: 25,
+                    opacity: 0.7,
+                  },
+                  wrapper: {
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
                   },
                 },
               },

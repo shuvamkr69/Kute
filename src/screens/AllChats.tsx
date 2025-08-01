@@ -304,7 +304,7 @@ const ChatsScreen: React.FC<Props> = ({ navigation }) => {
           <View style={styles.emptyStateContainer}>
             <Image
               source={require("../assets/icons/koala.png")}
-              style={{ width: 150, height: 150, marginBottom: 20 }}
+              style={{ width: 200, height: 200, marginBottom: 20 }}
             />
             <Text style={styles.noChatsText}>
               No DMs? Clearly, they fear the power of the perfect reply

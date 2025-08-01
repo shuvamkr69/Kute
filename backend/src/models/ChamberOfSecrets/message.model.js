@@ -13,6 +13,10 @@ const chamberMessageSchema = new Schema(
       ref: "User",
       required: true,
     },
+    senderName: {
+      type: String,
+      required: true,
+    },
     createdAt: {
       type: Date,
       default: Date.now,

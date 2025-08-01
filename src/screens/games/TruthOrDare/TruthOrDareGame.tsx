@@ -461,7 +461,7 @@ const TruthOrDareGame = () => {
               <View style={styles.gameCompleteSection}>
                 <Ionicons name="trophy" size={48} color="#ffd43b" />
                 <Text style={styles.gameCompleteText}>Game Completed!</Text>
-                <Text style={styles.gameCompleteSubtext}>Thanks for playing Truth or Dare</Text>
+                <Text style={styles.gameCompleteSubtext}>You can check you scores in leaderboard</Text>
               </View>
             )}
           </View>

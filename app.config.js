@@ -18,10 +18,11 @@ export default {
       [
         "expo-notifications",
         {
-          mode: "development",
-          iosDisplayInForeground: true,
-          androidMode: "default",
-          androidCollapsedTitle: "#{unread_count} new notifications",
+          icon: "./assets/icon.png",
+          color: "#ffffff",
+          defaultChannel: "default",
+          sounds: ["./assets/notification-sound.wav"],
+          mode: "production"
         }
       ],
       "react-native-video"
@@ -46,7 +47,13 @@ export default {
         googleServicesFile: "./google-services.json"
       },
       package: "com.dating.kute",
-      permissions: ["NOTIFICATIONS"],
+      permissions: [
+        "android.permission.INTERNET",
+        "android.permission.VIBRATE",
+        "android.permission.WAKE_LOCK",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.POST_NOTIFICATIONS"
+      ],
       config: {
         googleMaps: {
           apiKey: process.env.GOOGLE_MAPS_API_KEY

@@ -34,16 +34,43 @@ export const registerForPushNotifications = async (): Promise<string | null> => 
 
     // Request permission
     console.log("📋 Checking notification permissions...");
-    const { status } = await Notifications.getPermissionsAsync();
-    console.log("📋 Current permission status:", status);
+    let permissionStatus;
     
-    if (status !== "granted") {
+    try {
+      const { status } = await Notifications.getPermissionsAsync();
+      permissionStatus = status;
+      console.log("📋 Current permission status:", status);
+    } catch (error) {
+      console.error("❌ Error getting permissions:", error);
+      // Fallback for Android permission issues
+      permissionStatus = "undetermined";
+    }
+    
+    if (permissionStatus !== "granted") {
       console.log("🔔 Requesting notification permissions...");
-      const { status: newStatus } = await Notifications.requestPermissionsAsync();
-      console.log("🔔 New permission status:", newStatus);
-      
-      if (newStatus !== "granted") {
-        console.log("❌ Push notification permission denied");
+      try {
+        const { status: newStatus } = await Notifications.requestPermissionsAsync({
+          ios: {
+            allowAlert: true,
+            allowBadge: true,
+            allowSound: true,
+            allowAnnouncements: true,
+          },
+          android: {
+            allowAlert: true,
+            allowBadge: true,
+            allowSound: true,
+          }
+        });
+        console.log("🔔 New permission status:", newStatus);
+        
+        if (newStatus !== "granted") {
+          console.log("❌ Push notification permission denied");
+          return null;
+        }
+      } catch (error) {
+        console.error("❌ Error requesting permissions:", error);
+        // For Android API 33+ permission issues, return null but don't crash
         return null;
       }
     }

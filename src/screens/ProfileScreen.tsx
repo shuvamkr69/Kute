@@ -745,14 +745,14 @@ const ProfileScreen: React.FC<Props> = ({ navigation }) => {
         style={[
           styles.featureCard,
           styles.premiumFeatureCard,
-          { borderRadius: 22, marginBottom: 40, marginTop: 2, paddingTop: 12 }
+          { borderRadius: 26, marginBottom: 40, paddingTop: 4 }
         ]}
       >
         <View style={styles.featureCardHeader}>
-          <Icon name="unlock" size={32} color="#de822c" style={{ marginRight: 12 }} />
-          <Text style={[styles.featureTitle, styles.premiumFeatureTitle]}>Unlock All Features</Text>
+          <Icon name="unlock" size={32} color="#de822c" style={{ marginRight: 12, paddingTop: 10, alignSelf: "center" }} />
+          <Text style={[styles.featureTitle, styles.premiumFeatureTitle, { paddingTop: 10, alignSelf: "center" }]}>Unlock All Features</Text>
         </View>
-        <Text style={[styles.featureDescription, styles.premiumFeatureDescription]}>Unlock all premium features and maximize your Kute experience.</Text>
+        <Text style={[styles.featureDescription, styles.premiumFeatureDescription, { alignSelf: "center" }]}>Unlock all premium features and maximize your Kute experience.</Text>
         <TouchableOpacity activeOpacity={0.9} onPress={() => navigation.navigate("Premium")}
           style={styles.featureButton}
         >
@@ -1181,7 +1181,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   premiumFeatureCard: {
-    borderWidth: 2,
+    borderWidth: 0,
     borderColor: '#ffd700',
     backgroundColor: 'rgba(255, 223, 0, 0.08)',
     borderRadius: 22,

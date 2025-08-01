@@ -359,7 +359,7 @@ const Likes: React.FC<Props> = ({ navigation }) => {
             <View style={styles.emptyStateContainer}>
               <Image
                 source={require('../assets/icons/broken-heart.png')}
-                style={{ width: 150, height: 150, marginBottom: 20 }}
+                style={{ width: 200, height: 200, marginBottom: 20 }}
               />
               <Text style={styles.noLikes}>
                 No likes? The algorithm must be jealous

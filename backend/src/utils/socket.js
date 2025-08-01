@@ -2,11 +2,14 @@
 import { Server } from "socket.io";
 import { Message } from "../models/message.model.js";
 import { ChamberMessage } from '../models/ChamberOfSecrets/message.model.js';
+import { ChamberUser } from '../models/ChamberOfSecrets/chamberUser.model.js';
 import { TDGame } from "../models/TruthOrDare/TDGame.model.js";
 import { ApiError } from "./ApiError.js";
 import { asyncHandler } from "./asyncHandler.js";
+import { getOrCreateChamberUser } from '../controllers/ChamberOfSecrets/ChamberOfSecrets.controller.js';
 
 let io = null;
+const chamberUsers = new Map(); // Track online chamber users: socketId -> { userId, randomName }
 
 export const initializeSocket = (server) => {
   io = new Server(server, {
@@ -82,27 +85,82 @@ socket.on("ice-candidate", ({ convId, candidate, from }) => {
 
 
     // Chamber of Secrets live chat
-    socket.on("joinChamber", () => {
-      socket.join("chamberOfSecrets");
-    });
+    socket.on("joinChamber", asyncHandler(async ({ userId }) => {
+      try {
+        // Get or create chamber user with random name
+        const chamberUser = await getOrCreateChamberUser(userId);
+        
+        // Store user info for this socket
+        chamberUsers.set(socket.id, {
+          userId,
+          randomName: chamberUser.randomName
+        });
+        
+        socket.join("chamberOfSecrets");
+        
+        // Emit updated user count to all users in chamber
+        const onlineCount = chamberUsers.size;
+        io.to("chamberOfSecrets").emit("chamberUserCount", onlineCount);
+        
+        // Send the user their random name
+        socket.emit("chamberUserInfo", { randomName: chamberUser.randomName });
+        
+        console.log(`🏰 User ${chamberUser.randomName} joined Chamber of Secrets (${onlineCount} online)`);
+      } catch (error) {
+        console.error("❌ Error joining chamber:", error);
+        socket.emit("chamberError", { message: "Failed to join chamber" });
+      }
+    }));
 
     socket.on("sendChamberMessage", asyncHandler(async (data) => {
-      // data should be { text, senderId }
-      if (!data || !data.text || !data.senderId) return ApiError(400, "Invalid data");
-      // Save message to DB
-      const msg = await ChamberMessage.create({ text: data.text, senderId: data.senderId });
-      console.log(msg)
-      // Broadcast to all in the room (do NOT include senderId)
-      io.to("chamberOfSecrets").emit("newChamberMessage", {
-        _id: msg._id,
-        text: msg.text,
-        createdAt: msg.createdAt,
-        senderId: msg.senderId, // include senderId in the payload
-      });
+      try {
+        // data should be { text, senderId }
+        if (!data || !data.text || !data.senderId) {
+          socket.emit("chamberError", { message: "Invalid message data" });
+          return;
+        }
+        
+        // Get chamber user info
+        const userInfo = chamberUsers.get(socket.id);
+        if (!userInfo) {
+          socket.emit("chamberError", { message: "User not registered in chamber" });
+          return;
+        }
+        
+        // Save message to DB with sender name
+        const msg = await ChamberMessage.create({ 
+          text: data.text, 
+          senderId: data.senderId,
+          senderName: userInfo.randomName
+        });
+        
+        console.log(`💬 ${userInfo.randomName}: ${data.text}`);
+        
+        // Broadcast to all in the room
+        io.to("chamberOfSecrets").emit("newChamberMessage", {
+          _id: msg._id,
+          text: msg.text,
+          createdAt: msg.createdAt,
+          senderId: msg.senderId,
+          senderName: msg.senderName,
+        });
+      } catch (error) {
+        console.error("❌ Error sending chamber message:", error);
+        socket.emit("chamberError", { message: "Failed to send message" });
+      }
     }));
 
     socket.on("disconnect", () => {
       console.log("🔴 Client disconnected:", socket.id);
+      
+      // Remove user from chamber tracking if they were in chamber
+      const userInfo = chamberUsers.get(socket.id);
+      if (userInfo) {
+        chamberUsers.delete(socket.id);
+        const onlineCount = chamberUsers.size;
+        io.to("chamberOfSecrets").emit("chamberUserCount", onlineCount);
+        console.log(`🏰 ${userInfo.randomName} left Chamber of Secrets (${onlineCount} online)`);
+      }
     });
   });
 
