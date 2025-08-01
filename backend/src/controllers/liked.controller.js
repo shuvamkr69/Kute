@@ -47,7 +47,7 @@ const UserLiked = asyncHandler(async (req, res) => {
       try {
         const result1 = await sendPushNotification(
           matchedUser.pushToken, // 🟢 user who matched back
-          "🎉 It's a Match!",
+          "❤️ It's a Match!",
           `You matched with ${user.fullName}`,
           {
             type: "match",

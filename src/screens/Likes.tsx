@@ -421,66 +421,26 @@ const Likes: React.FC<Props> = ({ navigation }) => {
               />
             )
           ) : (
-            <FlatList
-              data={likedMe}
-              keyExtractor={(item) => item._id}
-              renderItem={renderLikedMeItem}
-              numColumns={1}
-              contentContainerStyle={[
-                styles.list,
-                likedMe.length === 0 && { flex: 1, justifyContent: 'center' },
-              ]}
-              refreshControl={
-                <RefreshControl
-                  refreshing={likedMeLoading}
-                  onRefresh={() => {
-                    setLikedMeLoading(true);
-                    api.get('/api/v1/users/usersWhoLikedMe')
-                      .then(res => {
-                        setLikedMe(res.data.map((user: any) => ({
-                          _id: user._id,
-                          fullName: user.fullName,
-                          profileImage: user.profileImage || 'https://via.placeholder.com/150',
-                          superLiked: user.superLiked || false,
-                          likedAt: user.likedAt,
-                        })));
-                      })
-                      .catch(() => setLikedMe([]))
-                      .finally(() => setLikedMeLoading(false));
-                  }}
-                  colors={['#de822c']}
-                />
-              }
-              ListEmptyComponent={
-                likedMeLoading ? (
-                  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                    <Text style={{ color: '#fff' }}>Loading...</Text>
-                  </View>
-                ) : (
-                  <View style={styles.emptyStateContainer}>
-                    <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill}>
-                      <View style={styles.blurOverlay}>
-                        <Image
-                          source={require('../assets/icons/heart-white.png')}
-                          style={{ width: 150, height: 150, marginBottom: 20, tintColor: '#de822c' }}
-                        />
-                        <Text style={styles.blurTitle}>See Who Likes You</Text>
-                        <Text style={styles.blurDesc}>
-                          Discover who's interested in you! Upgrade to Premium to see everyone who liked your profile.
-                        </Text>
-                        <TouchableOpacity
-                          style={styles.premiumButton}
-                          onPress={() => navigation.navigate('Premium')}
-                        >
-                          <Text style={styles.premiumButtonText}>Get Premium</Text>
-                        </TouchableOpacity>
-                      </View>
-                    </BlurView>
-                  </View>
-                )
-              }
-              key="liked-me-blurred-list"
-            />
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+              <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill}>
+                <View style={styles.blurOverlay}>
+                  <Image
+                    source={require('../assets/icons/heart-white.png')}
+                    style={{ width: 150, height: 150, marginBottom: 20, tintColor: '#de822c' }}
+                  />
+                  <Text style={styles.blurTitle}>See Who Likes You</Text>
+                  <Text style={styles.blurDesc}>
+                    Discover who's interested in you! Upgrade to Premium to see everyone who liked your profile.
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.premiumButton}
+                    onPress={() => navigation.navigate('Premium')}
+                  >
+                    <Text style={styles.premiumButtonText}>Unlock with Premium</Text>
+                  </TouchableOpacity>
+                </View>
+              </BlurView>
+            </View>
           )}
         </View>
       ) : (
@@ -548,7 +508,7 @@ const Likes: React.FC<Props> = ({ navigation }) => {
                   </Text>
                   <TouchableOpacity
                     style={styles.premiumButton}
-                    onPress={() => navigation.navigate('BuyPremium')}
+                    onPress={() => navigation.navigate('Premium')}
                   >
                     <Text style={styles.premiumButtonText}>Unlock with Premium</Text>
                   </TouchableOpacity>
