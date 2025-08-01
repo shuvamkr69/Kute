@@ -227,6 +227,14 @@ const loginUser = asyncHandler(async (req, res) => {
     throw new ApiError(404, "User not found");
   }
 
+  // Check if user's login method is email/password
+  if (user.loginMethod === "google") {
+    throw new ApiError(
+      400, 
+      "This email is registered with Google. Please login with Google instead."
+    );
+  }
+
   const isPasswordValid = await user.isPasswordCorrect(password);
   console.log("Password Valid:", isPasswordValid);
 
@@ -1089,15 +1097,16 @@ const googleLoginUser = asyncHandler(async (req, res) => {
       );
   }
 
-  // User exists - proceed with login
-  // Update user to support Google login if they originally registered with email
-  let userUpdated = false;
-  
-  // If user was originally registered with email/password, add Google login method
+  // Check if user's login method is Google
   if (user.loginMethod !== "google") {
-    user.loginMethod = "google";
-    userUpdated = true;
+    throw new ApiError(
+      400, 
+      "This email is registered with email/password. Please login with your email and password instead."
+    );
   }
+
+  // User exists and has Google login method - proceed with login
+  let userUpdated = false;
   
   // Update avatar if provided and user doesn't have one
   if (avatar && !user.avatar1) {

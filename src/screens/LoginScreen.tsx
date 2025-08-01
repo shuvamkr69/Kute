@@ -76,7 +76,26 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
       }
     } catch (error: any) {
       if (error.response) {
+        // Check if server provided a specific error message
+        const serverMessage = error.response.data?.message;
+        
         switch (error.response.status) {
+          case 400:
+            // Handle login method mismatch errors
+            if (serverMessage && serverMessage.includes("registered with Google")) {
+              setCustomAlert({ 
+                visible: true, 
+                title: "Wrong Login Method", 
+                message: serverMessage 
+              });
+            } else {
+              setCustomAlert({ 
+                visible: true, 
+                title: "Error", 
+                message: serverMessage || "Bad request" 
+              });
+            }
+            break;
           case 404:
             setCustomAlert({ visible: true, title: "Error", message: "User not found" });
             break;
@@ -87,7 +106,11 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
             setCustomAlert({ visible: true, title: "Error", message: "Invalid email or password" });
             break;
           default:
-            setCustomAlert({ visible: true, title: "Error", message: "Something went wrong" });
+            setCustomAlert({ 
+              visible: true, 
+              title: "Error", 
+              message: serverMessage || "Something went wrong" 
+            });
         }
       } else if (error.request) {
         setCustomAlert({ visible: true, title: "Error", message: "No response from server. Check your connection." });
@@ -206,9 +229,15 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
         errorMessage = error.message;
       }
       
+      // Determine alert title based on error content
+      let alertTitle = 'Google Login Failed';
+      if (errorMessage.includes('registered with email/password')) {
+        alertTitle = 'Wrong Login Method';
+      }
+      
       setCustomAlert({ 
         visible: true, 
-        title: 'Google Login Failed', 
+        title: alertTitle, 
         message: errorMessage 
       });
     }
