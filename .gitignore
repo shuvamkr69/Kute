@@ -35,3 +35,7 @@ env
 
 # typescript
 *.tsbuildinfo
+
+
+# google
+google-services.json
