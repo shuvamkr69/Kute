@@ -1,0 +1,20 @@
+{
+  "name": "kute-auth-tests",
+  "version": "1.0.0",
+  "description": "Authentication testing suite for Kute app",
+  "main": "test-auth.js",
+  "scripts": {
+    "test": "node test-auth.js",
+    "test:auth": "node test-auth.js",
+    "test:registration": "node test-registration-only.js",
+    "test:login": "node test-login-only.js"
+  },
+  "dependencies": {
+    "axios": "^1.5.0",
+    "form-data": "^4.0.0"
+  },
+  "devDependencies": {},
+  "keywords": ["testing", "authentication", "api"],
+  "author": "Your Name",
+  "license": "MIT"
+}

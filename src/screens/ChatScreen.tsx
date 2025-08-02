@@ -40,7 +40,7 @@ type RootStackParamList = {
     userName: string;
     loggedInUserId: string;
     likedUserAvatar?: string;
-    isBlockedByMe ?: boolean;
+    isBlockedByMe?: boolean;
   };
 };
 
@@ -59,20 +59,43 @@ type Message = {
 
 type Props = NativeStackScreenProps<any, "Chat">;
 
-// const socket = io("http://10.21.39.161:3000");
-
+// const socket = io("http://10.1.83.13:3000");
 
 const socket = getSocket();
 
 // Wallpaper options
 const wallpaperOptions = [
-  { id: 'default', name: 'Default', source: null },
-  { id: 'img1', name: 'Abstract 1', source: require('../assets/images/img1.jpg') },
-  { id: 'img2', name: 'Abstract 2', source: require('../assets/images/img2.jpg') },
-  { id: 'img3', name: 'Abstract 3', source: require('../assets/images/img3.jpg') },
-  { id: 'user1', name: 'Scenic 1', source: require('../../assets/images/user1.jpg') },
-  { id: 'user2', name: 'Scenic 2', source: require('../../assets/images/user2.jpg') },
-  { id: 'user3', name: 'Scenic 3', source: require('../../assets/images/user3.jpg') },
+  { id: "default", name: "Default", source: null },
+  {
+    id: "img1",
+    name: "Abstract 1",
+    source: require("../assets/images/img1.jpg"),
+  },
+  {
+    id: "img2",
+    name: "Abstract 2",
+    source: require("../assets/images/img2.jpg"),
+  },
+  {
+    id: "img3",
+    name: "Abstract 3",
+    source: require("../assets/images/img3.jpg"),
+  },
+  {
+    id: "user1",
+    name: "Scenic 1",
+    source: require("../../assets/images/user1.jpg"),
+  },
+  {
+    id: "user2",
+    name: "Scenic 2",
+    source: require("../../assets/images/user2.jpg"),
+  },
+  {
+    id: "user3",
+    name: "Scenic 3",
+    source: require("../../assets/images/user3.jpg"),
+  },
 ];
 
 const MessageItem = memo(
@@ -95,6 +118,7 @@ const MessageItem = memo(
     otherUserAvatar?: string; // <-- new prop
     style?: any;
     selectionMode: boolean;
+    isFirstMessageOfDay: boolean; // <-- new prop for date display
   }) => {
     const {
       text,
@@ -111,6 +135,7 @@ const MessageItem = memo(
       otherUserAvatar, // <-- new
       style,
       selectionMode,
+      isFirstMessageOfDay, // <-- new
     } = props;
 
     const formatTime = (isoDate?: string) => {
@@ -123,86 +148,103 @@ const MessageItem = memo(
       return `${hourFormatted}:${minutes.toString().padStart(2, "0")} ${ampm}`;
     };
 
+    const formatDate = (isodate?: string) => {
+      if (!isodate) return "";
+      const date = new Date(isodate);
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    };
+
     return (
-      <View style={{ position: 'relative' }}>
-        {isSelected && <View style={styles.selectedMessageOverlay} />}
-        <Pressable
-          onLongPress={() => {
-            if (!selectionMode) {
-              onLongPress();
-            }
-          }}
-          onPress={() => {
-            if (selectionMode) {
-              onPress();
-            }
-          }}
-          delayLongPress={selectionMode ? undefined : 150}
-          style={[
-            isMyMessage
-              ? styles.myMessageContainer
-              : styles.otherMessageContainer,
-            style,
-          ]}
-        >
-          {!isSelected && (
-            <TouchableOpacity
-              onPress={onReply}
-              style={[
-                styles.replyButton,
-                isMyMessage ? { right: -25 } : { left: -25 },
-              ]}
-            >
-              <Ionicons
-                name="return-up-back-outline"
-                size={20}
-                color={isMyMessage ? "#fff" : "#de822c"}
-                style={{
-                  transform: isMyMessage ? [] : [{ scaleX: -1 }], // ✅ Flip horizontally
-                }}
-              />
-            </TouchableOpacity>
-          )}
-
-          {replyTo && (
-            <View
-              style={[
-                styles.replyContainer,
-                isMyMessage
-                  ? styles.myReplyContainer
-                  : styles.otherReplyContainer,
-              ]}
-            >
-              <View style={styles.replyLine} />
-              <View style={styles.replyContent}>
-                <Text style={styles.replyToText}>
-                  {replyTo.senderId === loggedInUserId ? "You" : "Them"}
-                </Text>
-                <Text style={styles.replyText}>{replyTo.text}</Text>
-              </View>
-            </View>
-          )}
-
-          <View style={isMyMessage ? styles.myMessage : styles.otherMessage}>
-            <Text style={styles.messageText}>{text}</Text>
-            {createdAt && (
-              <Text style={styles.timeText}>{formatTime(createdAt)}</Text>
-            )}
+      <View>
+        {isFirstMessageOfDay && (
+          <View style={styles.messageDateContainer}>
+            <Text style={styles.messageDateText}>{formatDate(createdAt)}</Text>
           </View>
-          {/* Move Seen indicator below the bubble */}
-          {isMyMessage && isLastMyMessage && isRead && (
-            <Text style={styles.seenTextBelow}>Seen</Text>
-          )}
-        </Pressable>
+        )}
+        <View style={{ position: "relative" }}>
+          {isSelected && <View style={styles.selectedMessageOverlay} />}
+          <Pressable
+            onLongPress={() => {
+              if (!selectionMode) {
+                onLongPress();
+              }
+            }}
+            onPress={() => {
+              if (selectionMode) {
+                onPress();
+              }
+            }}
+            delayLongPress={selectionMode ? undefined : 150}
+            style={[
+              isMyMessage
+                ? styles.myMessageContainer
+                : styles.otherMessageContainer,
+              style,
+            ]}
+          >
+            {!isSelected && (
+              <TouchableOpacity
+                onPress={onReply}
+                style={[
+                  styles.replyButton,
+                  isMyMessage ? { right: -25 } : { left: -25 },
+                ]}
+              >
+                <Ionicons
+                  name="return-up-back-outline"
+                  size={20}
+                  color={isMyMessage ? "#fff" : "#de822c"}
+                  style={{
+                    transform: isMyMessage ? [] : [{ scaleX: -1 }], // ✅ Flip horizontally
+                  }}
+                />
+              </TouchableOpacity>
+            )}
+
+            {replyTo && (
+              <View
+                style={[
+                  styles.replyContainer,
+                  isMyMessage
+                    ? styles.myReplyContainer
+                    : styles.otherReplyContainer,
+                ]}
+              >
+                <View style={styles.replyLine} />
+                <View style={styles.replyContent}>
+                  <Text style={styles.replyToText}>
+                    {replyTo.senderId === loggedInUserId ? "You" : "Them"}
+                  </Text>
+                  <Text style={styles.replyText}>{replyTo.text}</Text>
+                </View>
+              </View>
+            )}
+
+            <View style={isMyMessage ? styles.myMessage : styles.otherMessage}>
+              <Text style={styles.messageText}>{text}</Text>
+              {createdAt && (
+                <Text style={styles.timeText}>{formatTime(createdAt)}</Text>
+              )}
+            </View>
+            {/* Move Seen indicator below the bubble */}
+            {isMyMessage && isLastMyMessage && isRead && (
+              <Text style={styles.seenTextBelow}>Seen</Text>
+            )}
+          </Pressable>
+        </View>
       </View>
     );
   }
 );
 
 const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
-  const { likedUserId, userName, loggedInUserId, likedUserAvatar } = route.params;
+  const { likedUserId, userName, loggedInUserId, likedUserAvatar } =
+    route.params;
   const [isBlockedByMe, setIsBlockedByMe] = useState<boolean>(false);
-
 
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
@@ -222,36 +264,57 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
     title: string;
     message: string;
     onConfirm?: () => void;
-  }>({ 
-    visible: false, 
-    title: '', 
-    message: '' 
+  }>({
+    visible: false,
+    title: "",
+    message: "",
   });
   const [searchText, setSearchText] = useState("");
   const [searchBarVisible, setSearchBarVisible] = useState(false);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
-  const [searchResultsModalVisible, setSearchResultsModalVisible] = useState(false);
+  const [searchResultsModalVisible, setSearchResultsModalVisible] =
+    useState(false);
   const [searchSubmitted, setSearchSubmitted] = useState(false);
-  const [currentWallpaper, setCurrentWallpaper] = useState('default');
+  const [currentWallpaper, setCurrentWallpaper] = useState("default");
   const [wallpaperModalVisible, setWallpaperModalVisible] = useState(false);
 
   const flatListRef = useRef<FlatList<Message>>(null);
-  
+
+  // Helper function to check if a message is the first message of the day
+  const isFirstMessageOfDay = (
+    currentMessage: Message,
+    index: number,
+    messages: Message[]
+  ): boolean => {
+    if (index === 0) return true; // First message in the chat
+
+    const previousMessage = messages[index - 1];
+    if (!currentMessage.createdAt || !previousMessage.createdAt) return false;
+
+    const currentDate = new Date(currentMessage.createdAt).toDateString();
+    const previousDate = new Date(previousMessage.createdAt).toDateString();
+
+    return currentDate !== previousDate;
+  };
+
   // Safe scrollToIndex helper to prevent out-of-range errors
   const safeScrollToIndex = (index: number, animated: boolean = true) => {
     if (!flatListRef.current) return;
-    
+
     try {
       // Get the current data length (either filtered or full messages)
-      const currentDataLength = searchBarVisible && searchText.trim().length > 0 
-        ? filteredMessages.length 
-        : messages.length;
-      
+      const currentDataLength =
+        searchBarVisible && searchText.trim().length > 0
+          ? filteredMessages.length
+          : messages.length;
+
       // Validate index is within bounds
       if (index >= 0 && index < currentDataLength) {
         flatListRef.current.scrollToIndex({ index, animated });
       } else {
-        console.warn(`ScrollToIndex out of range: index ${index}, data length ${currentDataLength}`);
+        console.warn(
+          `ScrollToIndex out of range: index ${index}, data length ${currentDataLength}`
+        );
         // Fallback to scrollToEnd
         flatListRef.current.scrollToEnd({ animated });
       }
@@ -283,7 +346,6 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
       }).start();
     }
   }, [menuVisible]);
-
 
   useEffect(() => {
     let isMounted = true;
@@ -360,12 +422,12 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
   useEffect(() => {
     const loadWallpaper = async () => {
       try {
-        const savedWallpaper = await AsyncStorage.getItem('chatWallpaper');
+        const savedWallpaper = await AsyncStorage.getItem("chatWallpaper");
         if (savedWallpaper) {
           setCurrentWallpaper(savedWallpaper);
         }
       } catch (error) {
-        console.error('Error loading wallpaper:', error);
+        console.error("Error loading wallpaper:", error);
       }
     };
     loadWallpaper();
@@ -586,31 +648,37 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
   const handleOptionPress = async (option: string) => {
     setMenuVisible(false);
 
-    if (option === 'background') {
+    if (option === "background") {
       setWallpaperModalVisible(true);
       return;
     }
 
     switch (option) {
       case "delete":
-        setCustomAlert({ 
-          visible: true, 
-          title: "Delete All Chats", 
-          message: "All chats will only be deleted for you. The other user will still be able to view your conversations.",
-          onConfirm: confirmDeleteAllChats
+        setCustomAlert({
+          visible: true,
+          title: "Delete All Chats",
+          message:
+            "All chats will only be deleted for you. The other user will still be able to view your conversations.",
+          onConfirm: confirmDeleteAllChats,
         });
         break;
 
       case "mute":
-        setCustomAlert({ visible: true, title: "Mute Notifications", message: "You will not receive notifications for this chat." });
+        setCustomAlert({
+          visible: true,
+          title: "Mute Notifications",
+          message: "You will not receive notifications for this chat.",
+        });
         break;
 
       case "block":
-        setCustomAlert({ 
-          visible: true, 
-          title: "Block User", 
-          message: "Are you sure you want to block this user? You will no longer see their messages.",
-          onConfirm: confirmBlockUser
+        setCustomAlert({
+          visible: true,
+          title: "Block User",
+          message:
+            "Are you sure you want to block this user? You will no longer see their messages.",
+          onConfirm: confirmBlockUser,
         });
         break;
     }
@@ -621,18 +689,18 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
       if (conversationId) {
         await api.delete(`/api/v1/users/messages/${conversationId}`);
         setMessages([]);
-        setCustomAlert({ 
-          visible: true, 
-          title: "Deleted", 
-          message: "All chats have been deleted for you." 
+        setCustomAlert({
+          visible: true,
+          title: "Deleted",
+          message: "All chats have been deleted for you.",
         });
       }
     } catch (error) {
       console.error("Error deleting chats:", error);
-      setCustomAlert({ 
-        visible: true, 
-        title: "Error", 
-        message: "Failed to delete chats. Please try again." 
+      setCustomAlert({
+        visible: true,
+        title: "Error",
+        message: "Failed to delete chats. Please try again.",
       });
     }
   };
@@ -643,18 +711,18 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
         blockedUserId: likedUserId,
       });
       setIsBlockedByMe(true);
-      setCustomAlert({ 
-        visible: true, 
-        title: "Blocked", 
-        message: "This user has been blocked." 
+      setCustomAlert({
+        visible: true,
+        title: "Blocked",
+        message: "This user has been blocked.",
       });
       navigation.goBack();
     } catch (error) {
       console.error("Error blocking user:", error);
-      setCustomAlert({ 
-        visible: true, 
-        title: "Error", 
-        message: "Failed to block user. Please try again." 
+      setCustomAlert({
+        visible: true,
+        title: "Error",
+        message: "Failed to block user. Please try again.",
       });
     }
   };
@@ -685,11 +753,11 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
   const selectWallpaper = async (wallpaperId: string) => {
     setCurrentWallpaper(wallpaperId);
     setWallpaperModalVisible(false);
-    
+
     try {
-      await AsyncStorage.setItem('chatWallpaper', wallpaperId);
+      await AsyncStorage.setItem("chatWallpaper", wallpaperId);
     } catch (error) {
-      console.error('Error saving wallpaper:', error);
+      console.error("Error saving wallpaper:", error);
     }
   };
 
@@ -722,7 +790,12 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
                   setSearchSubmitted(false);
                 }}
               >
-                <Ionicons name="close" size={24} color="white" style={{ marginHorizontal: 10 }} />
+                <Ionicons
+                  name="close"
+                  size={24}
+                  color="white"
+                  style={{ marginHorizontal: 10 }}
+                />
               </TouchableOpacity>
             </View>
           )}
@@ -731,13 +804,24 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
           <FlatList
             ref={flatListRef}
             data={filteredMessages}
-            renderItem={({ item }) => {
+            renderItem={({ item, index }) => {
               const isMyMessage = item.senderId === loggedInUserId;
               const isLastMyMessage =
                 isMyMessage &&
                 !messages
                   .slice(messages.indexOf(item) + 1)
-                  .some(msg => msg.senderId === loggedInUserId);
+                  .some((msg) => msg.senderId === loggedInUserId);
+
+              // Use the full messages array for determining first message of day
+              const messageIndex = messages.findIndex(
+                (msg) => msg._id === item._id
+              );
+              const isFirstOfDay = isFirstMessageOfDay(
+                item,
+                messageIndex,
+                messages
+              );
+
               return (
                 <MessageItem
                   text={item.text}
@@ -753,6 +837,7 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
                   isRead={item.isRead}
                   otherUserAvatar={likedUserAvatar}
                   selectionMode={selectionMode}
+                  isFirstMessageOfDay={isFirstOfDay}
                 />
               );
             }}
@@ -767,13 +852,13 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
           {showScrollToBottom && (
             <TouchableOpacity
               style={{
-                position: 'absolute',
+                position: "absolute",
                 bottom: 80,
                 right: 20,
-                backgroundColor: '#de822c',
+                backgroundColor: "#de822c",
                 borderRadius: 25,
                 padding: 10,
-                shadowColor: '#000',
+                shadowColor: "#000",
                 shadowOffset: { width: 0, height: 2 },
                 shadowOpacity: 0.3,
                 shadowRadius: 4,
@@ -790,7 +875,7 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
   );
 
   const getCurrentWallpaperSource = () => {
-    const wallpaper = wallpaperOptions.find(w => w.id === currentWallpaper);
+    const wallpaper = wallpaperOptions.find((w) => w.id === currentWallpaper);
     return wallpaper ? wallpaper.source : null;
   };
 
@@ -825,7 +910,14 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
       });
     }
 
-    setCustomAlert({ visible: true, title: "Delete Message", message: hasOthersMessages && !hasOwnMessages ? "You can only delete these messages for yourself." : "Do you want to delete for yourself or everyone?" });
+    setCustomAlert({
+      visible: true,
+      title: "Delete Message",
+      message:
+        hasOthersMessages && !hasOwnMessages
+          ? "You can only delete these messages for yourself."
+          : "Do you want to delete for yourself or everyone?",
+    });
   };
 
   const deleteForMe = async () => {
@@ -838,7 +930,11 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
       );
     } catch (err) {
       console.error(err);
-      setCustomAlert({ visible: true, title: "Error", message: "Failed to delete message." });
+      setCustomAlert({
+        visible: true,
+        title: "Error",
+        message: "Failed to delete message.",
+      });
     } finally {
       setSelectedMessages(new Set());
       setSelectionMode(false);
@@ -856,7 +952,11 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
       );
     } catch (err) {
       console.error(err);
-      setCustomAlert({ visible: true, title: "Error", message: "Failed to delete message." });
+      setCustomAlert({
+        visible: true,
+        title: "Error",
+        message: "Failed to delete message.",
+      });
     } finally {
       setSelectedMessages(new Set());
       setSelectionMode(false);
@@ -927,13 +1027,20 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
   };
 
   // Filter messages based on searchText
-  const filteredMessages = searchBarVisible && searchText.trim().length > 0
-    ? messages.filter((msg) => msg.text.toLowerCase().includes(searchText.toLowerCase()))
-    : messages;
+  const filteredMessages =
+    searchBarVisible && searchText.trim().length > 0
+      ? messages.filter((msg) =>
+          msg.text.toLowerCase().includes(searchText.toLowerCase())
+        )
+      : messages;
 
   // Scroll to first search result
   useEffect(() => {
-    if (searchBarVisible && searchText.trim().length > 0 && filteredMessages.length > 0) {
+    if (
+      searchBarVisible &&
+      searchText.trim().length > 0 &&
+      filteredMessages.length > 0
+    ) {
       // When searching, scroll to the first result in the filtered list
       setTimeout(() => {
         safeScrollToIndex(0, true);
@@ -945,8 +1052,11 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
   const handleScroll = (event) => {
     const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
     // Show button if user is more than 100px away from the bottom
-    const isAtBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - 20;
-    setShowScrollToBottom(contentSize.height - (layoutMeasurement.height + contentOffset.y) > 100);
+    const isAtBottom =
+      layoutMeasurement.height + contentOffset.y >= contentSize.height - 20;
+    setShowScrollToBottom(
+      contentSize.height - (layoutMeasurement.height + contentOffset.y) > 100
+    );
   };
 
   const scrollToBottom = () => {
@@ -955,10 +1065,11 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
       flatListRef.current.scrollToEnd({ animated: true });
       // Fallback: ensure scroll to last index after a short delay
       setTimeout(() => {
-        const currentDataLength = searchBarVisible && searchText.trim().length > 0 
-          ? filteredMessages.length 
-          : messages.length;
-        
+        const currentDataLength =
+          searchBarVisible && searchText.trim().length > 0
+            ? filteredMessages.length
+            : messages.length;
+
         if (currentDataLength > 0) {
           safeScrollToIndex(currentDataLength - 1, true);
         }
@@ -976,9 +1087,12 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
   };
 
   // Show search results modal when searching
-  const matchingMessages = searchSubmitted && searchText.trim().length > 0
-    ? messages.filter((msg) => msg.text.toLowerCase().includes(searchText.toLowerCase()))
-    : [];
+  const matchingMessages =
+    searchSubmitted && searchText.trim().length > 0
+      ? messages.filter((msg) =>
+          msg.text.toLowerCase().includes(searchText.toLowerCase())
+        )
+      : [];
 
   // Handler to jump to a message
   const jumpToMessage = (msgId: string) => {
@@ -987,7 +1101,7 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
     setSearchBarVisible(false);
     setSearchText("");
     setSearchSubmitted(false);
-    
+
     setTimeout(() => {
       // Now find the index in the full messages array (no filtering)
       const idx = messages.findIndex((msg) => msg._id === msgId);
@@ -1063,7 +1177,11 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
                   }}
                   style={{ marginRight: 2 }}
                 >
-                  <Ionicons name="return-up-back-outline" size={22} color="#fff" />
+                  <Ionicons
+                    name="return-up-back-outline"
+                    size={22}
+                    color="#fff"
+                  />
                 </TouchableOpacity>
               )}
               <TouchableOpacity onPress={confirmDelete}>
@@ -1123,19 +1241,15 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
 
       {/* Main Container with Background */}
       {getCurrentWallpaperSource() ? (
-        <ImageBackground 
-          source={getCurrentWallpaperSource()} 
+        <ImageBackground
+          source={getCurrentWallpaperSource()}
           style={styles.container}
           imageStyle={{ opacity: 0.3 }}
         >
-          <View style={styles.backgroundOverlay}>
-            {renderMainContent()}
-          </View>
+          <View style={styles.backgroundOverlay}>{renderMainContent()}</View>
         </ImageBackground>
       ) : (
-        <View style={styles.container}>
-          {renderMainContent()}
-        </View>
+        <View style={styles.container}>{renderMainContent()}</View>
       )}
 
       {/* Reply Preview */}
@@ -1167,7 +1281,11 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
             { backgroundColor: "#1c1c1c", opacity: 0.5 },
           ]}
           onPress={() =>
-            setCustomAlert({ visible: true, title: "Blocked", message: "Unblock this user to send messages." })
+            setCustomAlert({
+              visible: true,
+              title: "Blocked",
+              message: "Unblock this user to send messages.",
+            })
           }
           activeOpacity={1}
         >
@@ -1209,18 +1327,28 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
 
       <Modal transparent visible={menuVisible} animationType="none">
         <TouchableOpacity
-          style={[styles.modalBackground, { justifyContent: 'center', alignItems: 'flex-end' }]}
+          style={[
+            styles.modalBackground,
+            { justifyContent: "center", alignItems: "flex-end" },
+          ]}
           activeOpacity={1}
           onPress={closeMenuWithAnimation}
         >
-          <Animated.View style={[styles.menuCard, { transform: [{ translateX: menuAnim }] }]}>
-            <View style={{ justifyContent: 'center' }}>
+          <Animated.View
+            style={[styles.menuCard, { transform: [{ translateX: menuAnim }] }]}
+          >
+            <View style={{ justifyContent: "center" }}>
               <TouchableOpacity
                 style={styles.menuItemRow}
                 activeOpacity={0.7}
                 onPress={() => handleOptionPress("mute")}
               >
-                <Ionicons name="notifications-off-outline" size={20} color="#de822c" style={{ marginRight: 14 }} />
+                <Ionicons
+                  name="notifications-off-outline"
+                  size={20}
+                  color="#de822c"
+                  style={{ marginRight: 14 }}
+                />
                 <Text style={styles.menuItemText}>Mute Notifications</Text>
               </TouchableOpacity>
               <View style={styles.menuDivider} />
@@ -1229,7 +1357,12 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
                 activeOpacity={0.7}
                 onPress={() => handleOptionPress("background")}
               >
-                <Ionicons name="image-outline" size={20} color="#de822c" style={{ marginRight: 14 }} />
+                <Ionicons
+                  name="image-outline"
+                  size={20}
+                  color="#de822c"
+                  style={{ marginRight: 14 }}
+                />
                 <Text style={styles.menuItemText}>Change Background</Text>
               </TouchableOpacity>
               <View style={styles.menuDivider} />
@@ -1238,7 +1371,12 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
                 activeOpacity={0.7}
                 onPress={() => handleOptionPress("block")}
               >
-                <Ionicons name="remove-circle-outline" size={20} color="#de822c" style={{ marginRight: 14 }} />
+                <Ionicons
+                  name="remove-circle-outline"
+                  size={20}
+                  color="#de822c"
+                  style={{ marginRight: 14 }}
+                />
                 <Text style={styles.menuItemText}>Block User</Text>
               </TouchableOpacity>
               <View style={styles.menuDivider} />
@@ -1246,11 +1384,16 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
                 style={styles.menuItemRow}
                 activeOpacity={0.7}
                 onPress={() => {
-                 closeMenuWithAnimation();
+                  closeMenuWithAnimation();
                   setSearchBarVisible(true);
                 }}
               >
-                <Ionicons name="search" size={20} color="#de822c" style={{ marginRight: 14 }} />
+                <Ionicons
+                  name="search"
+                  size={20}
+                  color="#de822c"
+                  style={{ marginRight: 14 }}
+                />
                 <Text style={styles.menuItemText}>Search</Text>
               </TouchableOpacity>
               <View style={styles.menuDivider} />
@@ -1259,8 +1402,15 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
                 activeOpacity={0.7}
                 onPress={() => handleOptionPress("delete")}
               >
-                <Ionicons name="trash-outline" size={20} color="#ff4d4f" style={{ marginRight: 14 }} />
-                <Text style={[styles.menuItemText, { color: '#ff4d4f' }]}>Delete All Chats</Text>
+                <Ionicons
+                  name="trash-outline"
+                  size={20}
+                  color="#ff4d4f"
+                  style={{ marginRight: 14 }}
+                />
+                <Text style={[styles.menuItemText, { color: "#ff4d4f" }]}>
+                  Delete All Chats
+                </Text>
               </TouchableOpacity>
             </View>
           </Animated.View>
@@ -1268,25 +1418,28 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
       </Modal>
 
       {/* Wallpaper Selection Modal */}
-      <Modal 
-        visible={wallpaperModalVisible} 
-        transparent={true} 
+      <Modal
+        visible={wallpaperModalVisible}
+        transparent={true}
         animationType="slide"
         onRequestClose={() => setWallpaperModalVisible(false)}
       >
         <View style={styles.modalBackground}>
           <View style={styles.wallpaperModalContainer}>
             <Text style={styles.wallpaperModalTitle}>Choose Background</Text>
-            
-            <ScrollView style={styles.wallpaperGrid} showsVerticalScrollIndicator={false}>
+
+            <ScrollView
+              style={styles.wallpaperGrid}
+              showsVerticalScrollIndicator={false}
+            >
               <View style={styles.wallpaperRow}>
                 {/* Default/No wallpaper option */}
                 <TouchableOpacity
                   style={[
                     styles.wallpaperItem,
-                    !currentWallpaper && styles.selectedWallpaper
+                    !currentWallpaper && styles.selectedWallpaper,
                   ]}
-                  onPress={() => selectWallpaper('')}
+                  onPress={() => selectWallpaper("")}
                 >
                   <View style={styles.defaultWallpaperPreview}>
                     <Text style={styles.defaultWallpaperText}>Default</Text>
@@ -1304,11 +1457,15 @@ const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
                     key={index}
                     style={[
                       styles.wallpaperItem,
-                      currentWallpaper === wallpaper.id && styles.selectedWallpaper
+                      currentWallpaper === wallpaper.id &&
+                        styles.selectedWallpaper,
                     ]}
                     onPress={() => selectWallpaper(wallpaper.id)}
                   >
-                    <Image source={wallpaper.source} style={styles.wallpaperPreview} />
+                    <Image
+                      source={wallpaper.source}
+                      style={styles.wallpaperPreview}
+                    />
                     {currentWallpaper === wallpaper.id && (
                       <View style={styles.selectedIndicator}>
                         <Ionicons name="checkmark" size={16} color="white" />
@@ -1356,7 +1513,7 @@ const styles = StyleSheet.create({
   },
   backgroundOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.1)', // Slight overlay for readability
+    backgroundColor: "rgba(0, 0, 0, 0.1)", // Slight overlay for readability
   },
   chatBackButton: {
     fontSize: 18,
@@ -1528,7 +1685,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   menuCard: {
-    backgroundColor: '#181A20',
+    backgroundColor: "#181A20",
     borderTopLeftRadius: 18,
     borderBottomLeftRadius: 18,
     borderTopRightRadius: 0,
@@ -1537,31 +1694,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
     marginRight: 0,
     marginLeft: 24,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.18,
     shadowRadius: 24,
     elevation: 16,
-    width: '80%',
+    width: "80%",
     maxWidth: 400,
   },
   menuItemRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 18,
     paddingHorizontal: 28,
     borderRadius: 12,
     marginBottom: 2,
   },
   menuItemText: {
-    color: 'white',
+    color: "white",
     fontSize: 17,
-    fontWeight: '500',
+    fontWeight: "500",
     letterSpacing: 0.1,
   },
   menuDivider: {
     height: 1,
-    backgroundColor: '#23242a',
+    backgroundColor: "#23242a",
     marginHorizontal: 18,
     opacity: 0.18,
   },
@@ -1630,167 +1787,180 @@ const styles = StyleSheet.create({
     width: 18,
     height: 18,
     borderRadius: 9,
-    position: 'absolute',
+    position: "absolute",
     bottom: 2,
     right: 2,
     borderWidth: 1,
-    borderColor: '#fff',
+    borderColor: "#fff",
   },
   readCheck: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 2,
     right: 2,
   },
   searchResultsModalBg: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0,0,0,0.55)",
+    justifyContent: "center",
+    alignItems: "center",
     zIndex: 100,
   },
   searchResultsModalCard: {
-    backgroundColor: '#181A20',
+    backgroundColor: "#181A20",
     borderRadius: 18,
     padding: 18,
-    width: '90%',
+    width: "90%",
     maxWidth: 400,
-    alignItems: 'center',
-    shadowColor: '#000',
+    alignItems: "center",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.18,
     shadowRadius: 24,
     elevation: 16,
   },
   searchResultsTitle: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: 12,
     letterSpacing: 0.2,
   },
   searchResultItem: {
-    width: '100%',
+    width: "100%",
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#23242a',
+    borderBottomColor: "#23242a",
     paddingHorizontal: 4,
   },
   searchResultText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 15,
     marginBottom: 2,
   },
   searchResultTime: {
-    color: '#de822c',
+    color: "#de822c",
     fontSize: 12,
     opacity: 0.7,
   },
   searchResultEmpty: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 15,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 20,
   },
   searchResultsCloseBtn: {
-    position: 'absolute',
+    position: "absolute",
     top: 10,
     right: 10,
     padding: 6,
     zIndex: 10,
   },
   seenText: {
-    color: '#de2222',
+    color: "#de2222",
     fontSize: 12,
-    fontWeight: '600',
-    textAlign: 'right',
+    fontWeight: "600",
+    textAlign: "right",
     marginTop: 2,
     marginRight: 2,
   },
   // Add new style for below bubble
   seenTextBelow: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 11, // smaller
-    fontWeight: '400', // less bold
-    textAlign: 'right',
+    fontWeight: "400", // less bold
+    textAlign: "right",
     marginTop: 2,
     marginRight: 7,
     marginBottom: 4,
   },
   // Wallpaper Modal Styles
   wallpaperModalContainer: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: "#1a1a1a",
     margin: 20,
     borderRadius: 15,
     padding: 20,
-    maxHeight: '80%',
+    maxHeight: "80%",
   },
   wallpaperModalTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
-    color: 'white',
-    textAlign: 'center',
+    fontWeight: "bold",
+    color: "white",
+    textAlign: "center",
     marginBottom: 20,
   },
   wallpaperGrid: {
     flex: 1,
   },
   wallpaperRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-around',
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-around",
   },
   wallpaperItem: {
     width: 80,
     height: 80,
     borderRadius: 10,
     margin: 8,
-    position: 'relative',
-    overflow: 'hidden',
+    position: "relative",
+    overflow: "hidden",
   },
   selectedWallpaper: {
     borderWidth: 3,
-    borderColor: '#de822c',
+    borderColor: "#de822c",
   },
   wallpaperPreview: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
     borderRadius: 8,
   },
   defaultWallpaperPreview: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#333',
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: "100%",
+    height: "100%",
+    backgroundColor: "#333",
+    justifyContent: "center",
+    alignItems: "center",
     borderRadius: 8,
   },
   defaultWallpaperText: {
-    color: 'white',
+    color: "white",
     fontSize: 10,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   selectedIndicator: {
-    position: 'absolute',
+    position: "absolute",
     top: 2,
     right: 2,
-    backgroundColor: '#de822c',
+    backgroundColor: "#de822c",
     borderRadius: 10,
     width: 20,
     height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   wallpaperModalCloseButton: {
-    backgroundColor: '#de822c',
+    backgroundColor: "#de822c",
     padding: 12,
     borderRadius: 8,
     marginTop: 20,
-    alignItems: 'center',
+    alignItems: "center",
   },
   wallpaperModalCloseText: {
-    color: 'white',
-    fontWeight: 'bold',
+    color: "white",
+    fontWeight: "bold",
     fontSize: 16,
+  },
+  messageDateContainer: {
+    alignItems: "center",
+    marginVertical: 15,
+  },
+  messageDateText: {
+    color: "rgba(255, 255, 255, 0.6)",
+    fontSize: 12,
+    backgroundColor: "rgba(36, 36, 36, 0.7)",
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    overflow: "hidden",
   },
 });
 

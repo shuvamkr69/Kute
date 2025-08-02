@@ -20,7 +20,7 @@ import LoadingScreen from "./LoadingScreen";
 import { useFocusEffect } from "@react-navigation/native";
 import CustomAlert from "../components/CustomAlert";
 
-const socket = io("http://10.21.39.161:3000");
+const socket = io("http://10.1.83.13:3000");
 
 type Props = NativeStackScreenProps<any, "AllChatScreen">;
 

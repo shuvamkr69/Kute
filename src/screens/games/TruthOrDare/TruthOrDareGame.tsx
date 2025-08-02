@@ -8,7 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import api from '../../../utils/api';
 
-const SOCKET_URL = "http://10.21.39.161:3000";
+const SOCKET_URL = "http://10.1.83.13:3000";
 
 const TruthOrDareGame = () => {
   const [phase, setPhase] = useState("waiting");

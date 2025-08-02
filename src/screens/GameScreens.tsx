@@ -11,6 +11,7 @@ import {
   InteractionManager,
   Vibration,
   Animated,
+  ActivityIndicator,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { getUserId } from '../utils/constants';
@@ -37,28 +38,53 @@ const GameCard = ({
   onPress: () => void;
 }) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  const [isPressed, setIsPressed] = useState(false);
 
   const handlePressIn = () => {
+    setIsPressed(true);
     Animated.spring(scaleAnim, {
       toValue: 0.98,
       useNativeDriver: true,
+      tension: 100,
+      friction: 8,
     }).start();
   };
 
   const handlePressOut = () => {
+    setIsPressed(false);
     Animated.spring(scaleAnim, {
       toValue: 1,
       useNativeDriver: true,
+      tension: 100,
+      friction: 8,
     }).start();
+  };
+
+  const handlePress = () => {
+    console.log('GameCard pressed - starting navigation sequence');
+    
+    // Ensure the animation completes before triggering navigation
+    if (!isPressed) {
+      handlePressIn();
+    }
+    
+    // Small delay to ensure touch feedback is visible
+    setTimeout(() => {
+      handlePressOut();
+      console.log('GameCard press handler executing onPress');
+      onPress();
+    }, 100);
   };
 
   return (
     <TouchableOpacity 
-      activeOpacity={1} 
-      onPress={onPress}
+      activeOpacity={0.9}
+      onPress={handlePress}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       style={styles.touchableCard}
+      delayPressIn={0}
+      delayPressOut={0}
     >
       <Animated.View style={[styles.card, { transform: [{ scale: scaleAnim }] }]}>
         <ImageBackground source={img} style={styles.img} imageStyle={{ borderRadius: 28 }} />
@@ -69,6 +95,8 @@ const GameCard = ({
 
 const GamesScreen: React.FC<Props> = ({ navigation }) => {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isNavigating, setIsNavigating] = useState(false);
+  
   const onViewRef = useRef(({ viewableItems }: any) => {
     if (viewableItems.length > 0) {
       setActiveIndex(viewableItems[0].index);
@@ -77,17 +105,72 @@ const GamesScreen: React.FC<Props> = ({ navigation }) => {
   const viewConfigRef = useRef({ viewAreaCoveragePercentThreshold: 50 });
 
   const handlePlay = async (route: string) => {
+    console.log(`🎮 Attempting to navigate to: ${route}`);
+    
+    // Prevent multiple rapid taps
+    if (isNavigating) {
+      console.log('⚠️ Navigation already in progress, ignoring tap');
+      return;
+    }
+
     try {
+      setIsNavigating(true);
+      console.log('🚀 Navigation started');
+      
       // Add subtle haptic feedback for better UX
       Vibration.vibrate(10);
       
-      // Use InteractionManager to defer navigation until after the touch interaction
-      InteractionManager.runAfterInteractions(() => {
-        navigation.navigate(route as never);
+      // Validate route exists before navigation
+      const validRoutes = ['TDWaitingScreen', 'WYRLobbyScreen', 'NeverHaveIEverGame', 'EventSelectionScreen'];
+      if (!validRoutes.includes(route)) {
+        console.error('❌ Invalid route:', route);
+        Alert.alert('Error', 'Invalid game route. Please try again.');
+        return;
+      }
+
+      console.log('✅ Route validated, proceeding with navigation');
+
+      // Use a more reliable navigation approach
+      const navigationPromise = new Promise<void>((resolve, reject) => {
+        try {
+          console.log('📍 Executing navigation.navigate');
+          navigation.navigate(route as never);
+          resolve();
+        } catch (error) {
+          reject(error);
+        }
       });
+
+      // Use InteractionManager as a fallback
+      InteractionManager.runAfterInteractions(() => {
+        navigationPromise.catch((error) => {
+          console.error('❌ Direct navigation failed, trying alternative approach:', error);
+          // Fallback navigation method
+          setTimeout(() => {
+            try {
+              console.log('🔄 Attempting fallback navigation');
+              navigation.navigate(route as never);
+            } catch (fallbackError) {
+              console.error('❌ Fallback navigation also failed:', fallbackError);
+              Alert.alert('Error', 'Unable to navigate to game. Please try again.');
+            }
+          }, 50);
+        });
+      });
+
+      // Wait a moment for navigation to complete
+      await new Promise(resolve => setTimeout(resolve, 200));
+      console.log('✅ Navigation sequence completed');
+      
     } catch (error) {
-      console.error('Navigation error:', error);
+      console.error('❌ Navigation error:', error);
       Alert.alert('Error', 'Unable to navigate to game. Please try again.');
+    } finally {
+      // Reset navigation state after a delay
+      setTimeout(() => {
+        console.log('🔄 Resetting navigation state');
+        setIsNavigating(false);
+      }, 1000);
     }
   };
 
@@ -104,10 +187,11 @@ const GamesScreen: React.FC<Props> = ({ navigation }) => {
         showsHorizontalScrollIndicator={false}
         onViewableItemsChanged={onViewRef.current}
         viewabilityConfig={viewConfigRef.current}
-        removeClippedSubviews={true}
-        initialNumToRender={1}
+        removeClippedSubviews={false}
+        initialNumToRender={2}
         maxToRenderPerBatch={2}
         windowSize={3}
+        scrollEnabled={!isNavigating}
         getItemLayout={(data, index) => ({
           length: CARD_WIDTH,
           offset: CARD_WIDTH * index,
@@ -135,6 +219,16 @@ const GamesScreen: React.FC<Props> = ({ navigation }) => {
           />
         ))}
       </View>
+      
+      {/* Navigation loading overlay */}
+      {isNavigating && (
+        <View style={styles.navigationLoadingOverlay}>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color="white" style={{ marginBottom: 8 }} />
+            <Text style={styles.loadingText}>Loading Game...</Text>
+          </View>
+        </View>
+      )}
     </View>
   );
 };
@@ -197,6 +291,34 @@ const styles = StyleSheet.create({
 
   touchableCard: {
     flex: 1,
+    minHeight: CARD_HEIGHT,
+    minWidth: CARD_WIDTH,
+  },
+
+  navigationLoadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 999,
+  },
+
+  loadingContainer: {
+    backgroundColor: 'rgba(222, 130, 44, 0.9)',
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+
+  loadingText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
 

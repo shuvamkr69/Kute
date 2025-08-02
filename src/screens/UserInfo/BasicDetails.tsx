@@ -21,6 +21,7 @@ import BackButton from "../../components/BackButton";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import MaskedView from "@react-native-masked-view/masked-view";
+import { set } from "mongoose";
 
 const { width } = Dimensions.get('window');
 
@@ -183,6 +184,13 @@ const BasicDetails: React.FC<Props> = ({ navigation }) => {
         setCustomAlert({ visible: true, title: "Error", message: "Age is required" });
         return;
       }
+      
+      const ageNumber = parseInt(age.trim());
+      if (isNaN(ageNumber) || ageNumber < 18) {
+        setCustomAlert({ visible: true, title: "Error", message: "Age should be 18 or above" });
+        return;
+      }
+      
       if (!gender.trim()) {
         setCustomAlert({ visible: true, title: "Error", message: "Gender is required" });
         return;
@@ -248,7 +256,7 @@ const BasicDetails: React.FC<Props> = ({ navigation }) => {
             </View>
             <TextInput
               style={styles.ageInput}
-              placeholder="Enter your age"
+              placeholder="Enter your age - Must be 18 or above"
               placeholderTextColor="#888"
               value={age}
               onChangeText={setAge}
